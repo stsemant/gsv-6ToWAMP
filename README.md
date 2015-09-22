@@ -33,6 +33,7 @@ all downloads a dropped to ~/downloads and all installs dropped to ~/install
 #### PyPy
 pypy comes pre-installed on a Raspberry Pi with the raspian-image 2015-05-05. It comes with version 2.2.1 and we would use the version 2.6.1.
 For the update, we have to download the latest pypy-version, extract files and update paths.
+	
 	cd ~/downloads
 	wget https://bitbucket.org/pypy/pypy/downloads/pypy-2.6.1-linux-armhf-raspbian.tar.bz2
 	cd ~/install
