@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>GSV-6CPU | ME-Me&szlig;systeme GmbH</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/me_messsysteme.css" rel="stylesheet">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery.min.1.11.3.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/autobahn.min.js"></script>
+    <script src="js/smoothie.js"></script>
+    <script>
+
+        // the WAMP session we'll be using
+        //
+        var session = null;
+
+        var smoothie = null;
+        var line0 = new TimeSeries();
+        var line1 = new TimeSeries();
+
+        var eventCnt = 0;
+        var eventCntUpdateInterval = 2;
+
+        var last_overloadSign = null;
+
+        var debug_div = null;
+
+        function onFrameReceived(args) {
+            //console.log(args);
+            eventCnt += 1;
+            var payload = args[0];
+            //console.log(payload);
+            lastFrame.innerHTML = payload;
+        }
+
+        function onMesswertReceived(args) {
+            eventCnt += 1;
+            //console.log(args[0]);
+            args = args[0]
+            for (var key in args[0]) {
+                //console.log("Schreibe " + key + " value: "+args[0][key]);
+                channel_value = document.getElementById(key);
+                channel_value.innerHTML = args[0][key].toFixed(2);
+
+                if (key == 'channel0_value') {
+                    line0.append(new Date().getTime(), args[0][key]);
+                }
+            }
+            if (last_overloadSign != args[1]) {
+                last_overloadSign = args[1];
+                if (args[1]) {
+                    $("#inputOverloadWarning").show();
+                } else {
+                    $("#inputOverloadWarning").hide();
+                }
+                if (args[2]) {
+                    $("#sixachsiserrorWarning").show();
+                } else {
+                    $("#sixachsiserrorWarning").hide();
+                }
+            }
+        }
+
+        function startStopTransmission(turnOn) {
+            session.call("de.me_systeme.gsv.startStopTransmission", [turnOn]);
+            if (turnOn) {
+                smoothie.start();
+            } else {
+                smoothie.stop();
+            }
+        }
+
+        function onStartStopTransmission(args) {
+            args = args[0];
+            if (parseInt(args[0]) != 0) {
+                alert('can#t StartStop: ' + args[0]);
+            } else {
+                // no Error
+                if (args[1]) {
+                    smoothie.start();
+                } else {
+                    $("#inputOverloadWarning").hide();
+                    $("#sixachsiserrorWarning").hide();
+                    smoothie.stop();
+                }
+            }
+        }
+
+        function getUnitText() {
+            session.call("de.me_systeme.gsv.getUnitText");
+        }
+
+        function onGetUnitText(args) {
+            console.log(args[0]);
+            console.log(args[1]);
+        }
+
+        function setUnitText() {
+            session.call("de.me_systeme.gsv.setUnitText", ['test']);
+        }
+
+        function onSetUnitText(args) {
+            console.log(args[0]);
+        }
+
+        function onReceiveError(args) {
+            eventCnt += 1;
+            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
+        }
+
+        function updateEventCnt() {
+            document.getElementById("event-cnt").innerHTML = Math.round(eventCnt / eventCntUpdateInterval) + " events/s";
+            eventCnt = 0;
+        }
+
+        function getUnitNo(channelNo) {
+            session.call("de.me_systeme.gsv.getUnitNo", [channelNo]);
+        }
+
+        function getReadAoutScale(channelNo) {
+            session.call("de.me_systeme.gsv.getReadAoutScale", [channelNo]);
+        }
+
+        function onGetReadAoutScale(args) {
+            args = args[0];
+            smoothie.options.minValue = -1 * parseFloat(args[2]);
+            smoothie.options.maxValue = parseFloat(args[2]);
+        }
+
+        function onGetUnitNo(args) {
+            args = args[0];
+            if (parseInt(args[0]) != 0) {
+                //error
+                alert("fehler getUnitNo");
+            } else {
+                var channel_unit = null;
+                switch (parseInt(args[1])) {
+                    case 1:
+                        channel_unit = document.getElementById('channel0_unit');
+                        break;
+                    case 2:
+                        channel_unit = document.getElementById('channel1_unit');
+                        break;
+                    case 3:
+                        channel_unit = document.getElementById('channel2_unit');
+                        break;
+                    case 4:
+                        channel_unit = document.getElementById('channel3_unit');
+                        break;
+                    case 5:
+                        channel_unit = document.getElementById('channel4_unit');
+                        break;
+                    case 6:
+                        channel_unit = document.getElementById('channel5_unit');
+                        break;
+                    default:
+                        alert("Error GetUnitNo switch");
+                }
+                channel_unit.innerHTML = ' ' + args[2];
+            }
+            //alert(args);
+            //console.log('onGetUnitNo');
+            eventCnt += 1;
+        }
+
+        function onGetInterface(args) {
+            //console.log(args[0]);
+            args = args[0];
+
+            var channels = parseInt(args['anzahl_messwert-frame-objekte']);
+            if (channels > 0)
+                $("#channel1").show();
+            else
+                $("#channel1").hide();
+            if (channels > 1)
+                $("#channel2").show();
+            else
+                $("#channel2").hide();
+            if (channels > 2)
+                $("#channel3").show();
+            else
+                $("#channel3").hide();
+            if (channels > 3)
+                $("#channel4").show();
+            else
+                $("#channel4").hide();
+            if (channels > 4)
+                $("#channel5").show();
+            else
+                $("#channel5").hide();
+
+            $("#geraete_model").html(args['geraete_model']);
+
+            if (args['messuebertragung'] == true) {
+                smoothie.start();
+            } else {
+                smoothie.stop();
+                $("#inputOverloadWarning").hide();
+                $("#sixachsiserrorWarning").hide();
+            }
+        }
+
+        window.onload = function () {
+            //channel0_value = document.getElementById('channel0_value');
+            //channel0_unit = document.getElementById('channel0_unit');
+
+            smoothie = new SmoothieChart({
+                grid: {
+                    strokeStyle: 'rgb(125, 0, 0)',
+                    fillStyle: 'rgb(60, 0, 0)',
+                    lineWidth: 1,
+                    millisPerLine: 250,
+                    verticalSections: 6
+                },
+                minValue: -10,
+                maxValue: 10,
+                resetBounds: false,
+                //interpolation: "line"
+            });
+
+            smoothie.addTimeSeries(line0, {
+                strokeStyle: 'rgb(0, 255, 0)',
+                fillStyle: 'rgba(0, 255, 0, 0.1)',
+                lineWidth: 3
+            });
+            smoothie.addTimeSeries(line1, {
+                strokeStyle: 'rgb(255, 0, 255)',
+                fillStyle: 'rgba(255, 0, 255, 0.1)',
+                lineWidth: 3
+            });
+
+            smoothie.streamTo(document.getElementById("messChart"));
+            //smoothie.stop();
+
+            // the URL of the WAMP Router (e.g. Crossbar.io)
+            //
+            var wsuri;
+            if (document.location.origin == "file://") {
+                wsuri = "ws://localhost:8080/ws";
+            } else {
+                wsuri = "ws://" + document.location.hostname + ":8080/ws";
+            }
+
+            // connect to WAMP server
+            //
+            var connection = new autobahn.Connection({
+                url: wsuri,
+                realm: 'crossbardemo'
+            });
+
+            connection.onopen = function (new_session) {
+                console.log("connected to " + wsuri);
+
+                session = new_session;
+
+                //session.subscribe("com.myapp.mcu.on_analog_value", onAnalogValue);
+                //session.subscribe("com.myapp.mcu.on_frame_received", onFrameReceived);
+                session.subscribe("de.me_systeme.gsv.onStartStopTransmission", onStartStopTransmission);
+                session.subscribe("de.me_systeme.gsv.onMesswertReceived", onMesswertReceived);
+                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
+                //session.subscribe("de.me_systeme.gsv.onGetUnitText", onGetUnitText);
+                //session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
+                session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
+                session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
+                session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
+
+                debug_div = document.getElementById('debug_out');
+
+                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
+                    var log_section = document.getElementById('debug_out');
+                    res.forEach(function (entry) {
+                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
+                    });
+                }, session.log);
+                session.call("de.me_systeme.gsv.getUnitNo", [1]);
+                session.call("de.me_systeme.gsv.getUnitNo", [2]);
+                session.call("de.me_systeme.gsv.getUnitNo", [3]);
+                session.call("de.me_systeme.gsv.getUnitNo", [4]);
+                session.call("de.me_systeme.gsv.getUnitNo", [5]);
+                session.call("de.me_systeme.gsv.getUnitNo", [6]);
+                session.call("de.me_systeme.gsv.getGetIntetface");
+                session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
+
+                eventCnt = 0;
+
+                window.setInterval(updateEventCnt, eventCntUpdateInterval * 1000);
+            };
+
+            connection.open();
+        };
+
+        $(document).ready(function () {
+            // soruce code http://ameijer.nl/2011/08/resizable-html5-canvas/
+            //Get the canvas & context
+            var c = $('#messChart');
+            var ct = c.get(0).getContext('2d');
+            var container = $(c).parent();
+
+            //Run function when browser resizes
+            $(window).resize(respondCanvas);
+
+            function respondCanvas() {
+                c.attr('width', $(container).width()); //max width
+                c.attr('height', 400); //max height
+            }
+
+            //Initial call
+            respondCanvas();
+
+            //-----------> responsive Canvas
+
+        });
+    </script>
+
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">ME-Me&szlig;systeme GmbH</a>
+        </div>
+        <div>
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Messung</a></li>
+                <li><a href="#">Konfiguration</a></li>
+                <li><a href="#">Messungen</a></li>
+                <li><a href="#">Log</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <button type="button" class="btn btn-success" onclick="startStopTransmission(true)">Start</button>
+    <button type="button" class="btn btn-danger" onclick="startStopTransmission(false)">Stop</button>
+
+    <h2>Messwerte</h2>
+
+    <div class="row">
+        <div id="channel0" class="col-sm-4">Kanal 1: <span id="channel0_value">-</span><span id="channel0_unit">(Einheit)</span>
+        </div>
+        <div id="channel1" class="col-sm-4">Kanal 2: <span id="channel1_value">-</span><span id="channel1_unit">(Einheit)</span>
+        </div>
+        <div id="channel2" class="col-sm-4">Kanal 3: <span id="channel2_value">-</span><span id="channel2_unit">(Einheit)</span>
+        </div>
+        <div id="channel3" class="col-sm-4">Kanal 4: <span id="channel3_value">-</span><span id="channel3_unit">(Einheit)</span>
+        </div>
+        <div id="channel4" class="col-sm-4">Kanal 5: <span id="channel4_value">-</span><span id="channel4_unit">(Einheit)</span>
+        </div>
+        <div id="channel5" class="col-sm-4">Kanal 6: <span id="channel5_value">-</span><span id="channel5_unit">(Einheit)</span>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">Messausgabe <span id="geraete_model" class="label label-success"></span><span
+                    id="inputOverloadWarning" class="label label-warning">Eingang &Uuml;bersteuer!</span><span
+                    id="sixachsiserrorWarning" class="label label-danger"><span
+                    class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>Sechs-Achsen-Fehler!</span>
+            </h3>
+        </div>
+        <div class="panel-body nopadding">
+            <canvas id="messChart"></canvas>
+        </div>
+    </div>
+
+    <div class="panel panel-primary">
+        <div class="panel-heading">Debug
+            <div id="event-cnt" style="float:right;...;">-</div>
+        </div>
+        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
+    </div>
+</div>
+</div>
+</div>
+</body>
+</html>

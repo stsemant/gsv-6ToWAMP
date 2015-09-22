@@ -1,4 +1,4 @@
-# gsv-6ToWS
+#gsv-6ToWAMP
 ## GSV-6CPU Modul to WAMP
 
 This demo shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
@@ -32,7 +32,7 @@ all downloads a dropped to ~/downloads and all installs dropped to ~/install
 	mkdir ~/install
 #### PyPy
 pypy comes pre-installed on a Raspberry Pi with the raspian-image 2015-05-05. It comes with version 2.2.1 and we would use the version 2.6.1.
-For the update, we have to download the latest pypy-version, extract files and update paths
+For the update, we have to download the latest pypy-version, extract files and update paths.
 	cd ~/downloads
 	wget https://bitbucket.org/pypy/pypy/downloads/pypy-2.6.1-linux-armhf-raspbian.tar.bz2
 	cd ~/install
