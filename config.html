@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>GSV-6CPU | ME-Me&szlig;systeme GmbH</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/me_messsysteme.css" rel="stylesheet">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery.min.1.11.3.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/autobahn.min.js"></script>
+    <script src="js/smoothie.js"></script>
+    <script>
+
+        // the WAMP session we'll be using
+        //
+        var session = null;
+
+        var debug_div = null;
+
+        function onReceiveError(args) {
+            //eventCnt += 1;
+            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
+        }
+
+        function onGetReadAoutScale(args) {
+            args = args[0];
+            /*
+            smoothie.options.minValue = -1 * parseFloat(args[2]);
+            smoothie.options.maxValue = parseFloat(args[2]);
+            */
+        }
+
+        function onGetInterface(args) {
+            //console.log(args[0]);
+            args = args[0];
+            /*
+            var channels = parseInt(args['anzahl_messwert-frame-objekte']);
+            if (channels > 0)
+                $("#channel1").show();
+            else
+                $("#channel1").hide();
+            if (channels > 1)
+                $("#channel2").show();
+            else
+                $("#channel2").hide();
+            if (channels > 2)
+                $("#channel3").show();
+            else
+                $("#channel3").hide();
+            if (channels > 3)
+                $("#channel4").show();
+            else
+                $("#channel4").hide();
+            if (channels > 4)
+                $("#channel5").show();
+            else
+                $("#channel5").hide();
+
+            $("#geraete_model").html(args['geraete_model']);
+
+            if (args['messuebertragung'] == true) {
+                smoothie.start();
+            } else {
+                smoothie.stop();
+                $("#inputOverloadWarning").hide();
+                $("#sixachsiserrorWarning").hide();
+            }
+            */
+        }
+
+        window.onload = function () {
+
+            // the URL of the WAMP Router (e.g. Crossbar.io)
+            //
+            var wsuri;
+            if (document.location.origin == "file://") {
+                wsuri = "ws://localhost:8080/ws";
+            } else {
+                wsuri = "ws://" + document.location.hostname + ":8080/ws";
+            }
+
+            // connect to WAMP server
+            //
+            var connection = new autobahn.Connection({
+                url: wsuri,
+                realm: 'crossbardemo'
+            });
+
+            connection.onopen = function (new_session) {
+                console.log("connected to " + wsuri);
+
+                session = new_session;
+
+                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
+                session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
+                session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
+
+                debug_div = document.getElementById('debug_out');
+
+                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
+                    var log_section = document.getElementById('debug_out');
+                    res.forEach(function (entry) {
+                        console.log(entry);
+                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
+                    });
+                }, session.log);
+                session.call("de.me_systeme.gsv.getGetIntetface");
+                session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
+            };
+
+            connection.open();
+        };
+    </script>
+
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">ME-Me&szlig;systeme GmbH</a>
+        </div>
+        <div>
+            <ul class="nav navbar-nav">
+                <li><a href="index.html">Messung</a></li>
+                <li class="active"><a href="#">Konfiguration</a></li>
+                <li><a href="#">Messungen</a></li>
+                <li><a href="#">Log</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="panel panel-primary">
+        <div class="panel-heading">Debug
+            <div id="event-cnt" style="float:right;">-</div>
+        </div>
+        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
+    </div>
+</div>
+</div>
+</div>
+</body>
+</html>
