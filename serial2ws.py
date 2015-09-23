@@ -254,7 +254,10 @@ class GSV_6Protocol(protocol.Protocol):
         # self.transport.write(payload)
 
     def write(self, data):
-        self.transport.write(data)
+        if sys.platform == 'win32':
+            self.transport.write(data)
+        else:
+            self.transport.write(str(data))
 
 
 class MessFrameHandler():
@@ -636,7 +639,6 @@ if __name__ == '__main__':
         pass
 
     from twisted.python import log as logTwisted
-
     logTwisted.startLogging(sys.stdout)
 
     # import Twisted reactor
