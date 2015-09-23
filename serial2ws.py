@@ -41,10 +41,8 @@ from Queue import Queue
 import logging
 
 import unit_codes
-
-
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # 'format': '
@@ -64,7 +62,7 @@ class GSV_6Protocol(protocol.Protocol):
 
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
-        # logger.debug('[' + __name__ + '] serial data received.')
+        logger.debug('[' + __name__ + '] serial data received.')
         '''
         if self.trace:
             print('[serial|data received] ')# + ' '.join(format(x, '02x') for x in data))
@@ -79,172 +77,168 @@ class GSV_6Protocol(protocol.Protocol):
         foundcompleteframe = False
         tempArray = bytearray()
 
-        try:
-            # drop all bytes to find sync byte
-            while (len(self.inDataBuffer) > 0) and (self.inDataBuffer[0] != 0xAA):
-                self.inDataBuffer.pop(0)
-                if self.trace:
-                    print('Drop Byte.')
+        # drop all bytes to find sync byte
+        while (len(self.inDataBuffer) > 0) and (self.inDataBuffer[0] != 0xAA):
+            self.inDataBuffer.pop(0)
+            if self.trace:
+                print('Drop Byte.')
 
-            # min length messwert = 5 Byte
-            # min length antwort  = 4 Byte
-            # abort if not enougth data received
-            if len(self.inDataBuffer) < 4:
-                if self.trace:
-                    print('return, because minimal FrameLength not reached.')
-                return
+        # min length messwert = 5 Byte
+        # min length antwort  = 4 Byte
+        # abort if not enougth data received
+        if len(self.inDataBuffer) < 4:
+            if self.trace:
+                print('return, because minimal FrameLength not reached.')
+            return
 
-            for b in self.inDataBuffer:
-                tempArray.append(b)
-                counter += 1
-                if self.trace:
-                    print('State: ' + str(state))
+        for b in self.inDataBuffer:
+            tempArray.append(b)
+            counter += 1
+            if self.trace:
+                print('State: ' + str(state))
 
-                if state == 0:
+            if state == 0:
+                # okay we strip sync bytes 0xAA and 0x85 in this function
+                # strip 0xAA in state 0
+                del tempArray[-1]
+
+                # next state
+                state = 1
+            elif state == 1:
+                # check FrameType, Interface and length/channels -> state=2
+                # if AntwortFrame or MessFrame?
+                if not (((b & 0xC0) == 0x40) or ((b & 0xC0) == 0x00)):
+                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                    self.inDataBuffer[0] = 0x00
+                    if self.debug:
+                        print('[break] Frame seems to be not a Antwort or MsessFrame.')
+                    break
+                else:
+                    frametype = int(b >> 6)
+                # if Interface== Serial?
+                if not (b & 0x30 == 0x10):
+                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                    self.inDataBuffer[0] = 0x00
+                    if self.debug:
+                        print('[break] Interface != Serial')
+                    break
+                # payloadLength for AntwortFrame or count of Channels for Messframe
+                payloadLength = int(b & 0x0F)
+                if self.trace:
+                    print('payloadLength=' + str(payloadLength))
+                state = 2
+                # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
+            elif state == 2:
+                # check status byte Mess=indicator; AntwortFrame = in listErrorList?; payloadLength=calculate legnth of expected payload -> state=3
+                if frametype == 0:
+                    if self.trace:
+                        print('detected MessFrame')
+                    # it's a MessFrame
+                    # first check Indikator==1
+                    if (b & 0x80) != 0x80:
+                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                        self.inDataBuffer[0] = 0x00
+                        if self.debug:
+                            print('[break] Indikator!=1')
+                        break
+                    # now get datatype as multiplier for payloadLength
+                    multiplier = int((b & 0x70) >> 4) + 1
+                    if self.trace:
+                        print('multiplier: ' + str(multiplier))
+                    # start count at 0-> +1
+                    payloadLength += 1
+                    payloadLength *= multiplier
+                    if self.trace:
+                        print('payloadLength: ' + str(payloadLength))
+                    state = 3
+                elif frametype == 1:
+                    if self.trace:
+                        print('detected Antwort Frame')
+                    # it's a AntwortFrame
+                    # check if errorcode is in the list
+                    if not error_codes.error_code_to_error_shortcut.has_key(b):
+                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                        self.inDataBuffer[0] = 0x00
+                        if self.debug:
+                            print("[break] can't find errorcode ins list.")
+                        break
+                    else:
+                        # if no payload there, stepover state3
+                        if payloadLength > 0:
+                            state = 3
+                        else:
+                            state = 4
+                else:
+                    # any other frametype is not allow: drop
+                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                    self.inDataBuffer[0] = 0x00
+                    if self.debug:
+                        print('[break] other FrameType detected.')
+                    break
+                    # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
+                    # if payload>6*4Byte, drop also
+            elif state == 3:
+                if self.trace:
+                    print('counter-state: ' + str((counter - state)))
+                if payloadLength == (counter - state):
+                    state = 4
+                    # so we got the whole payload goto state=4
+            elif state == 4:
+                # at the first time in state 4, we have to break
+                # if b== 0x85 -> we have a complete Frame; pushback the complete Frame and remove copyed bytes from incommingBuffer and break For-Loop
+                if not (b == 0x85):
+                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                    self.inDataBuffer[0] = 0x00
+                    if self.trace:
+                        print("[break] can't find 0x85")
+                else:
+                    if self.trace:
+                        print('[break] found an complete Frame')
+                    foundcompleteframe = True
+
                     # okay we strip sync bytes 0xAA and 0x85 in this function
-                    # strip 0xAA in state 0
+                    # strip 0x85 in state 4
                     del tempArray[-1]
 
-                    # next state
-                    state = 1
-                elif state == 1:
-                    # check FrameType, Interface and length/channels -> state=2
-                    # if AntwortFrame or MessFrame?
-                    if not (((b & 0xC0) == 0x40) or ((b & 0xC0) == 0x00)):
-                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                        self.inDataBuffer[0] = 0x00
+                    # pushback data here!
+                    # publish WAMP event to all subscribers on topic
+                    ##
+                    frame = GSV6_BasicFrameType.BasicFrame(tempArray)
+                    # self.frameQueue.append(frame)
+                    try:
+                        # put() is blocking, put_nowait() ist non-blocking
+                        # self.frameQueue.put(frame)
+                        self.frameQueue.put_nowait(frame)
+                    except Queue.Full:
+                        self.session.addError('a complete Frame was droped, because Queue was full')
                         if self.debug:
-                            print('[break] Frame seems to be not a Antwort or MsessFrame.')
-                        break
-                    else:
-                        frametype = int(b >> 6)
-                    # if Interface== Serial?
-                    if not (b & 0x30 == 0x10):
-                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                        self.inDataBuffer[0] = 0x00
-                        if self.debug:
-                            print('[break] Interface != Serial')
-                        break
-                    # payloadLength for AntwortFrame or count of Channels for Messframe
-                    payloadLength = int(b & 0x0F)
+                            print('a complete Frame was droped, because Queue was full')
+                    # self.session.publish(u"com.myapp.mcu.on_frame_received",
+                    #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
                     if self.trace:
-                        print('payloadLength=' + str(payloadLength))
-                    state = 2
-                    # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
-                elif state == 2:
-                    # check status byte Mess=indicator; AntwortFrame = in listErrorList?; payloadLength=calculate legnth of expected payload -> state=3
-                    if frametype == 0:
-                        if self.trace:
-                            print('detected MessFrame')
-                        # it's a MessFrame
-                        # first check Indikator==1
-                        if (b & 0x80) != 0x80:
-                            # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                            self.inDataBuffer[0] = 0x00
-                            if self.debug:
-                                print('[break] Indikator!=1')
-                            break
-                        # now get datatype as multiplier for payloadLength
-                        multiplier = int((b & 0x70) >> 4) + 1
-                        if self.trace:
-                            print('multiplier: ' + str(multiplier))
-                        # start count at 0-> +1
-                        payloadLength += 1
-                        payloadLength *= multiplier
-                        if self.trace:
-                            print('payloadLength: ' + str(payloadLength))
-                        state = 3
-                    elif frametype == 1:
-                        if self.debug:
-                            print('detected Antwort Frame')
-                        # it's a AntwortFrame
-                        # check if errorcode is in the list
-                        if not error_codes.error_code_to_error_shortcut.has_key(b):
-                            # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                            self.inDataBuffer[0] = 0x00
-                            if self.debug:
-                                print("[break] can't find errorcode ins list.")
-                            break
-                        else:
-                            # if no payload there, stepover state3
-                            if payloadLength > 0:
-                                state = 3
-                            else:
-                                state = 4
-                    else:
-                        # any other frametype is not allow: drop
-                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                        self.inDataBuffer[0] = 0x00
-                        if self.debug:
-                            print('[break] other FrameType detected.')
-                        break
-                        # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
-                        # if payload>6*4Byte, drop also
-                elif state == 3:
-                    if self.trace:
-                        print('counter-state: ' + str((counter - state)))
-                    if payloadLength == (counter - state):
-                        state = 4
-                        # so we got the whole payload goto state=4
-                elif state == 4:
-                    # at the first time in state 4, we have to break
-                    # if b== 0x85 -> we have a complete Frame; pushback the complete Frame and remove copyed bytes from incommingBuffer and break For-Loop
-                    if not (b == 0x85):
-                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                        self.inDataBuffer[0] = 0x00
-                        if self.trace:
-                            print("[break] can't find 0x85")
-                    else:
-                        if self.trace:
-                            print('[break] found an complete Frame')
-                        foundcompleteframe = True
+                        print(
+                        '[serial] Received compelte Frame: ' + ' '.join(format(x, '02x') for x in bytearray(tempArray)))
 
-                        # okay we strip sync bytes 0xAA and 0x85 in this function
-                        # strip 0x85 in state 4
-                        del tempArray[-1]
+                # break anyway
+                break
+                # else drop last <counter> bytes and retry sync
 
-                        # pushback data here!
-                        # publish WAMP event to all subscribers on topic
-                        ##
-                        frame = GSV6_BasicFrameType.BasicFrame(tempArray)
-                        # self.frameQueue.append(frame)
-                        try:
-                            # put() is blocking, put_nowait() ist non-blocking
-                            # self.frameQueue.put(frame)
-                            self.frameQueue.put_nowait(frame)
-                        except Queue.Full:
-                            self.session.addError('a complete Frame was droped, because Queue was full')
-                            if self.debug:
-                                print('a complete Frame was droped, because Queue was full')
-                        # self.session.publish(u"com.myapp.mcu.on_frame_received",
-                        #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
-                        if self.trace:
-                            print(
-                                '[serial] Received compelte Frame: ' + ' '.join(
-                                    format(x, '02x') for x in bytearray(tempArray)))
+        if foundcompleteframe:
+            # remove copyed items
+            self.inDataBuffer[0:counter - 1] = []
+            if self.trace:
+                print('new inDataBuffer[0]: ' + ' '.join(format(self.inDataBuffer[0], '02x')))
 
-                    # break anyway
-                    break
-                    # else drop last <counter> bytes and retry sync
-        except:
-            print("serial in fehler")
-
-            if foundcompleteframe:
-                # remove copyed items
-                self.inDataBuffer[0:counter - 1] = []
-                if self.trace:
-                    print('new inDataBuffer[0]: ' + ' '.join(format(self.inDataBuffer[0], '02x')))
-
-            # at this point we have to test, if we have enougth data for a second frame
-            # execute this function again if (recursion == -1 and len(incommingBuffer>4) or ()
-            lenthOfData = len(self.inDataBuffer)
-            if (lenthOfData > 3) and (recursion != lenthOfData):
-                if self.trace:
-                    print('[rec] start rec')
-                self.checkForCompleteFrame(lenthOfData)
-            else:
-                if self.trace:
-                    print('[rec] no more rec')
+        # at this point we have to test, if we have enougth data for a second frame
+        # execute this function again if (recursion == -1 and len(incommingBuffer>4) or ()
+        lenthOfData = len(self.inDataBuffer)
+        if (lenthOfData > 3) and (recursion != lenthOfData):
+            if self.trace:
+                print('[rec] start rec')
+            self.checkForCompleteFrame(lenthOfData)
+        else:
+            if self.trace:
+                print('[rec] no more rec')
 
     def controlLed(self, str):
         """
@@ -255,13 +249,6 @@ class GSV_6Protocol(protocol.Protocol):
 
     def write(self, data):
         self.transport.write(data)
-        '''
-        if sys.platform == 'win32':
-            self.transport.write(data)
-        else:
-            self.transport.write(str(data))
-        '''
-
 
 class MessFrameHandler():
     def __init__(self, session, gsv_lib, eventHandler):
@@ -311,7 +298,6 @@ class AntwortFrameHandler():
                 else:
                     result = methodToCall(frame)
         except:
-            print('antwort error')
             msg = "Unexpected error:" + str(sys.exc_info()[0])
             self.session.addError(msg)
 
@@ -426,22 +412,19 @@ class FrameRouter(threading.Thread):
             except Queue.Empty:
                 pass
             else:
-                try:
-                    if self.debug:
-                        pass
-                        print('[router] ' + newFrame.toString())
-                    if newFrame.getFrameType() == 0:
-                        # MesswertFrame
-                        self.messFrameEventHandler.computeFrame(newFrame)
-                    elif newFrame.getFrameType() == 1:
-                        # AntwortFrame
-                        self.antwortFrameEventHandler.computeFrame(newFrame)
-                        pass
-                    else:
-                        # error
-                        print('nothing to do with an FrameType != Messwert/Antwort')
-                except:
-                    print('antwort error')
+                if self.debug:
+                    pass
+                    #print('[router] ' + newFrame.toString())
+                if newFrame.getFrameType() == 0:
+                    # MesswertFrame
+                    self.messFrameEventHandler.computeFrame(newFrame)
+                elif newFrame.getFrameType() == 1:
+                    # AntwortFrame
+                    self.antwortFrameEventHandler.computeFrame(newFrame)
+                    pass
+                else:
+                    # error
+                    print('nothing to do with an FrameType != Messwert/Antwort')
 
         print("[router] exit loop.")
 
@@ -503,8 +486,8 @@ class McuComponent(ApplicationSession):
         try:
             self.serialPort = SerialPort(serialProtocol, port, reactor, baudrate=baudrate)
 
-            # data = self.gsv_lib.buildStopTransmission()
-            # self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
+            #data = self.gsv_lib.buildStopTransmission()
+            #self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
         except Exception as e:
             print('Could not open serial port: {0}'.format(e))
@@ -526,30 +509,27 @@ class McuComponent(ApplicationSession):
         self.publish(u"de.me_systeme.gsv.onError", errorString)
 
     def writeAntwort(self, data, functionName, args=None):
+        # okay this function have to be atomic
+        # we protect it with a lock!
+        self.serialWrite_lock.acquire()
         try:
-            # okay this function have to be atomic
-            # we protect it with a lock!
-            self.serialWrite_lock.acquire()
-            try:
-                self.antwortQueue.put_nowait({functionName: args})
-                self.serialPort.write(str(data))
-                print('[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data))
-                msg = '[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data)
-                self.addError(msg)
-            except NameError:
-                if self.debug:
-                    print('[MyComp] serialport not openend')
-            finally:
-                self.serialWrite_lock.release()
-        except:
-            print("write error")
+            self.antwortQueue.put_nowait({functionName: args})
+            self.serialPort.write(str(data))
+            print('[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data))
+            msg = '[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data)
+            self.addError(msg)
+        except NameError:
+            if self.debug:
+                print('[MyComp] serialport not openend')
+        finally:
+            self.serialWrite_lock.release()
 
     def write(self, data):
         # okay this function have to be atomic
         # we protect it with a lock!
         self.serialWrite_lock.acquire()
         try:
-            self.serialPort.write(data)
+            self.serialPort.write(str(data))
             print('[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data))
             str = '[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data)
             self.addError(str)
@@ -562,51 +542,10 @@ class McuComponent(ApplicationSession):
     def publish_test(self, topic, args):
         self.publish(topic, args)
 
-import sys, traceback
-def print_exc_plus():
-    """
-    Print the usual traceback information, followed by a listing of all the
-    local variables in each frame.
-    """
-    tb = sys.exc_info()[2]
-    while 1:
-        if not tb.tb_next:
-            break
-        tb = tb.tb_next
-    stack = []
-    f = tb.tb_frame
-    while f:
-        stack.append(f)
-        f = f.f_back
-    stack.reverse()
-    traceback.print_exc()
-    print "Locals by frame, innermost last"
-    for frame in stack:
-        print
-        print "Frame %s in %s at line %s" % (frame.f_code.co_name,
-                                             frame.f_code.co_filename,
-                                             frame.f_lineno)
-        for key, value in frame.f_locals.items():
-            print "\t%20s = " % key,
-            #We have to be careful not to cause a new error in our error
-            #printer! Calling str() on an unknown object could cause an
-            #error we don't want.
-            try:
-                print value
-            except:
-                print "<ERROR WHILE PRINTING VALUE>"
-
-def myexcepthook(exctype, value, traceback):
-    if exctype == KeyboardInterrupt:
-        print "Handler code goes here"
-    else:
-        sys.__excepthook__(exctype, value, traceback)
-        print_exc_plus()
-sys.excepthook = myexcepthook
 
 if __name__ == '__main__':
 
-
+    import sys
     import argparse
     # log.setLevel(logging.DEBUG)
     # parse command line arguments
@@ -642,6 +581,7 @@ if __name__ == '__main__':
         pass
 
     from twisted.python import log as logTwisted
+
     logTwisted.startLogging(sys.stdout)
 
     # import Twisted reactor
@@ -672,14 +612,8 @@ if __name__ == '__main__':
 
     router = args.router or u'ws://127.0.0.1:8080/ws/'
 
-    try:
-        runner = ApplicationRunner(router, u"me_gsv6",
-                                   extra={'port': args.port, 'baudrate': args.baudrate, 'debug': True})
-    except:
-        print("error")
-        traceback.print_exc()
-        print_exc_plus()
-
+    runner = ApplicationRunner(router, u"me_gsv6",
+                               extra={'port': args.port, 'baudrate': args.baudrate, 'debug': True})
     # extra={'port': args.port, 'baudrate': args.baudrate, 'debug': args.debug})
 
     # start the component and the Twisted reactor ..
