@@ -48,7 +48,7 @@
             for (var key in args[0]) {
                 //console.log("Schreibe " + key + " value: "+args[0][key]);
                 channel_value = document.getElementById(key);
-                channel_value.innerHTML = args[0][key].toFixed(2);
+                channel_value.innerHTML = args[0][key].toFixed(4);
 
                 if (key == 'channel0_value') {
                     line0.append(new Date().getTime(), args[0][key]);
@@ -253,7 +253,7 @@
             //
             var connection = new autobahn.Connection({
                 url: wsuri,
-                realm: 'crossbardemo'
+                realm: 'me_gsv6'
             });
 
             connection.onopen = function (new_session) {
@@ -361,10 +361,14 @@
 
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h3 class="panel-title">Messausgabe <span id="geraete_model" class="label label-success"></span><span
-                    id="inputOverloadWarning" class="label label-warning">Eingang &Uuml;bersteuer!</span><span
-                    id="sixachsiserrorWarning" class="label label-danger"><span
-                    class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>Sechs-Achsen-Fehler!</span>
+            <h3 class="panel-title">Plot
+                <span id="geraete_model" class="label label-success"></span>
+                <span id="channel0_label" class="label label-success">Kanal 1</span>
+                <span id="inputOverloadWarning" class="label label-warning">Eingang &Uuml;bersteuer!</span>
+                <span id="sixachsiserrorWarning" class="label label-danger">
+                    <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+                    Sechs-Achsen-Fehler!
+                </span>
             </h3>
         </div>
         <div class="panel-body nopadding">

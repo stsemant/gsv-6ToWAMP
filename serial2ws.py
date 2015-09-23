@@ -339,6 +339,7 @@ class GSVeventHandler():
         self.regCalls()
 
     def regCalls(self):
+        print('register...')
         self.session.register(self.startStopTransmisson, u"de.me_systeme.gsv.startStopTransmission")
         self.session.register(self.getUnitText, u"de.me_systeme.gsv.getUnitText")
         self.session.register(self.setUnitText, u"de.me_systeme.gsv.setUnitText")
@@ -414,7 +415,7 @@ class FrameRouter(threading.Thread):
             else:
                 if self.debug:
                     pass
-                    print('[router] ' + newFrame.toString())
+                    #print('[router] ' + newFrame.toString())
                 if newFrame.getFrameType() == 0:
                     # MesswertFrame
                     self.messFrameEventHandler.computeFrame(newFrame)
@@ -485,6 +486,10 @@ class McuComponent(ApplicationSession):
         print('About to open serial port {0} [{1} baud] ..'.format(port, baudrate))
         try:
             self.serialPort = SerialPort(serialProtocol, port, reactor, baudrate=baudrate)
+
+            #data = self.gsv_lib.buildStopTransmission()
+            #self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
+
         except Exception as e:
             print('Could not open serial port: {0}'.format(e))
             self.leave()
@@ -604,7 +609,7 @@ if __name__ == '__main__':
 
     router = args.router or u'ws://127.0.0.1:8080/ws/'
 
-    runner = ApplicationRunner(router, u"crossbardemo",
+    runner = ApplicationRunner(router, u"me_gsv6",
                                extra={'port': args.port, 'baudrate': args.baudrate, 'debug': True})
     # extra={'port': args.port, 'baudrate': args.baudrate, 'debug': args.debug})
 
