@@ -41,8 +41,10 @@ from Queue import Queue
 import logging
 
 import unit_codes
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 
 # 'format': '
@@ -62,7 +64,7 @@ class GSV_6Protocol(protocol.Protocol):
 
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
-        logger.debug('[' + __name__ + '] serial data received.')
+        # logger.debug('[' + __name__ + '] serial data received.')
         '''
         if self.trace:
             print('[serial|data received] ')# + ' '.join(format(x, '02x') for x in data))
@@ -218,7 +220,8 @@ class GSV_6Protocol(protocol.Protocol):
                         #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
                         if self.trace:
                             print(
-                            '[serial] Received compelte Frame: ' + ' '.join(format(x, '02x') for x in bytearray(tempArray)))
+                                '[serial] Received compelte Frame: ' + ' '.join(
+                                    format(x, '02x') for x in bytearray(tempArray)))
 
                     # break anyway
                     break
@@ -252,6 +255,7 @@ class GSV_6Protocol(protocol.Protocol):
 
     def write(self, data):
         self.transport.write(data)
+
 
 class MessFrameHandler():
     def __init__(self, session, gsv_lib, eventHandler):
@@ -433,7 +437,6 @@ class FrameRouter(threading.Thread):
                 except:
                     print('antwort error')
 
-
         print("[router] exit loop.")
 
     def stop(self):
@@ -494,8 +497,8 @@ class McuComponent(ApplicationSession):
         try:
             self.serialPort = SerialPort(serialProtocol, port, reactor, baudrate=baudrate)
 
-            #data = self.gsv_lib.buildStopTransmission()
-            #self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
+            # data = self.gsv_lib.buildStopTransmission()
+            # self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
         except Exception as e:
             print('Could not open serial port: {0}'.format(e))
@@ -567,8 +570,12 @@ if __name__ == '__main__':
                         choices=[300, 1200, 2400, 4800, 9600, 19200, 57600, 115200],
                         help='Serial port baudrate.')
 
-    parser.add_argument("--port", type=str, default='12',
-                        help='Serial port to use (e.g. 3 for a COM port on Windows, /dev/ttyATH0 for Arduino Yun, /dev/ttyACM0 for Serial-over-USB on RaspberryPi.')
+    if sys.platform == 'win32':
+        parser.add_argument("--port", type=str, default='12',
+                            help='Serial port to use (e.g. 3 for a COM port on Windows, /dev/ttyATH0 for Arduino Yun, /dev/ttyACM0 for Serial-over-USB on RaspberryPi.')
+    else:
+        parser.add_argument("--port", type=str, default='/dev/ttyAMA0',
+                            help='Serial port to use (e.g. 3 for a COM port on Windows, /dev/ttyATH0 for Arduino Yun, /dev/ttyACM0 for Serial-over-USB on RaspberryPi.')
 
     parser.add_argument("--web", type=int, default=8000,
                         help='Web port to use for embedded Web server. Use 0 to disable.')
