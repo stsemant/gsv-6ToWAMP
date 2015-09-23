@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 # logger.setFormatter(formatter)
 class GSV_6Protocol(protocol.Protocol):
     inDataBuffer = {}
-    trace = True
+    trace = False
 
     def __init__(self, session, frameQueue, anfrageQueue, debug=False):
         self.debug = debug
@@ -77,168 +77,171 @@ class GSV_6Protocol(protocol.Protocol):
         foundcompleteframe = False
         tempArray = bytearray()
 
-        # drop all bytes to find sync byte
-        while (len(self.inDataBuffer) > 0) and (self.inDataBuffer[0] != 0xAA):
-            self.inDataBuffer.pop(0)
-            if self.trace:
-                print('Drop Byte.')
-
-        # min length messwert = 5 Byte
-        # min length antwort  = 4 Byte
-        # abort if not enougth data received
-        if len(self.inDataBuffer) < 4:
-            if self.trace:
-                print('return, because minimal FrameLength not reached.')
-            return
-
-        for b in self.inDataBuffer:
-            tempArray.append(b)
-            counter += 1
-            if self.trace:
-                print('State: ' + str(state))
-
-            if state == 0:
-                # okay we strip sync bytes 0xAA and 0x85 in this function
-                # strip 0xAA in state 0
-                del tempArray[-1]
-
-                # next state
-                state = 1
-            elif state == 1:
-                # check FrameType, Interface and length/channels -> state=2
-                # if AntwortFrame or MessFrame?
-                if not (((b & 0xC0) == 0x40) or ((b & 0xC0) == 0x00)):
-                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                    self.inDataBuffer[0] = 0x00
-                    if self.debug:
-                        print('[break] Frame seems to be not a Antwort or MsessFrame.')
-                    break
-                else:
-                    frametype = int(b >> 6)
-                # if Interface== Serial?
-                if not (b & 0x30 == 0x10):
-                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                    self.inDataBuffer[0] = 0x00
-                    if self.debug:
-                        print('[break] Interface != Serial')
-                    break
-                # payloadLength for AntwortFrame or count of Channels for Messframe
-                payloadLength = int(b & 0x0F)
+        try:
+            # drop all bytes to find sync byte
+            while (len(self.inDataBuffer) > 0) and (self.inDataBuffer[0] != 0xAA):
+                self.inDataBuffer.pop(0)
                 if self.trace:
-                    print('payloadLength=' + str(payloadLength))
-                state = 2
-                # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
-            elif state == 2:
-                # check status byte Mess=indicator; AntwortFrame = in listErrorList?; payloadLength=calculate legnth of expected payload -> state=3
-                if frametype == 0:
-                    if self.trace:
-                        print('detected MessFrame')
-                    # it's a MessFrame
-                    # first check Indikator==1
-                    if (b & 0x80) != 0x80:
-                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                        self.inDataBuffer[0] = 0x00
-                        if self.debug:
-                            print('[break] Indikator!=1')
-                        break
-                    # now get datatype as multiplier for payloadLength
-                    multiplier = int((b & 0x70) >> 4) + 1
-                    if self.trace:
-                        print('multiplier: ' + str(multiplier))
-                    # start count at 0-> +1
-                    payloadLength += 1
-                    payloadLength *= multiplier
-                    if self.trace:
-                        print('payloadLength: ' + str(payloadLength))
-                    state = 3
-                elif frametype == 1:
-                    if self.trace:
-                        print('detected Antwort Frame')
-                    # it's a AntwortFrame
-                    # check if errorcode is in the list
-                    if not error_codes.error_code_to_error_shortcut.has_key(b):
-                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                        self.inDataBuffer[0] = 0x00
-                        if self.debug:
-                            print("[break] can't find errorcode ins list.")
-                        break
-                    else:
-                        # if no payload there, stepover state3
-                        if payloadLength > 0:
-                            state = 3
-                        else:
-                            state = 4
-                else:
-                    # any other frametype is not allow: drop
-                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                    self.inDataBuffer[0] = 0x00
-                    if self.debug:
-                        print('[break] other FrameType detected.')
-                    break
-                    # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
-                    # if payload>6*4Byte, drop also
-            elif state == 3:
-                if self.trace:
-                    print('counter-state: ' + str((counter - state)))
-                if payloadLength == (counter - state):
-                    state = 4
-                    # so we got the whole payload goto state=4
-            elif state == 4:
-                # at the first time in state 4, we have to break
-                # if b== 0x85 -> we have a complete Frame; pushback the complete Frame and remove copyed bytes from incommingBuffer and break For-Loop
-                if not (b == 0x85):
-                    # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
-                    self.inDataBuffer[0] = 0x00
-                    if self.trace:
-                        print("[break] can't find 0x85")
-                else:
-                    if self.trace:
-                        print('[break] found an complete Frame')
-                    foundcompleteframe = True
+                    print('Drop Byte.')
 
+            # min length messwert = 5 Byte
+            # min length antwort  = 4 Byte
+            # abort if not enougth data received
+            if len(self.inDataBuffer) < 4:
+                if self.trace:
+                    print('return, because minimal FrameLength not reached.')
+                return
+
+            for b in self.inDataBuffer:
+                tempArray.append(b)
+                counter += 1
+                if self.trace:
+                    print('State: ' + str(state))
+
+                if state == 0:
                     # okay we strip sync bytes 0xAA and 0x85 in this function
-                    # strip 0x85 in state 4
+                    # strip 0xAA in state 0
                     del tempArray[-1]
 
-                    # pushback data here!
-                    # publish WAMP event to all subscribers on topic
-                    ##
-                    frame = GSV6_BasicFrameType.BasicFrame(tempArray)
-                    # self.frameQueue.append(frame)
-                    try:
-                        # put() is blocking, put_nowait() ist non-blocking
-                        # self.frameQueue.put(frame)
-                        self.frameQueue.put_nowait(frame)
-                    except Queue.Full:
-                        self.session.addError('a complete Frame was droped, because Queue was full')
+                    # next state
+                    state = 1
+                elif state == 1:
+                    # check FrameType, Interface and length/channels -> state=2
+                    # if AntwortFrame or MessFrame?
+                    if not (((b & 0xC0) == 0x40) or ((b & 0xC0) == 0x00)):
+                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                        self.inDataBuffer[0] = 0x00
                         if self.debug:
-                            print('a complete Frame was droped, because Queue was full')
-                    # self.session.publish(u"com.myapp.mcu.on_frame_received",
-                    #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
+                            print('[break] Frame seems to be not a Antwort or MsessFrame.')
+                        break
+                    else:
+                        frametype = int(b >> 6)
+                    # if Interface== Serial?
+                    if not (b & 0x30 == 0x10):
+                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                        self.inDataBuffer[0] = 0x00
+                        if self.debug:
+                            print('[break] Interface != Serial')
+                        break
+                    # payloadLength for AntwortFrame or count of Channels for Messframe
+                    payloadLength = int(b & 0x0F)
                     if self.trace:
-                        print(
-                        '[serial] Received compelte Frame: ' + ' '.join(format(x, '02x') for x in bytearray(tempArray)))
+                        print('payloadLength=' + str(payloadLength))
+                    state = 2
+                    # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
+                elif state == 2:
+                    # check status byte Mess=indicator; AntwortFrame = in listErrorList?; payloadLength=calculate legnth of expected payload -> state=3
+                    if frametype == 0:
+                        if self.trace:
+                            print('detected MessFrame')
+                        # it's a MessFrame
+                        # first check Indikator==1
+                        if (b & 0x80) != 0x80:
+                            # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                            self.inDataBuffer[0] = 0x00
+                            if self.debug:
+                                print('[break] Indikator!=1')
+                            break
+                        # now get datatype as multiplier for payloadLength
+                        multiplier = int((b & 0x70) >> 4) + 1
+                        if self.trace:
+                            print('multiplier: ' + str(multiplier))
+                        # start count at 0-> +1
+                        payloadLength += 1
+                        payloadLength *= multiplier
+                        if self.trace:
+                            print('payloadLength: ' + str(payloadLength))
+                        state = 3
+                    elif frametype == 1:
+                        if self.debug:
+                            print('detected Antwort Frame')
+                        # it's a AntwortFrame
+                        # check if errorcode is in the list
+                        if not error_codes.error_code_to_error_shortcut.has_key(b):
+                            # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                            self.inDataBuffer[0] = 0x00
+                            if self.debug:
+                                print("[break] can't find errorcode ins list.")
+                            break
+                        else:
+                            # if no payload there, stepover state3
+                            if payloadLength > 0:
+                                state = 3
+                            else:
+                                state = 4
+                    else:
+                        # any other frametype is not allow: drop
+                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                        self.inDataBuffer[0] = 0x00
+                        if self.debug:
+                            print('[break] other FrameType detected.')
+                        break
+                        # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
+                        # if payload>6*4Byte, drop also
+                elif state == 3:
+                    if self.trace:
+                        print('counter-state: ' + str((counter - state)))
+                    if payloadLength == (counter - state):
+                        state = 4
+                        # so we got the whole payload goto state=4
+                elif state == 4:
+                    # at the first time in state 4, we have to break
+                    # if b== 0x85 -> we have a complete Frame; pushback the complete Frame and remove copyed bytes from incommingBuffer and break For-Loop
+                    if not (b == 0x85):
+                        # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
+                        self.inDataBuffer[0] = 0x00
+                        if self.trace:
+                            print("[break] can't find 0x85")
+                    else:
+                        if self.trace:
+                            print('[break] found an complete Frame')
+                        foundcompleteframe = True
 
-                # break anyway
-                break
-                # else drop last <counter> bytes and retry sync
+                        # okay we strip sync bytes 0xAA and 0x85 in this function
+                        # strip 0x85 in state 4
+                        del tempArray[-1]
 
-        if foundcompleteframe:
-            # remove copyed items
-            self.inDataBuffer[0:counter - 1] = []
-            if self.trace:
-                print('new inDataBuffer[0]: ' + ' '.join(format(self.inDataBuffer[0], '02x')))
+                        # pushback data here!
+                        # publish WAMP event to all subscribers on topic
+                        ##
+                        frame = GSV6_BasicFrameType.BasicFrame(tempArray)
+                        # self.frameQueue.append(frame)
+                        try:
+                            # put() is blocking, put_nowait() ist non-blocking
+                            # self.frameQueue.put(frame)
+                            self.frameQueue.put_nowait(frame)
+                        except Queue.Full:
+                            self.session.addError('a complete Frame was droped, because Queue was full')
+                            if self.debug:
+                                print('a complete Frame was droped, because Queue was full')
+                        # self.session.publish(u"com.myapp.mcu.on_frame_received",
+                        #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
+                        if self.trace:
+                            print(
+                            '[serial] Received compelte Frame: ' + ' '.join(format(x, '02x') for x in bytearray(tempArray)))
 
-        # at this point we have to test, if we have enougth data for a second frame
-        # execute this function again if (recursion == -1 and len(incommingBuffer>4) or ()
-        lenthOfData = len(self.inDataBuffer)
-        if (lenthOfData > 3) and (recursion != lenthOfData):
-            if self.trace:
-                print('[rec] start rec')
-            self.checkForCompleteFrame(lenthOfData)
-        else:
-            if self.trace:
-                print('[rec] no more rec')
+                    # break anyway
+                    break
+                    # else drop last <counter> bytes and retry sync
+        except:
+            print("serial in fehler")
+
+            if foundcompleteframe:
+                # remove copyed items
+                self.inDataBuffer[0:counter - 1] = []
+                if self.trace:
+                    print('new inDataBuffer[0]: ' + ' '.join(format(self.inDataBuffer[0], '02x')))
+
+            # at this point we have to test, if we have enougth data for a second frame
+            # execute this function again if (recursion == -1 and len(incommingBuffer>4) or ()
+            lenthOfData = len(self.inDataBuffer)
+            if (lenthOfData > 3) and (recursion != lenthOfData):
+                if self.trace:
+                    print('[rec] start rec')
+                self.checkForCompleteFrame(lenthOfData)
+            else:
+                if self.trace:
+                    print('[rec] no more rec')
 
     def controlLed(self, str):
         """
@@ -416,7 +419,7 @@ class FrameRouter(threading.Thread):
                 try:
                     if self.debug:
                         pass
-                        #print('[router] ' + newFrame.toString())
+                        print('[router] ' + newFrame.toString())
                     if newFrame.getFrameType() == 0:
                         # MesswertFrame
                         self.messFrameEventHandler.computeFrame(newFrame)
