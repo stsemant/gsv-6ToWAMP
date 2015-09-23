@@ -520,20 +520,23 @@ class McuComponent(ApplicationSession):
         self.publish(u"de.me_systeme.gsv.onError", errorString)
 
     def writeAntwort(self, data, functionName, args=None):
-        # okay this function have to be atomic
-        # we protect it with a lock!
-        self.serialWrite_lock.acquire()
         try:
-            self.antwortQueue.put_nowait({functionName: args})
-            self.serialPort.write(data)
-            print('[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data))
-            msg = '[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data)
-            self.addError(msg)
-        except NameError:
-            if self.debug:
-                print('[MyComp] serialport not openend')
-        finally:
-            self.serialWrite_lock.release()
+            # okay this function have to be atomic
+            # we protect it with a lock!
+            self.serialWrite_lock.acquire()
+            try:
+                self.antwortQueue.put_nowait({functionName: args})
+                self.serialPort.write(data)
+                print('[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data))
+                msg = '[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data)
+                self.addError(msg)
+            except NameError:
+                if self.debug:
+                    print('[MyComp] serialport not openend')
+            finally:
+                self.serialWrite_lock.release()
+        except:
+            print("write error")
 
     def write(self, data):
         # okay this function have to be atomic
