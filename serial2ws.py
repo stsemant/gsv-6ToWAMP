@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 # logger.setFormatter(formatter)
 class GSV_6Protocol(protocol.Protocol):
     inDataBuffer = {}
-    trace = False
+    trace = True
 
     def __init__(self, session, frameQueue, anfrageQueue, debug=False):
         self.debug = debug
@@ -298,6 +298,7 @@ class AntwortFrameHandler():
                 else:
                     result = methodToCall(frame)
         except:
+            print('antwort error')
             msg = "Unexpected error:" + str(sys.exc_info()[0])
             self.session.addError(msg)
 
@@ -412,19 +413,23 @@ class FrameRouter(threading.Thread):
             except Queue.Empty:
                 pass
             else:
-                if self.debug:
-                    pass
-                    #print('[router] ' + newFrame.toString())
-                if newFrame.getFrameType() == 0:
-                    # MesswertFrame
-                    self.messFrameEventHandler.computeFrame(newFrame)
-                elif newFrame.getFrameType() == 1:
-                    # AntwortFrame
-                    self.antwortFrameEventHandler.computeFrame(newFrame)
-                    pass
-                else:
-                    # error
-                    print('nothing to do with an FrameType != Messwert/Antwort')
+                try:
+                    if self.debug:
+                        pass
+                        #print('[router] ' + newFrame.toString())
+                    if newFrame.getFrameType() == 0:
+                        # MesswertFrame
+                        self.messFrameEventHandler.computeFrame(newFrame)
+                    elif newFrame.getFrameType() == 1:
+                        # AntwortFrame
+                        self.antwortFrameEventHandler.computeFrame(newFrame)
+                        pass
+                    else:
+                        # error
+                        print('nothing to do with an FrameType != Messwert/Antwort')
+                except:
+                    print('antwort error')
+
 
         print("[router] exit loop.")
 
