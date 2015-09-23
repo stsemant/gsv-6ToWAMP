@@ -590,6 +590,13 @@ def print_exc_plus():
             except:
                 print "<ERROR WHILE PRINTING VALUE>"
 
+def myexcepthook(exctype, value, traceback):
+    if exctype == KeyboardInterrupt:
+        print "Handler code goes here"
+    else:
+        sys.__excepthook__(exctype, value, traceback)
+        print_exc_plus()
+sys.excepthook = myexcepthook
 
 if __name__ == '__main__':
 
