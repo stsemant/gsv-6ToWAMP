@@ -32,7 +32,6 @@ from twisted.protocols.basic import protocol
 
 from autobahn.twisted.wamp import ApplicationSession
 
-import numpy as np
 from collections import deque
 
 import error_codes
