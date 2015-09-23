@@ -254,10 +254,13 @@ class GSV_6Protocol(protocol.Protocol):
         # self.transport.write(payload)
 
     def write(self, data):
+        self.transport.write(data)
+        '''
         if sys.platform == 'win32':
             self.transport.write(data)
         else:
             self.transport.write(str(data))
+        '''
 
 
 class MessFrameHandler():
@@ -529,7 +532,7 @@ class McuComponent(ApplicationSession):
             self.serialWrite_lock.acquire()
             try:
                 self.antwortQueue.put_nowait({functionName: args})
-                self.serialPort.write(data)
+                self.serialPort.write(str(data))
                 print('[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data))
                 msg = '[MyComp|write] Data: ' + ' '.join(format(z, '02x') for z in data)
                 self.addError(msg)
