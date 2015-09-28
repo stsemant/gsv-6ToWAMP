@@ -5,3 +5,19 @@ __author__ = 'dennis rump'
    padding: 0 !important;
    margin: 0 !important;
 }
+
+.slider {
+   margin-left: 10px;
+}
+
+#option_channel_count .slider-selection {
+	background: #E8E3E3;
+}
+
+#option_channel_count .slider-handle {
+	background: #BABABA;
+}
+
+#option_channel_count .slider-tick.in-selection {
+	background: #CFCFCF;
+}

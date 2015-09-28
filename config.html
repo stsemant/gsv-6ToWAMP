@@ -9,11 +9,13 @@
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-slider.css" rel="stylesheet">
     <link href="css/me_messsysteme.css" rel="stylesheet">
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="js/jquery.min.1.11.3.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/bootstrap-slider.js"></script>
     <script src="js/autobahn.min.js"></script>
     <script src="js/smoothie.js"></script>
     <script>
@@ -21,6 +23,10 @@
         // the WAMP session we'll be using
         //
         var session = null;
+        var option1_last = "";
+        var typingTimer = new Array();
+        var doneTypingInterval = 500;
+        var slider_active_channels = null;
 
         var debug_div = null;
 
@@ -31,51 +37,38 @@
 
         function onGetReadAoutScale(args) {
             args = args[0];
+            console.log(args);
             /*
-            smoothie.options.minValue = -1 * parseFloat(args[2]);
-            smoothie.options.maxValue = parseFloat(args[2]);
-            */
+             smoothie.options.minValue = -1 * parseFloat(args[2]);
+             smoothie.options.maxValue = parseFloat(args[2]);
+             */
         }
 
         function onGetInterface(args) {
             //console.log(args[0]);
             args = args[0];
-            /*
-            var channels = parseInt(args['anzahl_messwert-frame-objekte']);
-            if (channels > 0)
-                $("#channel1").show();
-            else
-                $("#channel1").hide();
-            if (channels > 1)
-                $("#channel2").show();
-            else
-                $("#channel2").hide();
-            if (channels > 2)
-                $("#channel3").show();
-            else
-                $("#channel3").hide();
-            if (channels > 3)
-                $("#channel4").show();
-            else
-                $("#channel4").hide();
-            if (channels > 4)
-                $("#channel5").show();
-            else
-                $("#channel5").hide();
-
-            $("#geraete_model").html(args['geraete_model']);
-
-            if (args['messuebertragung'] == true) {
-                smoothie.start();
-            } else {
-                smoothie.stop();
-                $("#inputOverloadWarning").hide();
-                $("#sixachsiserrorWarning").hide();
+            var channels = parseInt(args['anzahl_messwert-frame-objekte']) +1;
+            slider_active_channels.setValue(channels);
+            var ge_schreibschutz = $('#ge_schreibschutz');
+            if(args['genereller_schreibschutz']){
+                ge_schreibschutz.html('Schreibschutz <span class=\"label label-default label-warning\">aktiviert</span>');
+            }else{
+                ge_schreibschutz.html('Schreibschutz <span class=\"label label-default label-success\">deaktiviert</span>');
             }
-            */
+            var model_name = $('#model_name');
+            model_name.html('Model <span class=\"label label-default label-primary\">'+args['geraete_model']+'</span>');
+            var measure_datatype = $('#measure_datatype');
+            measure_datatype.html('Model <span class=\"label label-default label-primary\">'+args['messwertdatentype']+'</span>');
         }
 
         window.onload = function () {
+            $('#myPleaseWait').modal('show');
+
+            typingTimer['loading'] = setTimeout(function () {
+                doneLoading();
+            }, 2000);
+
+            $('#worker').hide();
 
             // the URL of the WAMP Router (e.g. Crossbar.io)
             //
@@ -90,7 +83,7 @@
             //
             var connection = new autobahn.Connection({
                 url: wsuri,
-                realm: 'crossbardemo'
+                realm: 'me_gsv6'
             });
 
             connection.onopen = function (new_session) {
@@ -104,6 +97,8 @@
 
                 debug_div = document.getElementById('debug_out');
 
+                // try to get all cached informations and then get missing informations
+
                 session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
                     var log_section = document.getElementById('debug_out');
                     res.forEach(function (entry) {
@@ -114,9 +109,74 @@
                 session.call("de.me_systeme.gsv.getGetIntetface");
                 session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
             };
-
             connection.open();
+
+            $("input.testc").keyup(onKeyUpConfigInputs);
+            $("input.testc").keydown(onKeyDownConfigInputs);
+            slider_active_channels = new Slider("#option_channel_count", {
+                ticks: [1, 2, 3, 4, 5, 6],
+                ticks_labels: ['1', '2', '3', '4', '5', '6'],
+                ticks_snap_bounds: 30
+            });
+            $('#option_channel_count').on('slideStop', function () {
+                console.log("fertig");
+            });
+
         };
+
+        function doneLoading() {
+            $('#myPleaseWait').modal('hide');
+        }
+
+        function onKeyUpConfigInputs(e) {
+            //ESC==27
+            //ENTER=13
+            var inputName = $(this).data('id');
+            /*
+             console.log(e.which);
+             console.log("keyup");
+             */
+            clearTimeout(typingTimer);
+            typingTimer[inputName] = setTimeout(function () {
+                doneTyping(inputName);
+            }, doneTypingInterval);
+        }
+
+        function onKeyDownConfigInputs(e) {
+            //ESC==27
+            //ENTER=13
+            var inputName = $(this).data('id');
+            /*
+             console.log(e.which);
+             console.log($(this).data('id'));
+             /console.log("clear Timer");
+             */
+            clearTimeout(typingTimer[inputName]);
+        }
+
+        function doneTyping(inputID) {
+            console.log("übernehmen von " + inputID);
+            //do something
+        }
+
+        function test() {
+            console.log("test");
+            $('#dropdownMenu1')
+            $('#option1_glyphicon').hide();
+            $('#option1').removeClass("has-success");
+        }
+
+        function option1_change() {
+            $('#option1').removeClass("has-success has-warning has-error");
+            $('#option1_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
+            if ($('#option1_value').val() != option1_last) {
+                $('#option1').addClass("has-warning");
+                $('#option1_glyphicon').addClass("glyphicon-warning-sign");
+            } else {
+                $('#option1').addClass("has-success");
+                $('#option1_glyphicon').addClass("glyphicon-ok");
+            }
+        }
     </script>
 
 </head>
@@ -132,12 +192,77 @@
                 <li class="active"><a href="#">Konfiguration</a></li>
                 <li><a href="#">Messungen</a></li>
                 <li><a href="#">Log</a></li>
+                <li><a id="worker"><img src="images/ajax-loader_rechteck.gif" alt="loader_gif"></a></li>
             </ul>
         </div>
     </div>
 </nav>
 
 <div class="container">
+    <!-- Modal Start here-->
+    <div class="modal fade bs-example-modal-sm" id="myPleaseWait" tabindex="-1"
+         role="dialog" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-time">
+                    </span> Konfiguration wird geladen...
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-info
+                    progress-bar-striped active"
+                             style="width: 100%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal ends Here -->
+    <button type="button" class="btn btn-success" onclick="test()">test</button>
+    <input type="text" data-id="x" class="testc">
+
+    <div class="well well-sm">Modul Info</div>
+
+    <div class="row">
+        <div id="ge_schreibschutz" class="col-sm-3">Schreibschutz</span></div>
+        <div id="model_name" class="col-sm-3"></div>
+        <div id="measure_datatype" class="col-sm-3"></div>
+        <div class="col-sm-3"></div>
+        <div class="col-sm-3">
+            <label for="option1_value">aktive Kan&auml;le:</label>
+
+            <div id="option1" class="form-group has-success has-feedback">
+                <input id="option_channel_count" data-slider-id="option_channel_count" class="form-control" type="text"
+                       data-slider-ticks="[1, 2, 3, 4, 5, 6]"
+                       data-slider-ticks-snap-bounds="1" data-slider-ticks-labels='["1", "2", "3", "4", "5", "6"]'/>
+            </div>
+        </div>
+    </div>
+
+    <div id="option1" class="form-group has-success has-feedback">
+        <label for="option1_value">Name:</label>
+        <input id="option1_value" type="text" class="form-control" onchange="option1_change()">
+        <span id="option1_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+    </div>
+
+    <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle btn-success" type="button" id="dropdownMenu1"
+                data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="true">
+            Dropdown
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li><a href="#">Separated link</a></li>
+        </ul>
+    </div>
 
     <div class="panel panel-primary">
         <div class="panel-heading">Debug

@@ -70,7 +70,8 @@
         }
 
         function startStopTransmission(turnOn) {
-            session.call("de.me_systeme.gsv.startStopTransmission", [turnOn]);
+            session.call('de.me_systeme.gsv.startStopTransmission', [turnOn], {}, {disclose_me: true});
+            //session.call("de.me_systeme.gsv.startStopTransmission", [turnOn]);
             if (turnOn) {
                 smoothie.start();
             } else {
@@ -260,6 +261,8 @@
                 console.log("connected to " + wsuri);
 
                 session = new_session;
+                // provide caller details
+                session.caller_disclose_me = true;
 
                 //session.subscribe("com.myapp.mcu.on_analog_value", onAnalogValue);
                 //session.subscribe("com.myapp.mcu.on_frame_received", onFrameReceived);

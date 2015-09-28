@@ -31,16 +31,19 @@ from twisted.protocols.basic import LineReceiver
 from twisted.protocols.basic import protocol
 
 from autobahn.twisted.wamp import ApplicationSession
-
+from autobahn.wamp.types import CallDetails
 from collections import deque
 
 import error_codes
 import GSV6_BasicFrameType
 # import Queue
 from Queue import Queue
+import unit_codes
+from autobahn.wamp.types import RegisterOptions
+spezialOptions  = RegisterOptions(details_arg = "details")
+
 import logging
 
-import unit_codes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -339,19 +342,19 @@ class GSVeventHandler():
 
     def regCalls(self):
         print('register...')
-        self.session.register(self.startStopTransmisson, u"de.me_systeme.gsv.startStopTransmission")
+        self.session.register(self.startStopTransmisson, u"de.me_systeme.gsv.startStopTransmission", spezialOptions)
         self.session.register(self.getUnitText, u"de.me_systeme.gsv.getUnitText")
         self.session.register(self.setUnitText, u"de.me_systeme.gsv.setUnitText")
         self.session.register(self.getUnitNo, u"de.me_systeme.gsv.getUnitNo")
         self.session.register(self.getGetInterface, u"de.me_systeme.gsv.getGetIntetface")
         self.session.register(self.getReadAoutScale, u"de.me_systeme.gsv.getReadAoutScale")
 
-    def startStopTransmisson(self, start):
+    def startStopTransmisson(self, start, **kwargs):
         if start:
-            print('Start Transmission.')
+            print('Start Transmission. Call from ' + str(kwargs['details'].caller))
             data = self.gsv_lib.buildStartTransmission()
         else:
-            print('Stops Transmission.')
+            print('Stops Transmission. Call from ' + str(kwargs['details'].caller))
             data = self.gsv_lib.buildStopTransmission()
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
@@ -560,7 +563,7 @@ if __name__ == '__main__':
                         help='Serial port baudrate.')
 
     if sys.platform == 'win32':
-        parser.add_argument("--port", type=str, default='12',
+        parser.add_argument("--port", type=str, default='4',
                             help='Serial port to use (e.g. 3 for a COM port on Windows, /dev/ttyATH0 for Arduino Yun, /dev/ttyACM0 for Serial-over-USB on RaspberryPi.')
     else:
         parser.add_argument("--port", type=str, default='/dev/ttyAMA0',
