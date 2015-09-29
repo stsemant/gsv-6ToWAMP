@@ -28,6 +28,7 @@ You will need to have the following installed on the Rpi to run the project.
 
 ### Install
 all downloads a dropped to ~/downloads and all installs dropped to ~/install
+
 	mkdir ~/downloads
 	mkdir ~/install
 #### PyPy
