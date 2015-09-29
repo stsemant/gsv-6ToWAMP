@@ -33,7 +33,13 @@
             'ReadAoutScale3': 'WriteAoutScale3',
             'ReadAoutScale4': 'WriteAoutScale4',
             'ReadAoutScale5': 'WriteAoutScale5',
-            'ReadAoutScale6': 'WriteAoutScale6'
+            'ReadAoutScale6': 'WriteAoutScale6',
+            'ReadZero1': 'WriteZero1',
+            'ReadZero2': 'WriteZero2',
+            'ReadZero3': 'WriteZero3',
+            'ReadZero4': 'WriteZero4',
+            'ReadZero5': 'WriteZero5',
+            'ReadZero6': 'WriteZero6'
         };
         var doneTypingInterval = 250;
         var slider_active_channels = null;
@@ -91,22 +97,6 @@
             debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
         }
 
-        function onGetReadAoutScale(args) {
-            args = args[0];
-            console.log(args);
-            if (args[0] != 0) {
-                //error
-                return
-            }
-            var inputID = 'ReadAoutScale' + args[1];
-            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
-            setInputSuccess(inputID);
-
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
-            var data = {};
-            data['ReadAoutScale' + args[1]] = parseFloat(args[2]);
-            check_isConfig_complete(data);
-        }
 
         function onGetInterface(args) {
             //console.log(args[0]);
@@ -134,6 +124,22 @@
             check_isConfig_complete(args);
         }
 
+        function onGetReadAoutScale(args) {
+            args = args[0];
+            console.log(args);
+            if (args[0] != 0) {
+                //error
+                return
+            }
+            var inputID = 'ReadAoutScale' + args[1];
+            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
+            setInputSuccess(inputID);
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+            var data = {};
+            data['ReadAoutScale' + args[1]] = parseFloat(args[2]);
+            check_isConfig_complete(data);
+        }
         function WriteAoutScale1() {
             var scale = parseFloat($('#ReadAoutScale1_value').val());
             session.call("de.me_systeme.gsv.WriteAoutScale", [1, scale]);
@@ -158,17 +164,86 @@
             var scale = parseFloat($('#ReadAoutScale6_value').val());
             session.call("de.me_systeme.gsv.WriteAoutScale", [6, scale]);
         }
-
         function onWriteAoutScale(args) {
             args = args[0];
             console.log(args);
             if (args[0] != 0) {
                 alert("cant set A out Scale");
-                setInputError('ReadAoutScale');
+                setInputError('ReadAoutScale' + args[1]);
                 return
             }
             session.call("de.me_systeme.gsv.getReadAoutScale", [args[1]]);
             //setInputSuccess('ReadAoutScale');
+        }
+
+        function onGetReadZero(args) {
+            args = args[0];
+            /*
+             console.log("GetReadZero");
+             console.log(args);
+             */
+            if (args[0] != 0) {
+                alert('fehler');
+                setInputError('ReadZero' + args[1])
+                return
+            }
+            var inputID = 'ReadZero' + args[1];
+            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
+            setInputSuccess(inputID);
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+            var data = {};
+            data['ReadZero' + args[1]] = parseFloat(args[2]);
+            check_isConfig_complete(data);
+        }
+        function WriteZero1() {
+            var scale = parseFloat($('#ReadZero1_value').val());
+            session.call("de.me_systeme.gsv.WriteZero", [1, scale]);
+        }
+        function WriteZero2() {
+            var scale = parseFloat($('#ReadZero2_value').val());
+            session.call("de.me_systeme.gsv.WriteZero", [2, scale]);
+        }
+        function WriteZero3() {
+            var scale = parseFloat($('#ReadZero3_value').val());
+            session.call("de.me_systeme.gsv.WriteZero", [3, scale]);
+        }
+        function WriteZero4() {
+            var scale = parseFloat($('#ReadZero4_value').val());
+            session.call("de.me_systeme.gsv.WriteZero", [4, scale]);
+        }
+        function WriteZero5() {
+            var scale = parseFloat($('#ReadZero5_value').val());
+            session.call("de.me_systeme.gsv.WriteZero", [5, scale]);
+        }
+        function WriteZero6() {
+            var scale = parseFloat($('#ReadZero6_value').val());
+            session.call("de.me_systeme.gsv.WriteZero", [6, scale]);
+        }
+        function onWriteZero(args) {
+            args = args[0];
+            /*
+             console.log("WriteZero");
+             console.log(args);
+             */
+            if (args[0] != 0) {
+                //alert("cant set Zero");
+                setInputError('ReadZero' + args[1]);
+                var error = '';
+                if (args[0] == 84) {
+                    error = 'Der Absolutwert des Parameters ist zu groß';
+                } else if (args[0] == 85) {
+                    error = 'Der Absolutwert des Parameters ist zu klein';
+                } else {
+                    error = 'Parameter nicht akzeptiert';
+                }
+                $('#ReadZero' + args[1] + '_value').prop('title', error).tooltip('show');
+                setTimeout(function () {
+                    $('#ReadZero' + args[1] + '_value').prop('title', error).tooltip('destroy');
+                }, 5000);
+                return
+            }
+            session.call("de.me_systeme.gsv.getReadZero", [args[1]]);
         }
 
         window.onload = function () {
@@ -207,6 +282,8 @@
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
                 session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
                 session.subscribe("de.me_systeme.gsv.onWriteAoutScale", onWriteAoutScale);
+                session.subscribe("de.me_systeme.gsv.onGetReadZero", onGetReadZero);
+                session.subscribe("de.me_systeme.gsv.onWriteZero", onWriteZero);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -226,6 +303,12 @@
                 session.call("de.me_systeme.gsv.getReadAoutScale", [4]);
                 session.call("de.me_systeme.gsv.getReadAoutScale", [5]);
                 session.call("de.me_systeme.gsv.getReadAoutScale", [6]);
+                session.call("de.me_systeme.gsv.getReadZero", [1]);
+                session.call("de.me_systeme.gsv.getReadZero", [2]);
+                session.call("de.me_systeme.gsv.getReadZero", [3]);
+                session.call("de.me_systeme.gsv.getReadZero", [4]);
+                session.call("de.me_systeme.gsv.getReadZero", [5]);
+                session.call("de.me_systeme.gsv.getReadZero", [6]);
             };
             connection.open();
 
@@ -290,25 +373,6 @@
                 setInputSuccess(inputID);
             }
         }
-
-        function test() {
-            console.log("test");
-            $('#dropdownMenu1')
-            $('#option1_glyphicon').hide();
-            $('#option1').removeClass("has-success");
-        }
-
-        function option1_change() {
-            $('#option1').removeClass("has-success has-warning has-error");
-            $('#option1_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
-            if ($('#option1_value').val() != option1_last) {
-                $('#option1').addClass("has-warning");
-                $('#option1_glyphicon').addClass("glyphicon-warning-sign");
-            } else {
-                $('#option1').addClass("has-success");
-                $('#option1_glyphicon').addClass("glyphicon-ok");
-            }
-        }
     </script>
 
 </head>
@@ -354,8 +418,6 @@
         </div>
     </div>
     <!-- Modal ends Here -->
-    <button type="button" class="btn btn-success" onclick="test()">test</button>
-    <input type="text" data-id="x" class="testc">
 
     <div class="well well-sm">Modul Info</div>
 
@@ -374,64 +436,188 @@
             </div>
         </div>
     </div>
+
     <div class="well well-sm">Modul Settings</div>
+
     <div class="panel panel-default">
-        <div class="panel-heading">outScale</div>
+        <div class="panel-heading">Zero and Scaling</div>
         <div class="panel-body">
             <div class="row">
-                <div class="col-sm-2 box">
-                    <div id="ReadAoutScale1" class="form-group has-success has-feedback">
-                        <label for="ReadAoutScale1_value">Kanal 1:</label>
-                        <input id="ReadAoutScale1_value" data-id="ReadAoutScale1" type="number" step="0.01" min="-400"
-                               max="400"
-                               class="form-control modul_settings">
-                        <span id="ReadAoutScale1_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
-                    </div>
+                <div class="col-sm-3">
+                    <table class="table">
+                        <caption>Zero</caption>
+                        <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>Wert</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                <div id="ReadZero1" class="form-group has-success has-feedback">
+                                    <input id="ReadZero1_value" data-id="ReadZero1" type="number" step="0.01" min="-400"
+                                           max="400" title="Hooray!"
+                                           class="form-control modul_settings">
+                                    <span id="ReadZero1_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>
+                                <div id="ReadZero2" class="form-group has-success has-feedback">
+                                    <input id="ReadZero2_value" data-id="ReadZero2" type="number" step="0.01" min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadZero2_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>
+                                <div id="ReadZero3" class="form-group has-success has-feedback">
+                                    <input id="ReadZero3_value" data-id="ReadZero3" type="number" step="0.01" min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadZero3_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>
+                                <div id="ReadZero4" class="form-group has-success has-feedback">
+                                    <input id="ReadZero4_value" data-id="ReadZero4" type="number" step="0.01" min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadZero4_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>
+                                <div id="ReadZero5" class="form-group has-success has-feedback">
+                                    <input id="ReadZero5_value" data-id="ReadZero5" type="number" step="0.01" min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadZero5_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>
+                                <div id="ReadZero6" class="form-group has-success has-feedback">
+                                    <input id="ReadZero6_value" data-id="ReadZero6" type="number" step="0.01" min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadZero6_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="col-sm-2 box">
-                    <div id="ReadAoutScale2" class="form-group has-success has-feedback">
-                        <label for="ReadAoutScale2_value">Kanal 2:</label>
-                        <input id="ReadAoutScale2_value" data-id="ReadAoutScale2" type="number" step="0.01" min="-400"
-                               max="400"
-                               class="form-control modul_settings">
-                        <span id="ReadAoutScale2_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
-                    </div>
-                </div>
-                <div class="col-sm-2 box">
-                    <div id="ReadAoutScale3" class="form-group has-success has-feedback">
-                        <label for="ReadAoutScale3_value">Kanal 3:</label>
-                        <input id="ReadAoutScale3_value" data-id="ReadAoutScale3" type="number" step="0.01" min="-400"
-                               max="400"
-                               class="form-control modul_settings">
-                        <span id="ReadAoutScale3_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
-                    </div>
-                </div>
-                <div class="col-sm-2 box">
-                    <div id="ReadAoutScale4" class="form-group has-success has-feedback">
-                        <label for="ReadAoutScale4_value">Kanal 4:</label>
-                        <input id="ReadAoutScale4_value" data-id="ReadAoutScale4" type="number" step="0.01" min="-400"
-                               max="400"
-                               class="form-control modul_settings">
-                        <span id="ReadAoutScale4_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
-                    </div>
-                </div>
-                <div class="col-sm-2 box">
-                    <div id="ReadAoutScale5" class="form-group has-success has-feedback">
-                        <label for="ReadAoutScale5_value">Kanal 5:</label>
-                        <input id="ReadAoutScale5_value" data-id="ReadAoutScale5" type="number" step="0.01" min="-400"
-                               max="400"
-                               class="form-control modul_settings">
-                        <span id="ReadAoutScale5_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
-                    </div>
-                </div>
-                <div class="col-sm-2 box">
-                    <div id="ReadAoutScale6" class="form-group has-success has-feedback">
-                        <label for="ReadAoutScale6_value">Kanal 6:</label>
-                        <input id="ReadAoutScale6_value" data-id="ReadAoutScale6" type="number" step="0.01" min="-400"
-                               max="400"
-                               class="form-control modul_settings">
-                        <span id="ReadAoutScale6_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
-                    </div>
+                <div class="col-sm-3">
+                    <table class="table">
+                        <caption>outScale</caption>
+                        <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>Wert</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                <div id="ReadAoutScale1" class="form-group has-success has-feedback">
+                                    <input id="ReadAoutScale1_value" data-id="ReadAoutScale1" type="number" step="0.01"
+                                           min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadAoutScale1_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>
+                                <div id="ReadAoutScale2" class="form-group has-success has-feedback">
+                                    <input id="ReadAoutScale2_value" data-id="ReadAoutScale2" type="number" step="0.01"
+                                           min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadAoutScale2_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>
+                                <div id="ReadAoutScale3" class="form-group has-success has-feedback">
+                                    <input id="ReadAoutScale3_value" data-id="ReadAoutScale3" type="number" step="0.01"
+                                           min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadAoutScale3_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>
+                                <div id="ReadAoutScale4" class="form-group has-success has-feedback">
+                                    <input id="ReadAoutScale4_value" data-id="ReadAoutScale4" type="number" step="0.01"
+                                           min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadAoutScale4_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>
+                                <div id="ReadAoutScale5" class="form-group has-success has-feedback">
+                                    <input id="ReadAoutScale5_value" data-id="ReadAoutScale5" type="number" step="0.01"
+                                           min="-400"
+                                           max="400"
+                                           class="form-control modul_settings">
+                                    <span id="ReadAoutScale5_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>
+                                <div id="ReadAoutScale6" class="form-group has-success has-feedback">
+                                    <input id="ReadAoutScale6_value" data-id="ReadAoutScale6" type="number" step="0.01"
+                                           min="-400"
+                                           max="600"
+                                           class="form-control modul_settings">
+                                    <span id="ReadAoutScale6_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

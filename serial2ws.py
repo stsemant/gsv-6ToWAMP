@@ -337,6 +337,15 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onWriteAoutScale",
                              [frame.getAntwortErrorCode(), channelNo])
 
+    def rcvGetReadZero(self, frame, channelNo):
+        values = self.gsv_lib.convertToFloat(frame.getPayload())
+        self.session.publish(u"de.me_systeme.gsv.onGetReadZero",
+                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+
+    def rcvWriteZero(self, frame, channelNo):
+        self.session.publish(u"de.me_systeme.gsv.onWriteZero",
+                             [frame.getAntwortErrorCode(), channelNo])
+
 
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
@@ -356,6 +365,8 @@ class GSVeventHandler():
         self.session.register(self.getGetInterface, u"de.me_systeme.gsv.getGetIntetface")
         self.session.register(self.getReadAoutScale, u"de.me_systeme.gsv.getReadAoutScale")
         self.session.register(self.writeAoutScale, u"de.me_systeme.gsv.WriteAoutScale")
+        self.session.register(self.getReadZero, u"de.me_systeme.gsv.getReadZero")
+        self.session.register(self.writeZero, u"de.me_systeme.gsv.WriteZero")
 
     def startStopTransmisson(self, start, **kwargs):
         if start:
@@ -385,6 +396,14 @@ class GSVeventHandler():
         # first convert float to bytes
         scale = self.gsv_lib.convertFloatsToBytes([AoutScale])
         self.session.writeAntwort(self.gsv_lib.buildWriteAoutScale(channelNo, scale), 'rcvWriteAoutScale', channelNo)
+
+    def getReadZero(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildReadZero(channelNo), 'rcvGetReadZero', channelNo)
+
+    def writeZero(self, channelNo, zeroValue):
+        # first convert float to bytes
+        zero = self.gsv_lib.convertFloatsToBytes([zeroValue])
+        self.session.writeAntwort(self.gsv_lib.buildWriteZero(channelNo, zero), 'rcvWriteZero', channelNo)
 
 
 import threading
@@ -430,7 +449,7 @@ class FrameRouter(threading.Thread):
             else:
                 if self.debug:
                     pass
-                    # print('[router] ' + newFrame.toString())
+                    print('[router] ' + newFrame.toString())
                 if newFrame.getFrameType() == 0:
                     # MesswertFrame
                     self.messFrameEventHandler.computeFrame(newFrame)
