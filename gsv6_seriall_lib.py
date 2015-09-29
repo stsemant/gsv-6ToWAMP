@@ -186,6 +186,15 @@ class GSV6_seriall_lib:
         # > = Big-Endian; f	= float; Python-Type: float, size:4
         return unpack('>' + str(length / 4) + "f", data)
 
+    def convertFloatsToBytes(self, data):
+        length = len(data)
+        if not (length >= 1):
+            raise GSV6_ConversionError_Exception('float')
+            return
+
+        # > = Big-Endian; f	= float; Python-Type: float, size:4
+        return bytearray(pack('>%sf' % len(data), *data))
+
     def convertToString(self, data):
         length = len(data)
         if not length >= 1:
@@ -252,6 +261,11 @@ class GSV6_seriall_lib:
 
     def buildReadAoutScale(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('ReadAoutScale'), [channelNo])
+
+    def buildWriteAoutScale(self, channelNo, AoutScale):
+        data = bytearray([channelNo])
+        data.extend(AoutScale)
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteAoutScale'), data)
 
     def buildStartTransmission(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('StartTransmission'))

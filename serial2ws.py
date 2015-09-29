@@ -40,7 +40,8 @@ import GSV6_BasicFrameType
 from Queue import Queue
 import unit_codes
 from autobahn.wamp.types import RegisterOptions
-spezialOptions  = RegisterOptions(details_arg = "details")
+
+spezialOptions = RegisterOptions(details_arg="details")
 
 import logging
 
@@ -220,7 +221,8 @@ class GSV_6Protocol(protocol.Protocol):
                     #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
                     if self.trace:
                         print(
-                        '[serial] Received compelte Frame: ' + ' '.join(format(x, '02x') for x in bytearray(tempArray)))
+                            '[serial] Received compelte Frame: ' + ' '.join(
+                                format(x, '02x') for x in bytearray(tempArray)))
 
                 # break anyway
                 break
@@ -252,6 +254,7 @@ class GSV_6Protocol(protocol.Protocol):
 
     def write(self, data):
         self.transport.write(data)
+
 
 class MessFrameHandler():
     def __init__(self, session, gsv_lib, eventHandler):
@@ -330,6 +333,10 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onGetReadAoutScale",
                              [frame.getAntwortErrorCode(), channelNo, values[0]])
 
+    def rcvWriteAoutScale(self, frame, channelNo):
+        self.session.publish(u"de.me_systeme.gsv.onWriteAoutScale",
+                             [frame.getAntwortErrorCode(), channelNo])
+
 
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
@@ -348,6 +355,7 @@ class GSVeventHandler():
         self.session.register(self.getUnitNo, u"de.me_systeme.gsv.getUnitNo")
         self.session.register(self.getGetInterface, u"de.me_systeme.gsv.getGetIntetface")
         self.session.register(self.getReadAoutScale, u"de.me_systeme.gsv.getReadAoutScale")
+        self.session.register(self.writeAoutScale, u"de.me_systeme.gsv.WriteAoutScale")
 
     def startStopTransmisson(self, start, **kwargs):
         if start:
@@ -372,6 +380,11 @@ class GSVeventHandler():
 
     def getReadAoutScale(self, channelNo):
         self.session.writeAntwort(self.gsv_lib.buildReadAoutScale(channelNo), 'rcvGetReadAoutScale', channelNo)
+
+    def writeAoutScale(self, channelNo, AoutScale):
+        # first convert float to bytes
+        scale = self.gsv_lib.convertFloatsToBytes([AoutScale])
+        self.session.writeAntwort(self.gsv_lib.buildWriteAoutScale(channelNo, scale), 'rcvWriteAoutScale', channelNo)
 
 
 import threading
@@ -417,7 +430,7 @@ class FrameRouter(threading.Thread):
             else:
                 if self.debug:
                     pass
-                    #print('[router] ' + newFrame.toString())
+                    # print('[router] ' + newFrame.toString())
                 if newFrame.getFrameType() == 0:
                     # MesswertFrame
                     self.messFrameEventHandler.computeFrame(newFrame)
@@ -489,8 +502,8 @@ class McuComponent(ApplicationSession):
         try:
             self.serialPort = SerialPort(serialProtocol, port, reactor, baudrate=baudrate)
 
-            #data = self.gsv_lib.buildStopTransmission()
-            #self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
+            # data = self.gsv_lib.buildStopTransmission()
+            # self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
         except Exception as e:
             print('Could not open serial port: {0}'.format(e))

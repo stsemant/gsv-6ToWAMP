@@ -25,10 +25,66 @@
         var session = null;
         var option1_last = "";
         var typingTimer = new Array();
-        var doneTypingInterval = 500;
+        var modul_config = new Array();
+        var modul_config_element_count_for_complete_load = 13;
+        var setFunctionsByID = {
+            'ReadAoutScale1': 'WriteAoutScale1',
+            'ReadAoutScale2': 'WriteAoutScale2',
+            'ReadAoutScale3': 'WriteAoutScale3',
+            'ReadAoutScale4': 'WriteAoutScale4',
+            'ReadAoutScale5': 'WriteAoutScale5',
+            'ReadAoutScale6': 'WriteAoutScale6'
+        };
+        var doneTypingInterval = 250;
         var slider_active_channels = null;
 
         var debug_div = null;
+
+        Object.extend = function (destination, source) {
+            for (var property in source) {
+                if (source.hasOwnProperty(property)) {
+                    destination[property] = source[property];
+                }
+            }
+            return destination;
+        }
+
+        function check_isConfig_complete(args) {
+            //console.log(args);
+            //Array.prototype.push.apply(modul_config, args);
+            //modul_config = $.extend({}, modul_config, args);
+            //$.merge(modul_config,args);
+
+            modul_config = Object.extend(modul_config, args);
+            if (Object.keys(modul_config).length >= modul_config_element_count_for_complete_load) {
+                // hide loading modal
+                doneLoading();
+            }
+        }
+
+        function setInputSuccess(inputName) {
+            $('#' + inputName).removeClass("has-success has-warning has-error");
+            $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
+
+            $('#' + inputName).addClass("has-success");
+            $('#' + inputName + '_glyphicon').addClass("glyphicon-ok");
+        }
+
+        function setInputWarning(inputName) {
+            $('#' + inputName).removeClass("has-success has-warning has-error");
+            $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
+
+            $('#' + inputName).addClass("has-warning");
+            $('#' + inputName + '_glyphicon').addClass("glyphicon-warning-sign");
+        }
+
+        function setInputError(inputName) {
+            $('#' + inputName).removeClass("has-success has-warning has-error");
+            $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
+
+            $('#' + inputName).addClass("has-error");
+            $('#' + inputName + '_glyphicon').addClass("glyphicon-remove");
+        }
 
         function onReceiveError(args) {
             //eventCnt += 1;
@@ -38,35 +94,91 @@
         function onGetReadAoutScale(args) {
             args = args[0];
             console.log(args);
-            /*
-             smoothie.options.minValue = -1 * parseFloat(args[2]);
-             smoothie.options.maxValue = parseFloat(args[2]);
-             */
+            if (args[0] != 0) {
+                //error
+                return
+            }
+            var inputID = 'ReadAoutScale' + args[1];
+            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
+            setInputSuccess(inputID);
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+            var data = {};
+            data['ReadAoutScale' + args[1]] = parseFloat(args[2]);
+            check_isConfig_complete(data);
         }
 
         function onGetInterface(args) {
             //console.log(args[0]);
             args = args[0];
-            var channels = parseInt(args['anzahl_messwert-frame-objekte']) +1;
+            var channels = parseInt(args['anzahl_messwert-frame-objekte']) + 1;
             slider_active_channels.setValue(channels);
             var ge_schreibschutz = $('#ge_schreibschutz');
-            if(args['genereller_schreibschutz']){
-                ge_schreibschutz.html('Schreibschutz <span class=\"label label-default label-warning\">aktiviert</span>');
-            }else{
-                ge_schreibschutz.html('Schreibschutz <span class=\"label label-default label-success\">deaktiviert</span>');
+            if (args['genereller_schreibschutz']) {
+                ge_schreibschutz.html('genereller Schreibschutz <span class=\"label label-default label-warning\">aktiviert</span>');
+            } else {
+                ge_schreibschutz.html('genereller Schreibschutz <span class=\"label label-default label-success\">deaktiviert</span>');
+            }
+            var sp_schreibschutz = $('#sp_schreibschutz');
+            if (args['schnittstellen_spezifischer_schreibschutz']) {
+                sp_schreibschutz.html('schnittstellen spezifischer Schreibschutz <span class=\"label label-default label-warning\">aktiviert</span>');
+            } else {
+                sp_schreibschutz.html('schnittstellen spezifischer Schreibschutz <span class=\"label label-default label-success\">deaktiviert</span>');
             }
             var model_name = $('#model_name');
-            model_name.html('Model <span class=\"label label-default label-primary\">'+args['geraete_model']+'</span>');
+            model_name.html('Model <span class=\"label label-default label-primary\">' + args['geraete_model'] + '</span>');
             var measure_datatype = $('#measure_datatype');
-            measure_datatype.html('Model <span class=\"label label-default label-primary\">'+args['messwertdatentype']+'</span>');
+            measure_datatype.html('output-Datentype <span class=\"label label-default label-primary\">' + args['messwertdatentype'] + '</span>');
+
+            // push config data
+            check_isConfig_complete(args);
+        }
+
+        function WriteAoutScale1() {
+            var scale = parseFloat($('#ReadAoutScale1_value').val());
+            session.call("de.me_systeme.gsv.WriteAoutScale", [1, scale]);
+        }
+        function WriteAoutScale2() {
+            var scale = parseFloat($('#ReadAoutScale2_value').val());
+            session.call("de.me_systeme.gsv.WriteAoutScale", [2, scale]);
+        }
+        function WriteAoutScale3() {
+            var scale = parseFloat($('#ReadAoutScale3_value').val());
+            session.call("de.me_systeme.gsv.WriteAoutScale", [3, scale]);
+        }
+        function WriteAoutScale4() {
+            var scale = parseFloat($('#ReadAoutScale4_value').val());
+            session.call("de.me_systeme.gsv.WriteAoutScale", [4, scale]);
+        }
+        function WriteAoutScale5() {
+            var scale = parseFloat($('#ReadAoutScale5_value').val());
+            session.call("de.me_systeme.gsv.WriteAoutScale", [5, scale]);
+        }
+        function WriteAoutScale6() {
+            var scale = parseFloat($('#ReadAoutScale6_value').val());
+            session.call("de.me_systeme.gsv.WriteAoutScale", [6, scale]);
+        }
+
+        function onWriteAoutScale(args) {
+            args = args[0];
+            console.log(args);
+            if (args[0] != 0) {
+                alert("cant set A out Scale");
+                setInputError('ReadAoutScale');
+                return
+            }
+            session.call("de.me_systeme.gsv.getReadAoutScale", [args[1]]);
+            //setInputSuccess('ReadAoutScale');
         }
 
         window.onload = function () {
             $('#myPleaseWait').modal('show');
 
-            typingTimer['loading'] = setTimeout(function () {
-                doneLoading();
-            }, 2000);
+            /*
+             typingTimer['loading'] = setTimeout(function () {
+             doneLoading();
+             }, 2000);
+             */
 
             $('#worker').hide();
 
@@ -94,6 +206,7 @@
                 session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
                 session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
+                session.subscribe("de.me_systeme.gsv.onWriteAoutScale", onWriteAoutScale);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -102,17 +215,22 @@
                 session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
                     var log_section = document.getElementById('debug_out');
                     res.forEach(function (entry) {
-                        console.log(entry);
+                        //console.log(entry);
                         log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
                     });
                 }, session.log);
                 session.call("de.me_systeme.gsv.getGetIntetface");
                 session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [2]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [3]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [4]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [5]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [6]);
             };
             connection.open();
 
-            $("input.testc").keyup(onKeyUpConfigInputs);
-            $("input.testc").keydown(onKeyDownConfigInputs);
+            $("input.modul_settings").keyup(onKeyUpConfigInputs);
+            $("input.modul_settings").keydown(onKeyDownConfigInputs);
             slider_active_channels = new Slider("#option_channel_count", {
                 ticks: [1, 2, 3, 4, 5, 6],
                 ticks_labels: ['1', '2', '3', '4', '5', '6'],
@@ -131,32 +249,46 @@
         function onKeyUpConfigInputs(e) {
             //ESC==27
             //ENTER=13
-            var inputName = $(this).data('id');
+            if ((e.which == 27) || (e.which == 13)) {
+                return;
+            }
+            var inputID = $(this).data('id');
             /*
              console.log(e.which);
              console.log("keyup");
              */
             clearTimeout(typingTimer);
-            typingTimer[inputName] = setTimeout(function () {
-                doneTyping(inputName);
+            typingTimer[inputID] = setTimeout(function () {
+                doneTyping(inputID);
             }, doneTypingInterval);
         }
 
         function onKeyDownConfigInputs(e) {
+            var inputID = $(this).data('id');
+            clearTimeout(typingTimer[inputID]);
+
             //ESC==27
             //ENTER=13
-            var inputName = $(this).data('id');
-            /*
-             console.log(e.which);
-             console.log($(this).data('id'));
-             /console.log("clear Timer");
-             */
-            clearTimeout(typingTimer[inputName]);
+            if (e.which == 27) {
+                console.log(inputID);
+                $('#' + inputID + '_value').val(modul_config[inputID]);
+                setInputSuccess(inputID);
+            } else if (($('#' + inputID + '_value').val() == '')) {
+                setInputError(inputID);
+            } else if ((e.which == 13) && (modul_config[inputID] != $('#' + inputID + '_value').val())) {
+                // übernehmen
+                setInputWarning(inputID);
+                window[setFunctionsByID[inputID]]();
+            }
         }
 
         function doneTyping(inputID) {
-            console.log("übernehmen von " + inputID);
-            //do something
+            if (modul_config[inputID] != $('#' + inputID + '_value').val()) {
+                setInputWarning(inputID);
+            }
+            else {
+                setInputSuccess(inputID);
+            }
         }
 
         function test() {
@@ -228,17 +360,79 @@
     <div class="well well-sm">Modul Info</div>
 
     <div class="row">
-        <div id="ge_schreibschutz" class="col-sm-3">Schreibschutz</span></div>
-        <div id="model_name" class="col-sm-3"></div>
-        <div id="measure_datatype" class="col-sm-3"></div>
-        <div class="col-sm-3"></div>
-        <div class="col-sm-3">
+        <div id="ge_schreibschutz" class="col-sm-4 box">ge Schreibschutz</span></div>
+        <div id="sp_schreibschutz" class="col-sm-4 box">sp Schreibschutz</span></div>
+        <div id="model_name" class="col-sm-2 box"></div>
+        <div id="measure_datatype" class="col-sm-2 box"></div>
+        <div class="col-sm-3 box">
             <label for="option1_value">aktive Kan&auml;le:</label>
 
             <div id="option1" class="form-group has-success has-feedback">
                 <input id="option_channel_count" data-slider-id="option_channel_count" class="form-control" type="text"
                        data-slider-ticks="[1, 2, 3, 4, 5, 6]"
                        data-slider-ticks-snap-bounds="1" data-slider-ticks-labels='["1", "2", "3", "4", "5", "6"]'/>
+            </div>
+        </div>
+    </div>
+    <div class="well well-sm">Modul Settings</div>
+    <div class="panel panel-default">
+        <div class="panel-heading">outScale</div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-2 box">
+                    <div id="ReadAoutScale1" class="form-group has-success has-feedback">
+                        <label for="ReadAoutScale1_value">Kanal 1:</label>
+                        <input id="ReadAoutScale1_value" data-id="ReadAoutScale1" type="number" step="0.01" min="-400"
+                               max="400"
+                               class="form-control modul_settings">
+                        <span id="ReadAoutScale1_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+                    </div>
+                </div>
+                <div class="col-sm-2 box">
+                    <div id="ReadAoutScale2" class="form-group has-success has-feedback">
+                        <label for="ReadAoutScale2_value">Kanal 2:</label>
+                        <input id="ReadAoutScale2_value" data-id="ReadAoutScale2" type="number" step="0.01" min="-400"
+                               max="400"
+                               class="form-control modul_settings">
+                        <span id="ReadAoutScale2_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+                    </div>
+                </div>
+                <div class="col-sm-2 box">
+                    <div id="ReadAoutScale3" class="form-group has-success has-feedback">
+                        <label for="ReadAoutScale3_value">Kanal 3:</label>
+                        <input id="ReadAoutScale3_value" data-id="ReadAoutScale3" type="number" step="0.01" min="-400"
+                               max="400"
+                               class="form-control modul_settings">
+                        <span id="ReadAoutScale3_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+                    </div>
+                </div>
+                <div class="col-sm-2 box">
+                    <div id="ReadAoutScale4" class="form-group has-success has-feedback">
+                        <label for="ReadAoutScale4_value">Kanal 4:</label>
+                        <input id="ReadAoutScale4_value" data-id="ReadAoutScale4" type="number" step="0.01" min="-400"
+                               max="400"
+                               class="form-control modul_settings">
+                        <span id="ReadAoutScale4_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+                    </div>
+                </div>
+                <div class="col-sm-2 box">
+                    <div id="ReadAoutScale5" class="form-group has-success has-feedback">
+                        <label for="ReadAoutScale5_value">Kanal 5:</label>
+                        <input id="ReadAoutScale5_value" data-id="ReadAoutScale5" type="number" step="0.01" min="-400"
+                               max="400"
+                               class="form-control modul_settings">
+                        <span id="ReadAoutScale5_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+                    </div>
+                </div>
+                <div class="col-sm-2 box">
+                    <div id="ReadAoutScale6" class="form-group has-success has-feedback">
+                        <label for="ReadAoutScale6_value">Kanal 6:</label>
+                        <input id="ReadAoutScale6_value" data-id="ReadAoutScale6" type="number" step="0.01" min="-400"
+                               max="400"
+                               class="form-control modul_settings">
+                        <span id="ReadAoutScale6_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
