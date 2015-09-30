@@ -66,12 +66,11 @@ class GSV_6Protocol(protocol.Protocol):
 
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
-        logger.debug('[' + __name__ + '] serial data received.')
-        '''
-        if self.trace:
-            print('[serial|data received] ')# + ' '.join(format(x, '02x') for x in data))
-        '''
+        #logger.debug('[' + __name__ + '] serial data received.')
+        print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
+
         self.checkForCompleteFrame()
+        print("get DATA")
 
     def checkForCompleteFrame(self, recursion=-1):
         state = 0
@@ -346,6 +345,15 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onWriteZero",
                              [frame.getAntwortErrorCode(), channelNo])
 
+    def rcvGetReadUserScale(self, frame, channelNo):
+        values = self.gsv_lib.convertToFloat(frame.getPayload())
+        self.session.publish(u"de.me_systeme.gsv.onGetReadUserScale",
+                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+
+    def rcvWriteUserScale(self, frame, channelNo):
+        self.session.publish(u"de.me_systeme.gsv.onWriteUserScale",
+                             [frame.getAntwortErrorCode(), channelNo])
+
 
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
@@ -367,6 +375,8 @@ class GSVeventHandler():
         self.session.register(self.writeAoutScale, u"de.me_systeme.gsv.WriteAoutScale")
         self.session.register(self.getReadZero, u"de.me_systeme.gsv.getReadZero")
         self.session.register(self.writeZero, u"de.me_systeme.gsv.WriteZero")
+        self.session.register(self.getReadUserScale, u"de.me_systeme.gsv.getReadUserScale")
+        self.session.register(self.writeUserScale, u"de.me_systeme.gsv.WriteUserScale")
 
     def startStopTransmisson(self, start, **kwargs):
         if start:
@@ -405,6 +415,13 @@ class GSVeventHandler():
         zero = self.gsv_lib.convertFloatsToBytes([zeroValue])
         self.session.writeAntwort(self.gsv_lib.buildWriteZero(channelNo, zero), 'rcvWriteZero', channelNo)
 
+    def getReadUserScale(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildReadUserScale(channelNo), 'rcvGetReadUserScale', channelNo)
+
+    def writeUserScale(self, channelNo, userScaleValue):
+        # first convert float to bytes
+        userScale = self.gsv_lib.convertFloatsToBytes([userScaleValue])
+        self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale', channelNo)
 
 import threading
 from gsv6_seriall_lib import GSV6_seriall_lib

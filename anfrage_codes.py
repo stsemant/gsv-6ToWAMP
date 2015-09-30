@@ -9,6 +9,8 @@ anfrage_code_to_shortcut = {
     'WriteAoutOffset': 0x05,
     'ReadAoutScale': 0x06,
     'WriteAoutScale': 0x07,
+    'ReadUserScale': 0x14,
+    'WriteUserScale': 0x15,
     'StartTransmission': 0x24,
     'StopTransmission': 0x23,
     'GetSerNo': 0x1F,

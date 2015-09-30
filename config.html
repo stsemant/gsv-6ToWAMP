@@ -26,7 +26,7 @@
         var option1_last = "";
         var typingTimer = new Array();
         var modul_config = new Array();
-        var modul_config_element_count_for_complete_load = 13;
+        var modul_config_element_count_for_complete_load = 19;
         var setFunctionsByID = {
             'ReadAoutScale1': 'WriteAoutScale1',
             'ReadAoutScale2': 'WriteAoutScale2',
@@ -39,7 +39,13 @@
             'ReadZero3': 'WriteZero3',
             'ReadZero4': 'WriteZero4',
             'ReadZero5': 'WriteZero5',
-            'ReadZero6': 'WriteZero6'
+            'ReadZero6': 'WriteZero6',
+            'ReadUserScale1': 'WriteUserScale1',
+            'ReadUserScale2': 'WriteUserScale2',
+            'ReadUserScale3': 'WriteUserScale3',
+            'ReadUserScale4': 'WriteUserScale4',
+            'ReadUserScale5': 'WriteUserScale5',
+            'ReadUserScale6': 'WriteUserScale6'
         };
         var doneTypingInterval = 250;
         var slider_active_channels = null;
@@ -69,6 +75,7 @@
         }
 
         function setInputSuccess(inputName) {
+            $('#' + inputName + '_value').tooltip('destroy');
             $('#' + inputName).removeClass("has-success has-warning has-error");
             $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
 
@@ -76,7 +83,12 @@
             $('#' + inputName + '_glyphicon').addClass("glyphicon-ok");
         }
 
-        function setInputWarning(inputName) {
+        function setInputWarning(inputName, notice) {
+            if (typeof notice !== 'undefined') {
+                $('#' + inputName + '_value').prop('title', notice).tooltip('show');
+            } else {
+                $('#' + inputName + '_value').tooltip('destroy');
+            }
             $('#' + inputName).removeClass("has-success has-warning has-error");
             $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
 
@@ -84,7 +96,11 @@
             $('#' + inputName + '_glyphicon').addClass("glyphicon-warning-sign");
         }
 
-        function setInputError(inputName) {
+        function setInputError(inputName, error) {
+            $('#' + inputName + '_value').tooltip('destroy');
+            if (typeof error !== 'undefined') {
+                $('#' + inputName + '_value').prop('title', error).tooltip('show');
+            }
             $('#' + inputName).removeClass("has-success has-warning has-error");
             $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
 
@@ -96,7 +112,6 @@
             //eventCnt += 1;
             debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
         }
-
 
         function onGetInterface(args) {
             //console.log(args[0]);
@@ -126,7 +141,6 @@
 
         function onGetReadAoutScale(args) {
             args = args[0];
-            console.log(args);
             if (args[0] != 0) {
                 //error
                 return
@@ -166,7 +180,6 @@
         }
         function onWriteAoutScale(args) {
             args = args[0];
-            console.log(args);
             if (args[0] != 0) {
                 alert("cant set A out Scale");
                 setInputError('ReadAoutScale' + args[1]);
@@ -178,10 +191,6 @@
 
         function onGetReadZero(args) {
             args = args[0];
-            /*
-             console.log("GetReadZero");
-             console.log(args);
-             */
             if (args[0] != 0) {
                 alert('fehler');
                 setInputError('ReadZero' + args[1])
@@ -222,13 +231,8 @@
         }
         function onWriteZero(args) {
             args = args[0];
-            /*
-             console.log("WriteZero");
-             console.log(args);
-             */
             if (args[0] != 0) {
                 //alert("cant set Zero");
-                setInputError('ReadZero' + args[1]);
                 var error = '';
                 if (args[0] == 84) {
                     error = 'Der Absolutwert des Parameters ist zu groß';
@@ -237,13 +241,68 @@
                 } else {
                     error = 'Parameter nicht akzeptiert';
                 }
-                $('#ReadZero' + args[1] + '_value').prop('title', error).tooltip('show');
-                setTimeout(function () {
-                    $('#ReadZero' + args[1] + '_value').prop('title', error).tooltip('destroy');
-                }, 5000);
+                setInputError('ReadZero' + args[1], error);
                 return
             }
             session.call("de.me_systeme.gsv.getReadZero", [args[1]]);
+        }
+
+        function onGetReadUserScale(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                setInputError('ReadUserScale' + args[1], args[0])
+                return
+            }
+            var inputID = 'ReadUserScale' + args[1];
+            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
+            setInputSuccess(inputID);
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+            var data = {};
+            data['ReadUserScale' + args[1]] = parseFloat(args[2]);
+            check_isConfig_complete(data);
+        }
+        function WriteUserScale1() {
+            var scale = parseFloat($('#ReadUserScale1_value').val());
+            session.call("de.me_systeme.gsv.WriteUserScale", [1, scale]);
+        }
+        function WriteUserScale2() {
+            var scale = parseFloat($('#ReadUserScale2_value').val());
+            session.call("de.me_systeme.gsv.WriteUserScale", [2, scale]);
+        }
+        function WriteUserScale3() {
+            var scale = parseFloat($('#ReadUserScale3_value').val());
+            session.call("de.me_systeme.gsv.WriteUserScale", [3, scale]);
+        }
+        function WriteUserScale4() {
+            var scale = parseFloat($('#ReadUserScale4_value').val());
+            session.call("de.me_systeme.gsv.WriteUserScale", [4, scale]);
+        }
+        function WriteUserScale5() {
+            var scale = parseFloat($('#ReadUserScale5_value').val());
+            session.call("de.me_systeme.gsv.WriteUserScale", [5, scale]);
+        }
+        function WriteUserScale6() {
+            var scale = parseFloat($('#ReadUserScale6_value').val());
+            session.call("de.me_systeme.gsv.WriteUserScale", [6, scale]);
+        }
+        function onWriteUserScale(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                //alert("cant set Zero");
+                setInputError('ReadUserScale' + args[1]);
+                var error = '';
+                if (args[0] == 84) {
+                    error = 'Der Absolutwert des Parameters ist zu groß';
+                } else if (args[0] == 85) {
+                    error = 'Der Absolutwert des Parameters ist zu klein';
+                } else {
+                    error = 'Parameter nicht akzeptiert';
+                }
+                setInputError('ReadUserScale' + args[1], error);
+                return
+            }
+            session.call("de.me_systeme.gsv.getReadUserScale", [args[1]]);
         }
 
         window.onload = function () {
@@ -284,6 +343,8 @@
                 session.subscribe("de.me_systeme.gsv.onWriteAoutScale", onWriteAoutScale);
                 session.subscribe("de.me_systeme.gsv.onGetReadZero", onGetReadZero);
                 session.subscribe("de.me_systeme.gsv.onWriteZero", onWriteZero);
+                session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
+                session.subscribe("de.me_systeme.gsv.onWriteUserScale", onWriteUserScale);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -309,6 +370,12 @@
                 session.call("de.me_systeme.gsv.getReadZero", [4]);
                 session.call("de.me_systeme.gsv.getReadZero", [5]);
                 session.call("de.me_systeme.gsv.getReadZero", [6]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [1]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [2]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [3]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [4]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [5]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [6]);
             };
             connection.open();
 
@@ -322,7 +389,7 @@
             $('#option_channel_count').on('slideStop', function () {
                 console.log("fertig");
             });
-
+            $('select.unitNo').change(doneSelect);
         };
 
         function doneLoading() {
@@ -336,10 +403,6 @@
                 return;
             }
             var inputID = $(this).data('id');
-            /*
-             console.log(e.which);
-             console.log("keyup");
-             */
             clearTimeout(typingTimer);
             typingTimer[inputID] = setTimeout(function () {
                 doneTyping(inputID);
@@ -353,14 +416,13 @@
             //ESC==27
             //ENTER=13
             if (e.which == 27) {
-                console.log(inputID);
                 $('#' + inputID + '_value').val(modul_config[inputID]);
                 setInputSuccess(inputID);
             } else if (($('#' + inputID + '_value').val() == '')) {
                 setInputError(inputID);
             } else if ((e.which == 13) && (modul_config[inputID] != $('#' + inputID + '_value').val())) {
                 // übernehmen
-                setInputWarning(inputID);
+                setInputWarning(inputID, "wird übertragen...");
                 window[setFunctionsByID[inputID]]();
             }
         }
@@ -372,6 +434,11 @@
             else {
                 setInputSuccess(inputID);
             }
+        }
+
+        function doneSelect(e){
+            var inputID = $(this).data('id');
+            console.log("changed from "+inputID);
         }
     </script>
 
@@ -458,7 +525,7 @@
                             <td>
                                 <div id="ReadZero1" class="form-group has-success has-feedback">
                                     <input id="ReadZero1_value" data-id="ReadZero1" type="number" step="0.01" min="-400"
-                                           max="400" title="Hooray!"
+                                           max="400"
                                            class="form-control modul_settings">
                                     <span id="ReadZero1_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -619,30 +686,111 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="col-sm-3">
+                    <table class="table">
+                        <caption>UserScale</caption>
+                        <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>Wert</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                <div id="ReadUserScale1" class="form-group has-success has-feedback">
+                                    <input id="ReadUserScale1_value" data-id="ReadUserScale1" type="number" step="1"
+                                           min="-60"
+                                           max="60"
+                                           class="form-control modul_settings">
+                                    <span id="ReadUserScale1_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>
+                                <div id="ReadUserScale2" class="form-group has-success has-feedback">
+                                    <input id="ReadUserScale2_value" data-id="ReadUserScale2" type="number" step="1"
+                                           min="-60"
+                                           max="60"
+                                           class="form-control modul_settings">
+                                    <span id="ReadUserScale2_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>
+                                <div id="ReadUserScale3" class="form-group has-success has-feedback">
+                                    <input id="ReadUserScale3_value" data-id="ReadUserScale3" type="number" step="1"
+                                           min="-60"
+                                           max="60"
+                                           class="form-control modul_settings">
+                                    <span id="ReadUserScale3_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>
+                                <div id="ReadUserScale4" class="form-group has-success has-feedback">
+                                    <input id="ReadUserScale4_value" data-id="ReadUserScale4" type="number" step="1"
+                                           min="-60"
+                                           max="60"
+                                           class="form-control modul_settings">
+                                    <span id="ReadUserScale4_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>
+                                <div id="ReadUserScale5" class="form-group has-success has-feedback">
+                                    <input id="ReadUserScale5_value" data-id="ReadUserScale5" type="number" step="1"
+                                           min="-60"
+                                           max="60"
+                                           class="form-control modul_settings">
+                                    <span id="ReadUserScale5_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>
+                                <div id="ReadUserScale6" class="form-group has-success has-feedback">
+                                    <input id="ReadUserScale6_value" data-id="ReadUserScale6" type="number" step="1"
+                                           min="-60"
+                                           max="60"
+                                           class="form-control modul_settings">
+                                    <span id="ReadUserScale6_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="option1" class="form-group has-success has-feedback">
-        <label for="option1_value">Name:</label>
-        <input id="option1_value" type="text" class="form-control" onchange="option1_change()">
-        <span id="option1_glyphicon" class="glyphicon glyphicon-ok form-control-feedback"></span>
+    <div id="UnitNo1" class="form-group has-success has-feedback">
+        <select id="UnitNo1_value" data-id="UnitNo11" class="form-control unitNo">
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+        </select>
+        <span class="glyphicon glyphicon-ok form-control-feedback"></span>
     </div>
 
-    <div class="dropdown">
-        <button class="btn btn-default dropdown-toggle btn-success" type="button" id="dropdownMenu1"
-                data-toggle="dropdown"
-                aria-haspopup="true" aria-expanded="true">
-            Dropdown
-            <span class="caret"></span>
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-            <li><a href="#">Action</a></li>
-            <li><a href="#">Another action</a></li>
-            <li><a href="#">Something else here</a></li>
-            <li><a href="#">Separated link</a></li>
-        </ul>
-    </div>
 
     <div class="panel panel-primary">
         <div class="panel-heading">Debug

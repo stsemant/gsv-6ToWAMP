@@ -275,6 +275,14 @@ class GSV6_seriall_lib:
         data.extend(zero)
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteZero'), data)
 
+    def buildReadUserScale(self, channelNo):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('ReadUserScale'), [channelNo])
+
+    def buildWriteUserScale(self, channelNo, userScale):
+        data = bytearray([channelNo])
+        data.extend(userScale)
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteUserScale'), data)
+
     def buildStartTransmission(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('StartTransmission'))
 
