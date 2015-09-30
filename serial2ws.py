@@ -293,18 +293,21 @@ class AntwortFrameHandler():
         self.queue = queue
 
     def computeFrame(self, frame):
+        func_name_for_error = ""
         try:
             if not self.queue.empty():
                 function_informations = self.queue.get_nowait()
                 methodNameToCall, args = function_informations.popitem()
+                func_name_for_error = methodNameToCall
                 methodToCall = getattr(self, methodNameToCall)
                 if args is not None:
                     result = methodToCall(frame, args)
                 else:
                     result = methodToCall(frame)
-        except:
-            msg = "Unexpected error:" + str(sys.exc_info()[0])
+        except Exception, e:
+            msg = 'Unexpected error[antwort]['+func_name_for_error+']:' + str(e)
             self.session.addError(msg)
+            print(msg)
 
     def rcvStartStopTransmission(self, frame, start):
         self.session.publish(u"de.me_systeme.gsv.onStartStopTransmission", [frame.getAntwortErrorCode(), start])
@@ -318,10 +321,6 @@ class AntwortFrameHandler():
 
     def rcvSetUnitText(self, frame):
         self.session.publish(u"de.me_systeme.gsv.onSetUnitText", frame.getAntwortErrorCode())
-
-    def rcvGetUnitNo(self, frame, channelNo):
-        unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
-        self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), channelNo, unit_str])
 
     def rcvGetGetInterface(self, frame, ubertragung=None):
         reuslt = self.gsv_lib.decodeGetInterface(frame.getPayload())
@@ -346,6 +345,7 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), channelNo])
 
     def rcvGetReadUserScale(self, frame, channelNo):
+        print("jetzt")
         values = self.gsv_lib.convertToFloat(frame.getPayload())
         self.session.publish(u"de.me_systeme.gsv.onGetReadUserScale",
                              [frame.getAntwortErrorCode(), channelNo, values[0]])
@@ -354,6 +354,20 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onWriteUserScale",
                              [frame.getAntwortErrorCode(), channelNo])
 
+    def rcvGetUnitNoAsText(self, frame, channelNo):
+        unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
+        self.session.publish(u"de.me_systeme.gsv.onGetUnitNoAsText", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
+
+    def rcvGetUnitNo(self, frame, channelNo):
+        #unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
+        #self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
+        unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
+        unit_str = unit_str.decode("utf8")
+        self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, frame.getPayload()[0], unit_str])
+
+    def rcvWriteUnitNo(self, frame, channelNo):
+        self.session.publish(u"de.me_systeme.gsv.onWriteUnitNo",
+                             [frame.getAntwortErrorCode(), channelNo, frame.getAntwortErrorText()])
 
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
@@ -369,7 +383,6 @@ class GSVeventHandler():
         self.session.register(self.startStopTransmisson, u"de.me_systeme.gsv.startStopTransmission", spezialOptions)
         self.session.register(self.getUnitText, u"de.me_systeme.gsv.getUnitText")
         self.session.register(self.setUnitText, u"de.me_systeme.gsv.setUnitText")
-        self.session.register(self.getUnitNo, u"de.me_systeme.gsv.getUnitNo")
         self.session.register(self.getGetInterface, u"de.me_systeme.gsv.getGetIntetface")
         self.session.register(self.getReadAoutScale, u"de.me_systeme.gsv.getReadAoutScale")
         self.session.register(self.writeAoutScale, u"de.me_systeme.gsv.WriteAoutScale")
@@ -377,6 +390,9 @@ class GSVeventHandler():
         self.session.register(self.writeZero, u"de.me_systeme.gsv.WriteZero")
         self.session.register(self.getReadUserScale, u"de.me_systeme.gsv.getReadUserScale")
         self.session.register(self.writeUserScale, u"de.me_systeme.gsv.WriteUserScale")
+        self.session.register(self.getUnitNoAsText, u"de.me_systeme.gsv.getUnitNoAsText")
+        self.session.register(self.getUnitNo, u"de.me_systeme.gsv.getUnitNo")
+        self.session.register(self.writeUnitNo, u"de.me_systeme.gsv.WriteUnitNo")
 
     def startStopTransmisson(self, start, **kwargs):
         if start:
@@ -392,9 +408,6 @@ class GSVeventHandler():
 
     def setUnitText(self, text):
         self.session.writeAntwort(self.gsv_lib.buildSetUnitText(text), 'rcvSetUnitText')
-
-    def getUnitNo(self, channelNo):
-        self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNo', channelNo)
 
     def getGetInterface(self, ubertragung=None):
         self.session.writeAntwort(self.gsv_lib.buildGetInterface(ubertragung), 'rcvGetGetInterface', ubertragung)
@@ -421,7 +434,17 @@ class GSVeventHandler():
     def writeUserScale(self, channelNo, userScaleValue):
         # first convert float to bytes
         userScale = self.gsv_lib.convertFloatsToBytes([userScaleValue])
-        self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale', channelNo)
+        self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale',
+                                  channelNo)
+
+    def getUnitNoAsText(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNoAsText', channelNo)
+    def getUnitNo(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNo', channelNo)
+
+    def writeUnitNo(self, channelNo, unitNo):
+        self.session.writeAntwort(self.gsv_lib.buildWriteUnitNo(channelNo, unitNo), 'rcvWriteUnitNo',
+                                  channelNo)
 
 import threading
 from gsv6_seriall_lib import GSV6_seriall_lib

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from anfrage_codes import anfrage_code_to_shortcut
+
 __author__ = 'dennis rump'
 
 import gsv6_serial_lib_errors
-import error_codes
+from error_codes import error_code_to_error_shortcut
 
 class BasicFrame:
     frameType = {}
@@ -60,6 +62,9 @@ class BasicFrame:
     def getAntwortErrorCode(self):
         return self.statusbyte
 
+    def getAntwortErrorText(self):
+        return error_code_to_error_shortcut.get(self.statusbyte)
+
     def toString(self):
         if self.frameType == 0:
             # Messwert Frame
@@ -71,7 +76,7 @@ class BasicFrame:
             return str
         elif self.frameType == 1:
             # Antwort Frame
-            str = 'AntwortFrame: Länge des Payloads: {} Fehler: {}'.format(self.getLength(), error_codes.error_code_to_error_shortcut.get(self.statusbyte))
+            str = 'AntwortFrame: Länge des Payloads: {} Fehler: {}'.format(self.getLength(), error_code_to_error_shortcut.get(self.statusbyte))
             if self.length_or_channel > 0:
                 str += ' Payload: {}'.format(' '.join(format(z, '02x') for z in self.data))
             return str

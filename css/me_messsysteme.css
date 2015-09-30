@@ -28,3 +28,7 @@ __author__ = 'dennis rump'
 .box:last-child{
   margin: 10px 0 10px 0;
 }
+
+.select_gly{
+    right: 15px;
+}

@@ -143,7 +143,7 @@
                 alert("fehler getUnitNo");
             } else {
                 var channel_unit = null;
-                switch (parseInt(args[1])) {
+                switch (parseInt(args[2])) {
                     case 1:
                         channel_unit = document.getElementById('channel0_unit');
                         break;
@@ -165,7 +165,7 @@
                     default:
                         alert("Error GetUnitNo switch");
                 }
-                channel_unit.innerHTML = ' ' + args[2];
+                channel_unit.innerHTML = ' ' + args[4];
             }
             //alert(args);
             //console.log('onGetUnitNo');

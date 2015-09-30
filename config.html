@@ -26,7 +26,7 @@
         var option1_last = "";
         var typingTimer = new Array();
         var modul_config = new Array();
-        var modul_config_element_count_for_complete_load = 19;
+        var modul_config_element_count_for_complete_load = 25;
         var setFunctionsByID = {
             'ReadAoutScale1': 'WriteAoutScale1',
             'ReadAoutScale2': 'WriteAoutScale2',
@@ -305,6 +305,35 @@
             session.call("de.me_systeme.gsv.getReadUserScale", [args[1]]);
         }
 
+        function onGetUnitNo(args) {
+            args = args[0];
+            console.log(args);
+            if (args[0] != 0) {
+                setInputError('UnitNo' + args[2], args[1])
+                return
+            }
+            var inputID = 'UnitNo' + args[2];
+            $('#'+inputID+' option')[args[3]].selected = true;
+            setInputSuccess(inputID);
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+
+            var data = {};
+            data['UnitNo' + args[2]] = parseInt(args[4]);
+            check_isConfig_complete(data);
+        }
+        function onWriteUnitNo(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                //alert("cant set Zero");
+                setInputError('UnitNo' + args[1]);
+                var error = 'Parameter nicht akzeptiert: ' + args[2];
+                setInputError('UnitNo' + args[1], error);
+                return
+            }
+            session.call("de.me_systeme.gsv.getUnitNo", [args[1]]);
+        }
+
         window.onload = function () {
             $('#myPleaseWait').modal('show');
 
@@ -345,6 +374,8 @@
                 session.subscribe("de.me_systeme.gsv.onWriteZero", onWriteZero);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
                 session.subscribe("de.me_systeme.gsv.onWriteUserScale", onWriteUserScale);
+                session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
+                session.subscribe("de.me_systeme.gsv.onWriteUnitNo", onWriteUnitNo);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -376,6 +407,12 @@
                 session.call("de.me_systeme.gsv.getReadUserScale", [4]);
                 session.call("de.me_systeme.gsv.getReadUserScale", [5]);
                 session.call("de.me_systeme.gsv.getReadUserScale", [6]);
+                session.call("de.me_systeme.gsv.getUnitNo", [1]);
+                session.call("de.me_systeme.gsv.getUnitNo", [2]);
+                session.call("de.me_systeme.gsv.getUnitNo", [3]);
+                session.call("de.me_systeme.gsv.getUnitNo", [4]);
+                session.call("de.me_systeme.gsv.getUnitNo", [5]);
+                session.call("de.me_systeme.gsv.getUnitNo", [6]);
             };
             connection.open();
 
@@ -436,9 +473,15 @@
             }
         }
 
-        function doneSelect(e){
+        function doneSelect(e) {
             var inputID = $(this).data('id');
-            console.log("changed from "+inputID);
+            var index = $(this)[0].selectedIndex;
+            var inputIDno = parseInt(inputID.charAt(inputID.length-1))
+            console.log("write");
+            console.log(inputIDno);
+            console.log(inputID);
+            setInputWarning(inputID, "wird übertragen...");
+            session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno,index]);
         }
     </script>
 
@@ -781,16 +824,344 @@
         </div>
     </div>
 
-    <div id="UnitNo1" class="form-group has-success has-feedback">
-        <select id="UnitNo1_value" data-id="UnitNo11" class="form-control unitNo">
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-        </select>
-        <span class="glyphicon glyphicon-ok form-control-feedback"></span>
+    <div class="panel panel-default">
+        <div class="panel-heading">...</div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-3">
+                    <table class="table">
+                        <caption>Einheiten</caption>
+                        <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>Einheit</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                <div id="UnitNo1" class="form-group has-success has-feedback">
+                                    <select id="UnitNo1_value" data-id="UnitNo1" class="form-control unitNo">
+                                        <option>mV/V</option>
+                                        <option>kg</option>
+                                        <option>g</option>
+                                        <option>N</option>
+                                        <option>cN</option>
+                                        <option>V</option>
+                                        <option>µm/m</option>
+                                        <option>(keine)</option>
+                                        <option>t</option>
+                                        <option>kN</option>
+                                        <option>lb</option>
+                                        <option>oz</option>
+                                        <option>kp</option>
+                                        <option>lbf</option>
+                                        <option>pdl</option>
+                                        <option>mm</option>
+                                        <option>m</option>
+                                        <option>cNm</option>
+                                        <option>Nm</option>
+                                        <option>°C</option>
+                                        <option>°F</option>
+                                        <option>K</option>
+                                        <option>oztr</option>
+                                        <option>dwt</option>
+                                        <option>kNm</option>
+                                        <option>%</option>
+                                        <option>‰</option>
+                                        <option>W</option>
+                                        <option>kW</option>
+                                        <option>rpm</option>
+                                        <option>bar</option>
+                                        <option>Pa</option>
+                                        <option>hPa</option>
+                                        <option>MPa</option>
+                                        <option>N/mm²</option>
+                                        <option>°</option>
+                                        <option>Hz</option>
+                                        <option>m/s</option>
+                                        <option>km/h</option>
+                                        <option>m³/h</option>
+                                        <option>mA</option>
+                                        <option>A</option>
+                                        <option>m/s²</option>
+                                    </select>
+                                    <span id="UnitNo1_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>
+                                <div id="UnitNo2" class="form-group has-success has-feedback">
+                                    <select id="UnitNo2_value" data-id="UnitNo2" class="form-control unitNo">
+                                        <option>mV/V</option>
+                                        <option>kg</option>
+                                        <option>g</option>
+                                        <option>N</option>
+                                        <option>cN</option>
+                                        <option>V</option>
+                                        <option>µm/m</option>
+                                        <option>(keine)</option>
+                                        <option>t</option>
+                                        <option>kN</option>
+                                        <option>lb</option>
+                                        <option>oz</option>
+                                        <option>kp</option>
+                                        <option>lbf</option>
+                                        <option>pdl</option>
+                                        <option>mm</option>
+                                        <option>m</option>
+                                        <option>cNm</option>
+                                        <option>Nm</option>
+                                        <option>°C</option>
+                                        <option>°F</option>
+                                        <option>K</option>
+                                        <option>oztr</option>
+                                        <option>dwt</option>
+                                        <option>kNm</option>
+                                        <option>%</option>
+                                        <option>‰</option>
+                                        <option>W</option>
+                                        <option>kW</option>
+                                        <option>rpm</option>
+                                        <option>bar</option>
+                                        <option>Pa</option>
+                                        <option>hPa</option>
+                                        <option>MPa</option>
+                                        <option>N/mm²</option>
+                                        <option>°</option>
+                                        <option>Hz</option>
+                                        <option>m/s</option>
+                                        <option>km/h</option>
+                                        <option>m³/h</option>
+                                        <option>mA</option>
+                                        <option>A</option>
+                                        <option>m/s²</option>
+                                    </select>
+                                    <span id="UnitNo2_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>
+                                <div id="UnitNo3" class="form-group has-success has-feedback">
+                                    <select id="UnitNo3_value" data-id="UnitNo3" class="form-control unitNo">
+                                        <option>mV/V</option>
+                                        <option>kg</option>
+                                        <option>g</option>
+                                        <option>N</option>
+                                        <option>cN</option>
+                                        <option>V</option>
+                                        <option>µm/m</option>
+                                        <option>(keine)</option>
+                                        <option>t</option>
+                                        <option>kN</option>
+                                        <option>lb</option>
+                                        <option>oz</option>
+                                        <option>kp</option>
+                                        <option>lbf</option>
+                                        <option>pdl</option>
+                                        <option>mm</option>
+                                        <option>m</option>
+                                        <option>cNm</option>
+                                        <option>Nm</option>
+                                        <option>°C</option>
+                                        <option>°F</option>
+                                        <option>K</option>
+                                        <option>oztr</option>
+                                        <option>dwt</option>
+                                        <option>kNm</option>
+                                        <option>%</option>
+                                        <option>‰</option>
+                                        <option>W</option>
+                                        <option>kW</option>
+                                        <option>rpm</option>
+                                        <option>bar</option>
+                                        <option>Pa</option>
+                                        <option>hPa</option>
+                                        <option>MPa</option>
+                                        <option>N/mm²</option>
+                                        <option>°</option>
+                                        <option>Hz</option>
+                                        <option>m/s</option>
+                                        <option>km/h</option>
+                                        <option>m³/h</option>
+                                        <option>mA</option>
+                                        <option>A</option>
+                                        <option>m/s²</option>
+                                    </select>
+                                    <span id="UnitNo3_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>
+                                <div id="UnitNo4" class="form-group has-success has-feedback">
+                                    <select id="UnitNo4_value" data-id="UnitNo4" class="form-control unitNo">
+                                        <option>mV/V</option>
+                                        <option>kg</option>
+                                        <option>g</option>
+                                        <option>N</option>
+                                        <option>cN</option>
+                                        <option>V</option>
+                                        <option>µm/m</option>
+                                        <option>(keine)</option>
+                                        <option>t</option>
+                                        <option>kN</option>
+                                        <option>lb</option>
+                                        <option>oz</option>
+                                        <option>kp</option>
+                                        <option>lbf</option>
+                                        <option>pdl</option>
+                                        <option>mm</option>
+                                        <option>m</option>
+                                        <option>cNm</option>
+                                        <option>Nm</option>
+                                        <option>°C</option>
+                                        <option>°F</option>
+                                        <option>K</option>
+                                        <option>oztr</option>
+                                        <option>dwt</option>
+                                        <option>kNm</option>
+                                        <option>%</option>
+                                        <option>‰</option>
+                                        <option>W</option>
+                                        <option>kW</option>
+                                        <option>rpm</option>
+                                        <option>bar</option>
+                                        <option>Pa</option>
+                                        <option>hPa</option>
+                                        <option>MPa</option>
+                                        <option>N/mm²</option>
+                                        <option>°</option>
+                                        <option>Hz</option>
+                                        <option>m/s</option>
+                                        <option>km/h</option>
+                                        <option>m³/h</option>
+                                        <option>mA</option>
+                                        <option>A</option>
+                                        <option>m/s²</option>
+                                    </select>
+                                    <span id="UnitNo4_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>
+                                <div id="UnitNo5" class="form-group has-success has-feedback">
+                                    <select id="UnitNo5_value" data-id="UnitNo5" class="form-control unitNo">
+                                        <option>mV/V</option>
+                                        <option>kg</option>
+                                        <option>g</option>
+                                        <option>N</option>
+                                        <option>cN</option>
+                                        <option>V</option>
+                                        <option>µm/m</option>
+                                        <option>(keine)</option>
+                                        <option>t</option>
+                                        <option>kN</option>
+                                        <option>lb</option>
+                                        <option>oz</option>
+                                        <option>kp</option>
+                                        <option>lbf</option>
+                                        <option>pdl</option>
+                                        <option>mm</option>
+                                        <option>m</option>
+                                        <option>cNm</option>
+                                        <option>Nm</option>
+                                        <option>°C</option>
+                                        <option>°F</option>
+                                        <option>K</option>
+                                        <option>oztr</option>
+                                        <option>dwt</option>
+                                        <option>kNm</option>
+                                        <option>%</option>
+                                        <option>‰</option>
+                                        <option>W</option>
+                                        <option>kW</option>
+                                        <option>rpm</option>
+                                        <option>bar</option>
+                                        <option>Pa</option>
+                                        <option>hPa</option>
+                                        <option>MPa</option>
+                                        <option>N/mm²</option>
+                                        <option>°</option>
+                                        <option>Hz</option>
+                                        <option>m/s</option>
+                                        <option>km/h</option>
+                                        <option>m³/h</option>
+                                        <option>mA</option>
+                                        <option>A</option>
+                                        <option>m/s²</option>
+                                    </select>
+                                    <span id="UnitNo5_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>
+                                <div id="UnitNo6" class="form-group has-success has-feedback">
+                                    <select id="UnitNo6_value" data-id="UnitNo6" class="form-control unitNo">
+                                        <option>mV/V</option>
+                                        <option>kg</option>
+                                        <option>g</option>
+                                        <option>N</option>
+                                        <option>cN</option>
+                                        <option>V</option>
+                                        <option>µm/m</option>
+                                        <option>(keine)</option>
+                                        <option>t</option>
+                                        <option>kN</option>
+                                        <option>lb</option>
+                                        <option>oz</option>
+                                        <option>kp</option>
+                                        <option>lbf</option>
+                                        <option>pdl</option>
+                                        <option>mm</option>
+                                        <option>m</option>
+                                        <option>cNm</option>
+                                        <option>Nm</option>
+                                        <option>°C</option>
+                                        <option>°F</option>
+                                        <option>K</option>
+                                        <option>oztr</option>
+                                        <option>dwt</option>
+                                        <option>kNm</option>
+                                        <option>%</option>
+                                        <option>‰</option>
+                                        <option>W</option>
+                                        <option>kW</option>
+                                        <option>rpm</option>
+                                        <option>bar</option>
+                                        <option>Pa</option>
+                                        <option>hPa</option>
+                                        <option>MPa</option>
+                                        <option>N/mm²</option>
+                                        <option>°</option>
+                                        <option>Hz</option>
+                                        <option>m/s</option>
+                                        <option>km/h</option>
+                                        <option>m³/h</option>
+                                        <option>mA</option>
+                                        <option>A</option>
+                                        <option>m/s²</option>
+                                    </select>
+                                    <span id="UnitNo6_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-
 
     <div class="panel panel-primary">
         <div class="panel-heading">Debug

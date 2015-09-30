@@ -306,3 +306,8 @@ class GSV6_seriall_lib:
 
     def buildGetUnitNo(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetUnitNo'), [channelNo])
+
+    def buildWriteUnitNo(self, channelNo, unitNo):
+        data = bytearray([channelNo])
+        data.append(unitNo)
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetUnitNo'), data)

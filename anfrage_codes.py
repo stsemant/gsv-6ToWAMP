@@ -16,5 +16,6 @@ anfrage_code_to_shortcut = {
     'GetSerNo': 0x1F,
     'GetUnitText': 0x11,
     'SetUnitText': 0x12,
-    'GetUnitNo': 0x0F
+    'GetUnitNo': 0x0F,
+    'SetUnitNo': 0x10
 }
