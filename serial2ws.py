@@ -37,7 +37,7 @@ from collections import deque
 import error_codes
 import GSV6_BasicFrameType
 # import Queue
-from Queue import Queue
+from Queue import Queue, Empty
 import unit_codes
 from autobahn.wamp.types import RegisterOptions
 
@@ -369,6 +369,11 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onWriteUnitNo",
                              [frame.getAntwortErrorCode(), channelNo, frame.getAntwortErrorText()])
 
+    def rcvGetSerialNo(self, frame):
+        serialNo = self.gsv_lib.convertToUint32_t(frame.getPayload())[0]
+        self.session.publish(u"de.me_systeme.gsv.onGetSerialNo", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), serialNo])
+
+
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
     def __init__(self, session, gsv_lib, antwortQueue):
@@ -393,6 +398,8 @@ class GSVeventHandler():
         self.session.register(self.getUnitNoAsText, u"de.me_systeme.gsv.getUnitNoAsText")
         self.session.register(self.getUnitNo, u"de.me_systeme.gsv.getUnitNo")
         self.session.register(self.writeUnitNo, u"de.me_systeme.gsv.WriteUnitNo")
+        self.session.register(self.getSerialNo, u"de.me_systeme.gsv.getSerialNo")
+        self.session.register(self.resetAntwortQueue, u"de.me_systeme.gsv.resetAntwortQueue")
 
     def startStopTransmisson(self, start, **kwargs):
         if start:
@@ -446,6 +453,22 @@ class GSVeventHandler():
         self.session.writeAntwort(self.gsv_lib.buildWriteUnitNo(channelNo, unitNo), 'rcvWriteUnitNo',
                                   channelNo)
 
+    def getSerialNo(self):
+        self.session.writeAntwort(self.gsv_lib.buildGetSerialNo(), 'rcvGetSerialNo')
+
+    # this fuction didnt write to the modul, its resets the antwort Queue
+    def resetAntwortQueue(self):
+        try:
+            while True:
+                self.antwortQueue.get_nowait()
+        except Empty:
+            return True
+        except Exception, e:
+            msg = 'Unexpected error[resetAntwortQueue]:' + str(e)
+            self.session.addError(msg)
+            print(msg)
+            return False
+
 import threading
 from gsv6_seriall_lib import GSV6_seriall_lib
 
@@ -496,7 +519,6 @@ class FrameRouter(threading.Thread):
                 elif newFrame.getFrameType() == 1:
                     # AntwortFrame
                     self.antwortFrameEventHandler.computeFrame(newFrame)
-                    pass
                 else:
                     # error
                     print('nothing to do with an FrameType != Messwert/Antwort')

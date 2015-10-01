@@ -6,16 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>GSV-6CPU | ME-Me&szlig;systeme GmbH</title>
+    <link rel="shortcut icon" href="images/favicon.ico"/>
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/bootstrap-slider.css" rel="stylesheet">
     <link href="css/me_messsysteme.css" rel="stylesheet">
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="js/jquery.min.1.11.3.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
-    <script src="js/bootstrap-slider.js"></script>
     <script src="js/autobahn.min.js"></script>
     <script src="js/smoothie.js"></script>
     <script>
@@ -26,7 +25,9 @@
         var option1_last = "";
         var typingTimer = new Array();
         var modul_config = new Array();
-        var modul_config_element_count_for_complete_load = 25;
+
+        // die nummer soll spaeter durch eine aufzaehlung im array ersetzt werden, aber erst wenn das config caching des gsv programmiert ist
+        var modul_config_element_count_for_complete_load = 32;
         var setFunctionsByID = {
             'ReadAoutScale1': 'WriteAoutScale1',
             'ReadAoutScale2': 'WriteAoutScale2',
@@ -48,7 +49,9 @@
             'ReadUserScale6': 'WriteUserScale6'
         };
         var doneTypingInterval = 250;
-        var slider_active_channels = null;
+
+        var loadTimeOut = 5000;
+        var loadConfigTimer = null;
 
         var debug_div = null;
 
@@ -76,6 +79,7 @@
 
         function setInputSuccess(inputName) {
             $('#' + inputName + '_value').tooltip('destroy');
+            $('#' + inputName + '_value').popover('destroy');
             $('#' + inputName).removeClass("has-success has-warning has-error");
             $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
 
@@ -84,10 +88,11 @@
         }
 
         function setInputWarning(inputName, notice) {
+            $('#' + inputName + '_value').tooltip('destroy');
+            $('#' + inputName + '_value').popover("destroy");
             if (typeof notice !== 'undefined') {
-                $('#' + inputName + '_value').prop('title', notice).tooltip('show');
-            } else {
-                $('#' + inputName + '_value').tooltip('destroy');
+                //$('#' + inputName + '_value').prop('title', notice).tooltip('show');
+                $('#' + inputName + '_value').popover({content: notice, placement: "top"}).popover("show");
             }
             $('#' + inputName).removeClass("has-success has-warning has-error");
             $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
@@ -97,9 +102,11 @@
         }
 
         function setInputError(inputName, error) {
-            $('#' + inputName + '_value').tooltip('destroy');
+            //$('#' + inputName + '_value').tooltip('destroy');
+            $('#' + inputName + '_value').popover('destroy');
             if (typeof error !== 'undefined') {
                 $('#' + inputName + '_value').prop('title', error).tooltip('show');
+                //$('#' + inputName + '_value').popover({content: error, placement: "top"}).popover("show");
             }
             $('#' + inputName).removeClass("has-success has-warning has-error");
             $('#' + inputName + '_glyphicon').removeClass("glyphicon-ok glyphicon-warning-sign glyphicon-remove");
@@ -117,23 +124,23 @@
             //console.log(args[0]);
             args = args[0];
             var channels = parseInt(args['anzahl_messwert-frame-objekte']) + 1;
-            slider_active_channels.setValue(channels);
+            $('#activeChannels').html(channels);
             var ge_schreibschutz = $('#ge_schreibschutz');
             if (args['genereller_schreibschutz']) {
-                ge_schreibschutz.html('genereller Schreibschutz <span class=\"label label-default label-warning\">aktiviert</span>');
+                ge_schreibschutz.html('<span class=\"label label-default label-warning\">aktiviert</span>');
             } else {
-                ge_schreibschutz.html('genereller Schreibschutz <span class=\"label label-default label-success\">deaktiviert</span>');
+                ge_schreibschutz.html('<span class=\"label label-default label-success\">deaktiviert</span>');
             }
             var sp_schreibschutz = $('#sp_schreibschutz');
             if (args['schnittstellen_spezifischer_schreibschutz']) {
-                sp_schreibschutz.html('schnittstellen spezifischer Schreibschutz <span class=\"label label-default label-warning\">aktiviert</span>');
+                sp_schreibschutz.html('<span class=\"label label-default label-warning\">aktiviert</span>');
             } else {
-                sp_schreibschutz.html('schnittstellen spezifischer Schreibschutz <span class=\"label label-default label-success\">deaktiviert</span>');
+                sp_schreibschutz.html('<span class=\"label label-default label-success\">deaktiviert</span>');
             }
             var model_name = $('#model_name');
-            model_name.html('Model <span class=\"label label-default label-primary\">' + args['geraete_model'] + '</span>');
+            model_name.html('<span class=\"label label-default label-primary\">' + args['geraete_model'] + '</span>');
             var measure_datatype = $('#measure_datatype');
-            measure_datatype.html('output-Datentype <span class=\"label label-default label-primary\">' + args['messwertdatentype'] + '</span>');
+            measure_datatype.html('<span class=\"label label-default label-primary\">' + args['messwertdatentype'] + '</span>');
 
             // push config data
             check_isConfig_complete(args);
@@ -307,13 +314,12 @@
 
         function onGetUnitNo(args) {
             args = args[0];
-            console.log(args);
             if (args[0] != 0) {
                 setInputError('UnitNo' + args[2], args[1])
                 return
             }
             var inputID = 'UnitNo' + args[2];
-            $('#'+inputID+' option')[args[3]].selected = true;
+            $('#' + inputID + ' option')[args[3]].selected = true;
             setInputSuccess(inputID);
 
             //modul_config['ReadAoutScale'][args[1]] = args[2];
@@ -334,16 +340,37 @@
             session.call("de.me_systeme.gsv.getUnitNo", [args[1]]);
         }
 
+        function onGetSerialNo(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                alert('can\'t get SerialNo');
+                return
+            }
+            if (args[2] == '') {
+                $('#serialNo').html('(leer)');
+            } else {
+                $('#serialNo').html(args[2]);
+            }
+
+            var data = {};
+            data['SerialNo' + args[2]] = parseInt(args[4]);
+            check_isConfig_complete(data);
+        }
+
+        function onLoadConfigError() {
+            $('#myPleaseWait').modal('hide');
+            $('#errorModal').modal('show');
+            session.call('de.me_systeme.gsv.resetAntwortQueue').then(function checkReset(res) {
+                //alert(res);
+                setTimeout(function(){
+                    location.reload();
+                }, 2000);
+            }, session.log);
+        }
+
         window.onload = function () {
             $('#myPleaseWait').modal('show');
-
-            /*
-             typingTimer['loading'] = setTimeout(function () {
-             doneLoading();
-             }, 2000);
-             */
-
-            $('#worker').hide();
+            loadConfigTimer = setTimeout(onLoadConfigError, loadTimeOut);
 
             // the URL of the WAMP Router (e.g. Crossbar.io)
             //
@@ -376,6 +403,7 @@
                 session.subscribe("de.me_systeme.gsv.onWriteUserScale", onWriteUserScale);
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
                 session.subscribe("de.me_systeme.gsv.onWriteUnitNo", onWriteUnitNo);
+                session.subscribe("de.me_systeme.gsv.onGetSerialNo", onGetSerialNo);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -413,24 +441,18 @@
                 session.call("de.me_systeme.gsv.getUnitNo", [4]);
                 session.call("de.me_systeme.gsv.getUnitNo", [5]);
                 session.call("de.me_systeme.gsv.getUnitNo", [6]);
+                session.call("de.me_systeme.gsv.getSerialNo");
             };
             connection.open();
 
             $("input.modul_settings").keyup(onKeyUpConfigInputs);
             $("input.modul_settings").keydown(onKeyDownConfigInputs);
-            slider_active_channels = new Slider("#option_channel_count", {
-                ticks: [1, 2, 3, 4, 5, 6],
-                ticks_labels: ['1', '2', '3', '4', '5', '6'],
-                ticks_snap_bounds: 30
-            });
-            $('#option_channel_count').on('slideStop', function () {
-                console.log("fertig");
-            });
             $('select.unitNo').change(doneSelect);
         };
 
         function doneLoading() {
             $('#myPleaseWait').modal('hide');
+            clearTimeout(loadConfigTimer);
         }
 
         function onKeyUpConfigInputs(e) {
@@ -476,12 +498,9 @@
         function doneSelect(e) {
             var inputID = $(this).data('id');
             var index = $(this)[0].selectedIndex;
-            var inputIDno = parseInt(inputID.charAt(inputID.length-1))
-            console.log("write");
-            console.log(inputIDno);
-            console.log(inputID);
+            var inputIDno = parseInt(inputID.charAt(inputID.length - 1))
             setInputWarning(inputID, "wird übertragen...");
-            session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno,index]);
+            session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno, index]);
         }
     </script>
 
@@ -498,52 +517,110 @@
                 <li class="active"><a href="#">Konfiguration</a></li>
                 <li><a href="#">Messungen</a></li>
                 <li><a href="#">Log</a></li>
-                <li><a id="worker"><img src="images/ajax-loader_rechteck.gif" alt="loader_gif"></a></li>
+                <!-- <li><a id="worker"><img src="images/ajax-loader_rechteck.gif" alt="loader_gif"></a></li> -->
             </ul>
         </div>
     </div>
 </nav>
-
-<div class="container">
-    <!-- Modal Start here-->
-    <div class="modal fade bs-example-modal-sm" id="myPleaseWait" tabindex="-1"
-         role="dialog" aria-hidden="true" data-backdrop="static">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">
+<!-- Loading Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="myPleaseWait" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
                     <span class="glyphicon glyphicon-time">
                     </span> Konfiguration wird geladen...
-                    </h4>
-                </div>
-                <div class="modal-body">
-                    <div class="progress">
-                        <div class="progress-bar progress-bar-info
+                </h4>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-info
                     progress-bar-striped active"
-                             style="width: 100%">
-                        </div>
+                         style="width: 100%">
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Modal ends Here -->
+</div>
+<!-- Loading Modal ends Here -->
+<!-- Error Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="errorModal" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-alert">
+                    </span> Ladetimeout erreicht
+                </h4>
+            </div>
+            <div class="modal-body">
+                <h3>Die Antwort-Queue wird zur&uuml;ckgesetzt</h3>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-danger
+                    progress-bar-striped active"
+                         style="width: 100%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Error Modal ends Here -->
+<div class="container">
 
     <div class="well well-sm">Modul Info</div>
 
     <div class="row">
-        <div id="ge_schreibschutz" class="col-sm-4 box">ge Schreibschutz</span></div>
-        <div id="sp_schreibschutz" class="col-sm-4 box">sp Schreibschutz</span></div>
-        <div id="model_name" class="col-sm-2 box"></div>
-        <div id="measure_datatype" class="col-sm-2 box"></div>
-        <div class="col-sm-3 box">
-            <label for="option1_value">aktive Kan&auml;le:</label>
-
-            <div id="option1" class="form-group has-success has-feedback">
-                <input id="option_channel_count" data-slider-id="option_channel_count" class="form-control" type="text"
-                       data-slider-ticks="[1, 2, 3, 4, 5, 6]"
-                       data-slider-ticks-snap-bounds="1" data-slider-ticks-labels='["1", "2", "3", "4", "5", "6"]'/>
-            </div>
+        <div class="col-sm-4 box">
+            <table class="table table-condensed">
+                <thead>
+                <tr>
+                    <th>Eigenschaft</th>
+                    <th>Wert</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>genereller Schreibschutz</td>
+                    <td id="ge_schreibschutz">-</td>
+                </tr>
+                <tr>
+                    <td>Schnittstellen spzif. Schreibs.</td>
+                    <td id="sp_schreibschutz"></td>
+                </tr>
+                <tr>
+                    <td>Model</td>
+                    <td id="model_name"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-sm-4 box">
+            <table class="table table-condensed">
+                <thead>
+                <tr>
+                    <th>Eigenschaft</th>
+                    <th>Wert</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>output-Datentype</td>
+                    <td id="measure_datatype">-</td>
+                </tr>
+                <tr>
+                    <td>aktive Kan&auml;le</td>
+                    <td id="activeChannels">-</td>
+                </tr>
+                <tr>
+                    <td>SerialNo</td>
+                    <td id="serialNo">-</td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -887,7 +964,8 @@
                                         <option>A</option>
                                         <option>m/s²</option>
                                     </select>
-                                    <span id="UnitNo1_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                    <span id="UnitNo1_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
                         </tr>
@@ -940,7 +1018,8 @@
                                         <option>A</option>
                                         <option>m/s²</option>
                                     </select>
-                                    <span id="UnitNo2_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                    <span id="UnitNo2_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
                         </tr>
@@ -993,7 +1072,8 @@
                                         <option>A</option>
                                         <option>m/s²</option>
                                     </select>
-                                    <span id="UnitNo3_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                    <span id="UnitNo3_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
                         </tr>
@@ -1046,7 +1126,8 @@
                                         <option>A</option>
                                         <option>m/s²</option>
                                     </select>
-                                    <span id="UnitNo4_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                    <span id="UnitNo4_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
                         </tr>
@@ -1099,7 +1180,8 @@
                                         <option>A</option>
                                         <option>m/s²</option>
                                     </select>
-                                    <span id="UnitNo5_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                    <span id="UnitNo5_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
                         </tr>
@@ -1152,7 +1234,8 @@
                                         <option>A</option>
                                         <option>m/s²</option>
                                     </select>
-                                    <span id="UnitNo6_glyphicon" class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                    <span id="UnitNo6_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
                         </tr>

@@ -289,9 +289,6 @@ class GSV6_seriall_lib:
     def buildStopTransmission(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('StopTransmission'))
 
-    def buildGetSerNo(self):
-        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetSerNo'))
-
     def buildGetUnitText(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetUnitText'), [
             0])  # + self.encode_anfrage_frame(anfrage_code_to_shortcut.get(' GetUnitText'),[1])
@@ -311,3 +308,6 @@ class GSV6_seriall_lib:
         data = bytearray([channelNo])
         data.append(unitNo)
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetUnitNo'), data)
+
+    def buildGetSerialNo(self):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetSerialNo'))

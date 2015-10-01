@@ -13,7 +13,7 @@ anfrage_code_to_shortcut = {
     'WriteUserScale': 0x15,
     'StartTransmission': 0x24,
     'StopTransmission': 0x23,
-    'GetSerNo': 0x1F,
+    'GetSerialNo': 0x1F,
     'GetUnitText': 0x11,
     'SetUnitText': 0x12,
     'GetUnitNo': 0x0F,
