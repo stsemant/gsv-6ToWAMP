@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>GSV-6CPU | ME-Me&szlig;systeme GmbH</title>
-    <link rel="shortcut icon" href="images/favicon.ico" />
+    <link rel="shortcut icon" href="images/favicon.ico"/>
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -30,6 +30,11 @@
         var eventCnt = 0;
         var eventCntUpdateInterval = 2;
 
+        var aktiveChannel = 1;
+        // init all with scale 1
+        var userScales = new Array(1, 1, 1, 1, 1, 1);
+        var taraTimers = new Array();
+
         var last_overloadSign = null;
 
         var debug_div = null;
@@ -49,10 +54,12 @@
             for (var key in args[0]) {
                 //console.log("Schreibe " + key + " value: "+args[0][key]);
                 channel_value = document.getElementById(key);
-                channel_value.innerHTML = args[0][key].toFixed(4);
+                var channelNo = parseInt(key.slice(-7)) + 1;
+                var value = parseFloat(args[0][key]) * userScales[channelNo];
+                channel_value.innerHTML = value.toFixed(4);
 
                 if (key == 'channel0_value') {
-                    line0.append(new Date().getTime(), args[0][key]);
+                    line0.append(new Date().getTime(), value);
                 }
             }
             if (last_overloadSign != args[1]) {
@@ -133,8 +140,21 @@
 
         function onGetReadAoutScale(args) {
             args = args[0];
-            smoothie.options.minValue = -1 * parseFloat(args[2]);
-            smoothie.options.maxValue = parseFloat(args[2]);
+            if (args[0] != 0) {
+                console.log("onGetReadAoutScale");
+                // TODO: fehler text einbinden
+                console.log(args[0]);
+                return;
+            }
+            var channelNo = parseInt(args[1]);
+            var channelScale = parseFloat(args[2]);
+            userScales[channelNo] = channelScale;
+
+            if (channelNo == aktiveChannel) {
+                var scaleWithTenPercent = (channelScale *1.10).toFixed(2);
+                smoothie.options.minValue = -1 * scaleWithTenPercent;
+                smoothie.options.maxValue = scaleWithTenPercent;
+            }
         }
 
         function onGetUnitNo(args) {
@@ -210,6 +230,38 @@
             }
         }
 
+        function setZero(channelNo) {
+            if (taraTimers[channelNo] != null) {
+                clearTimeout(taraTimers[channelNo])
+            }
+            if ($('#btn-setZero' + channelNo).hasClass("disabled")) {
+                return;
+            }
+            $('#btn-setZero' + channelNo).addClass("disabled");
+            $('#btn-setZero' + channelNo).popover("destroy");
+            $('#btn-setZero' + channelNo).popover({content: 'wird übertragen...', placement: "top"}).popover("show");
+            // TODO: aktuellen channel übernhemen
+            session.call("de.me_systeme.gsv.WriteSetZero", [channelNo]);
+        }
+        function onWriteSetZero(args) {
+            args = args[0];
+            console.log("OnSetZero");
+            console.log(args);
+            $('#btn-setZero' + args[2]).popover("destroy");
+            if (args[0] != 0) {
+                $('#btn-setZero' + args[2]).prop('title', args[1]).tooltip('show');
+                return
+            }
+            $('#btn-setZero' + args[2]).prop('title', 'setZero(Tara) erfolgreich').tooltip('show');
+            $('#btn-setZero' + args[2]).removeClass("btn-warning disabled");
+            $('#btn-setZero' + args[2]).addClass("btn-success");
+            taraTimers[args[2]] = setTimeout(function () {
+                $('#btn-setZero' + args[2]).tooltip("destroy");
+                $('#btn-setZero' + args[2]).removeClass("btn-success disabled");
+                $('#btn-setZero' + args[2]).addClass("btn-warning");
+            }, 3500);
+        }
+
         window.onload = function () {
             //channel0_value = document.getElementById('channel0_value');
             //channel0_unit = document.getElementById('channel0_unit');
@@ -275,6 +327,7 @@
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
                 session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
+                session.subscribe("de.me_systeme.gsv.onWriteSetZero", onWriteSetZero);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -292,6 +345,11 @@
                 session.call("de.me_systeme.gsv.getUnitNo", [6]);
                 session.call("de.me_systeme.gsv.getGetIntetface");
                 session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [2]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [3]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [4]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [5]);
+                session.call("de.me_systeme.gsv.getReadAoutScale", [6]);
 
                 eventCnt = 0;
 
@@ -350,16 +408,34 @@
 
     <div class="row">
         <div id="channel0" class="col-sm-4">Kanal 1: <span id="channel0_value">-</span><span id="channel0_unit">(Einheit)</span>
+            <button id="btn-setZero1" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(1)">
+                Tara
+            </button>
         </div>
         <div id="channel1" class="col-sm-4">Kanal 2: <span id="channel1_value">-</span><span id="channel1_unit">(Einheit)</span>
+            <button id="btn-setZero2" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(2)">
+                Tara
+            </button>
         </div>
         <div id="channel2" class="col-sm-4">Kanal 3: <span id="channel2_value">-</span><span id="channel2_unit">(Einheit)</span>
+            <button id="btn-setZero3" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(3)">
+                Tara
+            </button>
         </div>
         <div id="channel3" class="col-sm-4">Kanal 4: <span id="channel3_value">-</span><span id="channel3_unit">(Einheit)</span>
+            <button id="btn-setZero4" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(4)">
+                Tara
+            </button>
         </div>
         <div id="channel4" class="col-sm-4">Kanal 5: <span id="channel4_value">-</span><span id="channel4_unit">(Einheit)</span>
+            <button id="btn-setZero5" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(5)">
+                Tara
+            </button>
         </div>
         <div id="channel5" class="col-sm-4">Kanal 6: <span id="channel5_value">-</span><span id="channel5_unit">(Einheit)</span>
+            <button id="btn-setZero6" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(6)">
+                Tara
+            </button>
         </div>
     </div>
 

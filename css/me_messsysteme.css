@@ -32,3 +32,16 @@ __author__ = 'dennis rump'
 .select_gly{
     right: 15px;
 }
+
+.badgeInsideInput{
+    position: absolute;
+    top: 8px;
+    right: 63px;
+}
+
+.taraButtons{
+    padding: 0px;
+    border: 0px;
+}
+
+.popover-title { display: none; }

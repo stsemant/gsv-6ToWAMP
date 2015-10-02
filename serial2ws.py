@@ -66,7 +66,7 @@ class GSV_6Protocol(protocol.Protocol):
 
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
-        #logger.debug('[' + __name__ + '] serial data received.')
+        # logger.debug('[' + __name__ + '] serial data received.')
         print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
 
         self.checkForCompleteFrame()
@@ -305,7 +305,7 @@ class AntwortFrameHandler():
                 else:
                     result = methodToCall(frame)
         except Exception, e:
-            msg = 'Unexpected error[antwort]['+func_name_for_error+']:' + str(e)
+            msg = 'Unexpected error[antwort][' + func_name_for_error + ']:' + str(e)
             self.session.addError(msg)
             print(msg)
 
@@ -356,14 +356,17 @@ class AntwortFrameHandler():
 
     def rcvGetUnitNoAsText(self, frame, channelNo):
         unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
-        self.session.publish(u"de.me_systeme.gsv.onGetUnitNoAsText", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
+        self.session.publish(u"de.me_systeme.gsv.onGetUnitNoAsText",
+                             [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
 
     def rcvGetUnitNo(self, frame, channelNo):
-        #unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
-        #self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
+        # unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
+        # self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
         unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
         unit_str = unit_str.decode("utf8")
-        self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, frame.getPayload()[0], unit_str])
+        self.session.publish(u"de.me_systeme.gsv.onGetUnitNo",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo,
+                              frame.getPayload()[0], unit_str])
 
     def rcvWriteUnitNo(self, frame, channelNo):
         self.session.publish(u"de.me_systeme.gsv.onWriteUnitNo",
@@ -371,7 +374,34 @@ class AntwortFrameHandler():
 
     def rcvGetSerialNo(self, frame):
         serialNo = self.gsv_lib.convertToUint32_t(frame.getPayload())[0]
-        self.session.publish(u"de.me_systeme.gsv.onGetSerialNo", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), serialNo])
+        self.session.publish(u"de.me_systeme.gsv.onGetSerialNo",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), serialNo])
+
+    def rcvGetDeviceHours(self, frame):
+        if frame.getAntwortErrorCode() == 0:
+            deviceHours = self.gsv_lib.convertToFloat(frame.getPayload())
+            self.session.publish(u"de.me_systeme.gsv.onGetDeviceHours",
+                                 [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), deviceHours[0]])
+        else:
+            self.session.publish(u"de.me_systeme.gsv.onGetDeviceHours",
+                                 [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
+
+    def rcvGetDataRate(self, frame):
+        dataRate = self.gsv_lib.convertToFloat(frame.getPayload())[0]
+        self.session.publish(u"de.me_systeme.gsv.onGetDataRate",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRate])
+
+    def rcvWriteDataRate(self, frame, dataRateValue):
+        self.session.publish(u"de.me_systeme.gsv.onWriteDataRate",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRateValue])
+
+    def rcvWriteSaveAll(self, frame):
+        self.session.publish(u"de.me_systeme.gsv.onWriteSaveAll",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText()])
+
+    def rcvWriteSetZero(self, frame, channelNo):
+        self.session.publish(u"de.me_systeme.gsv.onWriteSetZero",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
 
 class GSVeventHandler():
@@ -400,6 +430,11 @@ class GSVeventHandler():
         self.session.register(self.writeUnitNo, u"de.me_systeme.gsv.WriteUnitNo")
         self.session.register(self.getSerialNo, u"de.me_systeme.gsv.getSerialNo")
         self.session.register(self.resetAntwortQueue, u"de.me_systeme.gsv.resetAntwortQueue")
+        self.session.register(self.getDeviceHours, u"de.me_systeme.gsv.getDeviceHours")
+        self.session.register(self.getDataRate, u"de.me_systeme.gsv.getDataRate")
+        self.session.register(self.writeDataRate, u"de.me_systeme.gsv.WriteDataRate")
+        self.session.register(self.writeSaveAll, u"de.me_systeme.gsv.WriteSaveAll")
+        self.session.register(self.writeSetZero, u"de.me_systeme.gsv.WriteSetZero")
 
     def startStopTransmisson(self, start, **kwargs):
         if start:
@@ -446,15 +481,31 @@ class GSVeventHandler():
 
     def getUnitNoAsText(self, channelNo):
         self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNoAsText', channelNo)
+
     def getUnitNo(self, channelNo):
         self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNo', channelNo)
 
     def writeUnitNo(self, channelNo, unitNo):
-        self.session.writeAntwort(self.gsv_lib.buildWriteUnitNo(channelNo, unitNo), 'rcvWriteUnitNo',
-                                  channelNo)
+        self.session.writeAntwort(self.gsv_lib.buildWriteUnitNo(channelNo, unitNo), 'rcvWriteUnitNo', channelNo)
 
     def getSerialNo(self):
         self.session.writeAntwort(self.gsv_lib.buildGetSerialNo(), 'rcvGetSerialNo')
+
+    def getDeviceHours(self):
+        self.session.writeAntwort(self.gsv_lib.buildGetDeviceHours(), 'rcvGetDeviceHours')
+
+    def getDataRate(self):
+        self.session.writeAntwort(self.gsv_lib.buildGetDataRate(), 'rcvGetDataRate')
+
+    def writeDataRate(self, dataRateValue):
+        dataRate = self.gsv_lib.convertFloatsToBytes([dataRateValue])
+        self.session.writeAntwort(self.gsv_lib.buildWriteDataRate(dataRate), 'rcvWriteSaveAll', dataRateValue)
+
+    def writeSaveAll(self):
+        self.session.writeAntwort(self.gsv_lib.buildWriteSaveAll(), 'rcvWriteSaveAll')
+
+    def writeSetZero(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildWriteSetZero(channelNo), 'rcvWriteSetZero', channelNo)
 
     # this fuction didnt write to the modul, its resets the antwort Queue
     def resetAntwortQueue(self):
@@ -468,6 +519,7 @@ class GSVeventHandler():
             self.session.addError(msg)
             print(msg)
             return False
+
 
 import threading
 from gsv6_seriall_lib import GSV6_seriall_lib

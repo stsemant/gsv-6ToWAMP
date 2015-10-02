@@ -311,3 +311,18 @@ class GSV6_seriall_lib:
 
     def buildGetSerialNo(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetSerialNo'))
+
+    def buildGetDeviceHours(self, slot=0):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetDeviceHours'),[slot])
+
+    def buildGetDataRate(self):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('ReadDataRate'))
+
+    def buildWriteDataRate(self, dataRate):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteDataRate'), dataRate)
+
+    def buildWriteSaveAll(self, slot=0):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SaveAll'), [slot])
+
+    def buildWriteSetZero(self, channelNo):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetZero'), [channelNo])

@@ -27,7 +27,7 @@
         var modul_config = new Array();
 
         // die nummer soll spaeter durch eine aufzaehlung im array ersetzt werden, aber erst wenn das config caching des gsv programmiert ist
-        var modul_config_element_count_for_complete_load = 32;
+        var modul_config_element_count_for_complete_load = 33;
         var setFunctionsByID = {
             'ReadAoutScale1': 'WriteAoutScale1',
             'ReadAoutScale2': 'WriteAoutScale2',
@@ -46,7 +46,8 @@
             'ReadUserScale3': 'WriteUserScale3',
             'ReadUserScale4': 'WriteUserScale4',
             'ReadUserScale5': 'WriteUserScale5',
-            'ReadUserScale6': 'WriteUserScale6'
+            'ReadUserScale6': 'WriteUserScale6',
+            'DataRate': 'WriteDataRate'
         };
         var doneTypingInterval = 250;
 
@@ -357,12 +358,80 @@
             check_isConfig_complete(data);
         }
 
+        function onGetDeviceHours(args) {
+            var data = {};
+            args = args[0];
+            if (args[0] != 0) {
+                $('#device_hours_counter').html(args[1]);
+                data['DeviceHoursAbs'] = args[1];
+                check_isConfig_complete(data);
+                return
+            }
+            $('#device_hours_counter').html(args[2]);
+
+            data['DeviceHoursAbs'] = parseInt(args[2]);
+            check_isConfig_complete(data);
+        }
+
+        function onGetDataRate(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                setInputError('DataRate', args[1])
+                return
+            }
+            $('#DataRate_value').val(parseFloat(args[2]).toFixed(2));
+            setInputSuccess('DataRate');
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+            var data = {};
+            data['DataRate'] = parseFloat(args[2]);
+            check_isConfig_complete(data);
+        }
+        function WriteDataRate() {
+            var dataRate = parseFloat($('#DataRate_value').val());
+            session.call("de.me_systeme.gsv.WriteDataRate", [dataRate]);
+        }
+        function onWriteDataRate(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                setInputError('DataRate' + args[2]);
+                return
+            }
+            session.call("de.me_systeme.gsv.getDataRate");
+        }
+
+        function WriteSaveAll() {
+            if($('#btn-saveAll').hasClass("disabled")){
+                return;
+            }
+            $('#btn-saveAll').addClass("disabled");
+            $('#btn-saveAll').popover("destroy");
+            $('#btn-saveAll').popover({content: 'wird übertragen...', placement: "top"}).popover("show");
+            session.call("de.me_systeme.gsv.WriteSaveAll");
+        }
+        function onWriteSaveAll(args) {
+            args = args[0];
+            $('#btn-saveAll').popover("destroy");
+            if (args[0] != 0) {
+                $('#btn-saveAll').prop('title', args[1]).tooltip('show');
+                return
+            }
+            $('#btn-saveAll').prop('title', 'Speicherung erfolgreich.').tooltip('show');
+            $('#btn-saveAll').removeClass("btn-warning disabled");
+            $('#btn-saveAll').addClass("btn-success");
+            setTimeout(function () {
+                $('#btn-saveAll').tooltip("destroy");
+                $('#btn-saveAll').removeClass("btn-success disabled");
+                $('#btn-saveAll').addClass("btn-warning");
+            }, 3500);
+        }
+
         function onLoadConfigError() {
             $('#myPleaseWait').modal('hide');
             $('#errorModal').modal('show');
             session.call('de.me_systeme.gsv.resetAntwortQueue').then(function checkReset(res) {
                 //alert(res);
-                setTimeout(function(){
+                setTimeout(function () {
                     location.reload();
                 }, 2000);
             }, session.log);
@@ -404,6 +473,10 @@
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
                 session.subscribe("de.me_systeme.gsv.onWriteUnitNo", onWriteUnitNo);
                 session.subscribe("de.me_systeme.gsv.onGetSerialNo", onGetSerialNo);
+                session.subscribe("de.me_systeme.gsv.onGetDeviceHours", onGetDeviceHours);
+                session.subscribe("de.me_systeme.gsv.onGetDataRate", onGetDataRate);
+                session.subscribe("de.me_systeme.gsv.onWriteDataRate", onWriteDataRate);
+                session.subscribe("de.me_systeme.gsv.onWriteSaveAll", onWriteSaveAll);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -442,6 +515,8 @@
                 session.call("de.me_systeme.gsv.getUnitNo", [5]);
                 session.call("de.me_systeme.gsv.getUnitNo", [6]);
                 session.call("de.me_systeme.gsv.getSerialNo");
+                session.call("de.me_systeme.gsv.getDeviceHours");
+                session.call("de.me_systeme.gsv.getDataRate");
             };
             connection.open();
 
@@ -456,6 +531,7 @@
         }
 
         function onKeyUpConfigInputs(e) {
+            //console.log("up");
             //ESC==27
             //ENTER=13
             if ((e.which == 27) || (e.which == 13)) {
@@ -469,13 +545,14 @@
         }
 
         function onKeyDownConfigInputs(e) {
+            //console.log("down");
             var inputID = $(this).data('id');
             clearTimeout(typingTimer[inputID]);
 
             //ESC==27
             //ENTER=13
             if (e.which == 27) {
-                $('#' + inputID + '_value').val(modul_config[inputID]);
+                $('#' + inputID + '_value').val(modul_config[inputID].toFixed(4));
                 setInputSuccess(inputID);
             } else if (($('#' + inputID + '_value').val() == '')) {
                 setInputError(inputID);
@@ -558,6 +635,7 @@
             </div>
             <div class="modal-body">
                 <h3>Die Antwort-Queue wird zur&uuml;ckgesetzt</h3>
+
                 <div class="progress">
                     <div class="progress-bar progress-bar-danger
                     progress-bar-striped active"
@@ -618,6 +696,41 @@
                 <tr>
                     <td>SerialNo</td>
                     <td id="serialNo">-</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-sm-4 box">
+            <table class="table table-condensed">
+                <thead>
+                <tr>
+                    <th>Eigenschaft</th>
+                    <th>Wert</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Betriebstunden</td>
+                    <td id="device_hours_counter">-</td>
+                </tr>
+                <tr>
+                    <td>-</td>
+                    <td id="">-</td>
+                </tr>
+                <tr>
+                    <td>Datenrate</td>
+                    <td>
+                        <div id="DataRate" class="form-group has-success has-feedback">
+                            <input id="DataRate_value" data-id="DataRate" type="number" step="0.01"
+                                   min="1"
+                                   max="2500"
+                                   class="form-control modul_settings">
+                            <span class="badge badgeInsideInput">Hz</span>
+                                    <span id="DataRate_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
+
+                        </div>
+                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -821,8 +934,8 @@
                             <td>
                                 <div id="ReadUserScale1" class="form-group has-success has-feedback">
                                     <input id="ReadUserScale1_value" data-id="ReadUserScale1" type="number" step="1"
-                                           min="-60"
-                                           max="60"
+                                           min="0"
+                                           max="1000"
                                            class="form-control modul_settings">
                                     <span id="ReadUserScale1_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -834,8 +947,8 @@
                             <td>
                                 <div id="ReadUserScale2" class="form-group has-success has-feedback">
                                     <input id="ReadUserScale2_value" data-id="ReadUserScale2" type="number" step="1"
-                                           min="-60"
-                                           max="60"
+                                           min="0"
+                                           max="1000"
                                            class="form-control modul_settings">
                                     <span id="ReadUserScale2_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -847,8 +960,8 @@
                             <td>
                                 <div id="ReadUserScale3" class="form-group has-success has-feedback">
                                     <input id="ReadUserScale3_value" data-id="ReadUserScale3" type="number" step="1"
-                                           min="-60"
-                                           max="60"
+                                           min="0"
+                                           max="1000"
                                            class="form-control modul_settings">
                                     <span id="ReadUserScale3_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -860,8 +973,8 @@
                             <td>
                                 <div id="ReadUserScale4" class="form-group has-success has-feedback">
                                     <input id="ReadUserScale4_value" data-id="ReadUserScale4" type="number" step="1"
-                                           min="-60"
-                                           max="60"
+                                           min="0"
+                                           max="1000"
                                            class="form-control modul_settings">
                                     <span id="ReadUserScale4_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -873,8 +986,8 @@
                             <td>
                                 <div id="ReadUserScale5" class="form-group has-success has-feedback">
                                     <input id="ReadUserScale5_value" data-id="ReadUserScale5" type="number" step="1"
-                                           min="-60"
-                                           max="60"
+                                           min="0"
+                                           max="1000"
                                            class="form-control modul_settings">
                                     <span id="ReadUserScale5_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -886,8 +999,9 @@
                             <td>
                                 <div id="ReadUserScale6" class="form-group has-success has-feedback">
                                     <input id="ReadUserScale6_value" data-id="ReadUserScale6" type="number" step="1"
-                                           min="-60"
-                                           max="60"
+                                           min="0"
+                                           max="1000"
+                                           max="1000"
                                            class="form-control modul_settings">
                                     <span id="ReadUserScale6_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
@@ -1243,6 +1357,13 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="panel panel-danger">
+        <div class="panel-heading">Danger-Zone</div>
+        <div class="panel-body">
+            <button id="btn-saveAll" type="button" class="btn btn-warning" onclick="WriteSaveAll()">SaveAll</button>
         </div>
     </div>
 
