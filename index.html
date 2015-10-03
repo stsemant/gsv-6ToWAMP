@@ -56,7 +56,12 @@
                 channel_value = document.getElementById(key);
                 var channelNo = parseInt(key.slice(-7)) + 1;
                 var value = parseFloat(args[0][key]) * userScales[channelNo];
-                channel_value.innerHTML = value.toFixed(4);
+                if (value < 0) {
+                    channel_value.innerHTML = value.toFixed(4);
+                } else {
+                    channel_value.innerHTML = '&nbsp;' + value.toFixed(4);
+                }
+
 
                 if (key == 'channel0_value') {
                     line0.append(new Date().getTime(), value);
@@ -151,7 +156,7 @@
             userScales[channelNo] = channelScale;
 
             if (channelNo == aktiveChannel) {
-                var scaleWithTenPercent = (channelScale *1.10).toFixed(2);
+                var scaleWithTenPercent = (channelScale * 1.10).toFixed(2);
                 smoothie.options.minValue = -1 * scaleWithTenPercent;
                 smoothie.options.maxValue = scaleWithTenPercent;
             }
@@ -400,39 +405,93 @@
     </div>
 </nav>
 
+<!-- TaraAll Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="modalTaraAll" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-question-sign">
+                    </span> TaraAll (setZeroAll)
+                </h4>
+            </div>
+            <div class="modal-body">
+                Wollen Sie wirklich Tara auf alle Kan&auml;le anwenden?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" onclick="setZero(0); $('#modalTaraAll').modal('hide');">
+                    Ja, TaraAll
+                </button>
+                <button type="button" class="btn btn-success" onclick="$('#modalTaraAll').modal('hide');">Nein,
+                    Abbruch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- TaraAll Modal ends Here -->
+
 <div class="container">
     <button type="button" class="btn btn-success" onclick="startStopTransmission(true)">Start</button>
     <button type="button" class="btn btn-danger" onclick="startStopTransmission(false)">Stop</button>
+    <button id="btn-setZero0" type="button" class="btn btn-warning" onclick="$('#modalTaraAll').modal('show');">Tara all
+    </button>
 
     <h2>Messwerte</h2>
 
     <div class="row">
-        <div id="channel0" class="col-sm-4">Kanal 1: <span id="channel0_value">-</span><span id="channel0_unit">(Einheit)</span>
+        <div id="channel0" class="col-sm-4">
+            <div class="checkbox">
+                <input id="channel0_checkbox" type="checkbox" checked>
+            </div>
+            Kanal 1: <span id="channel0_value">-</span><span id="channel0_unit">(Einheit)</span>
             <button id="btn-setZero1" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(1)">
                 Tara
             </button>
+
         </div>
-        <div id="channel1" class="col-sm-4">Kanal 2: <span id="channel1_value">-</span><span id="channel1_unit">(Einheit)</span>
+        <div id="channel1" class="col-sm-4">
+            <div class="checkbox">
+                <input id="channel1_checkbox" type="checkbox">
+            </div>
+            Kanal 2: <span id="channel1_value">-</span><span id="channel1_unit">(Einheit)</span>
             <button id="btn-setZero2" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(2)">
                 Tara
             </button>
         </div>
-        <div id="channel2" class="col-sm-4">Kanal 3: <span id="channel2_value">-</span><span id="channel2_unit">(Einheit)</span>
+        <div id="channel2" class="col-sm-4">
+            <div class="checkbox">
+                <input id="channel2_checkbox" type="checkbox">
+            </div>
+            Kanal 3: <span id="channel2_value">-</span><span id="channel2_unit">(Einheit)</span>
             <button id="btn-setZero3" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(3)">
                 Tara
             </button>
         </div>
-        <div id="channel3" class="col-sm-4">Kanal 4: <span id="channel3_value">-</span><span id="channel3_unit">(Einheit)</span>
+        <div id="channel3" class="col-sm-4">
+            <div class="checkbox">
+                <input id="channel3_checkbox" type="checkbox">
+            </div>
+            Kanal 4: <span id="channel3_value">-</span><span id="channel3_unit">(Einheit)</span>
             <button id="btn-setZero4" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(4)">
                 Tara
             </button>
         </div>
-        <div id="channel4" class="col-sm-4">Kanal 5: <span id="channel4_value">-</span><span id="channel4_unit">(Einheit)</span>
+        <div id="channel4" class="col-sm-4">
+            <div class="checkbox">
+                <input id="channel4_checkbox" type="checkbox">
+            </div>
+            Kanal 5: <span id="channel4_value">-</span><span id="channel4_unit">(Einheit)</span>
             <button id="btn-setZero5" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(5)">
                 Tara
             </button>
         </div>
-        <div id="channel5" class="col-sm-4">Kanal 6: <span id="channel5_value">-</span><span id="channel5_unit">(Einheit)</span>
+        <div id="channel5" class="col-sm-4">
+            <div class="checkbox">
+                <input id="channel5_checkbox" type="checkbox">
+            </div>
+            Kanal 6: <span id="channel5_value">-</span><span id="channel5_unit">(Einheit)</span>
             <button id="btn-setZero6" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(6)">
                 Tara
             </button>
