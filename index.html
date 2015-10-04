@@ -25,7 +25,6 @@
 
         var smoothie = null;
         var line0 = new TimeSeries();
-        var line1 = new TimeSeries();
 
         var eventCnt = 0;
         var eventCntUpdateInterval = 2;
@@ -35,7 +34,7 @@
         var userScales = new Array(1, 1, 1, 1, 1, 1);
         var taraTimers = new Array();
 
-        var last_overloadSign = null;
+        var last_overloadSign = false;
 
         var debug_div = null;
 
@@ -52,7 +51,6 @@
             //console.log(args[0]);
             args = args[0]
             for (var key in args[0]) {
-                //console.log("Schreibe " + key + " value: "+args[0][key]);
                 channel_value = document.getElementById(key);
                 var channelNo = parseInt(key.slice(-7)) + 1;
                 var value = parseFloat(args[0][key]) * userScales[channelNo];
@@ -62,8 +60,7 @@
                     channel_value.innerHTML = '&nbsp;' + value.toFixed(4);
                 }
 
-
-                if (key == 'channel0_value') {
+                if (channelNo == aktiveChannel) {
                     line0.append(new Date().getTime(), value);
                 }
             }
@@ -267,11 +264,24 @@
             }, 3500);
         }
 
-        window.onload = function () {
-            //channel0_value = document.getElementById('channel0_value');
-            //channel0_unit = document.getElementById('channel0_unit');
+        function plotThisChannel(channelNo) {
+            if (aktiveChannel == channelNo) {
+                // nothing to do!
+                return;
+            }
+            $('#toChannel' + aktiveChannel).removeClass("btn-success");
+            $('#toChannel' + channelNo).addClass("btn-success");
+            aktiveChannel = parseInt(channelNo);
+            line0.clear();
 
+            var scaleWithTenPercent = (userScales[channelNo] * 1.10).toFixed(2);
+            smoothie.options.minValue = -1 * scaleWithTenPercent;
+            smoothie.options.maxValue = scaleWithTenPercent;
+        }
+
+        window.onload = function () {
             smoothie = new SmoothieChart({
+                labels:{fontSize:13},
                 grid: {
                     strokeStyle: 'rgb(125, 0, 0)',
                     fillStyle: 'rgb(60, 0, 0)',
@@ -281,6 +291,8 @@
                 },
                 minValue: -10,
                 maxValue: 10,
+                maxValueScale: 1.2,
+                minValueScale: 1.2,
                 resetBounds: false,
                 //interpolation: "line"
             });
@@ -290,12 +302,13 @@
                 fillStyle: 'rgba(0, 255, 0, 0.1)',
                 lineWidth: 3
             });
-            smoothie.addTimeSeries(line1, {
-                strokeStyle: 'rgb(255, 0, 255)',
-                fillStyle: 'rgba(255, 0, 255, 0.1)',
-                lineWidth: 3
-            });
-
+            /*
+             smoothie.addTimeSeries(line1, {
+             strokeStyle: 'rgb(255, 0, 255)',
+             fillStyle: 'rgba(255, 0, 255, 0.1)',
+             lineWidth: 3
+             });
+             */
             smoothie.streamTo(document.getElementById("messChart"));
             //smoothie.stop();
 
@@ -441,56 +454,38 @@
     <h2>Messwerte</h2>
 
     <div class="row">
-        <div id="channel0" class="col-sm-4">
-            <div class="checkbox">
-                <input id="channel0_checkbox" type="checkbox" checked>
-            </div>
+        <div id="channel0" class="col-sm-4 channelWithCheckboxExtraPadding">
             Kanal 1: <span id="channel0_value">-</span><span id="channel0_unit">(Einheit)</span>
             <button id="btn-setZero1" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(1)">
                 Tara
             </button>
 
         </div>
-        <div id="channel1" class="col-sm-4">
-            <div class="checkbox">
-                <input id="channel1_checkbox" type="checkbox">
-            </div>
+        <div id="channel1" class="col-sm-4 channelWithCheckboxExtraPadding">
             Kanal 2: <span id="channel1_value">-</span><span id="channel1_unit">(Einheit)</span>
             <button id="btn-setZero2" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(2)">
                 Tara
             </button>
         </div>
-        <div id="channel2" class="col-sm-4">
-            <div class="checkbox">
-                <input id="channel2_checkbox" type="checkbox">
-            </div>
+        <div id="channel2" class="col-sm-4 channelWithCheckboxExtraPadding">
             Kanal 3: <span id="channel2_value">-</span><span id="channel2_unit">(Einheit)</span>
             <button id="btn-setZero3" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(3)">
                 Tara
             </button>
         </div>
-        <div id="channel3" class="col-sm-4">
-            <div class="checkbox">
-                <input id="channel3_checkbox" type="checkbox">
-            </div>
+        <div id="channel3" class="col-sm-4 channelWithCheckboxExtraPadding">
             Kanal 4: <span id="channel3_value">-</span><span id="channel3_unit">(Einheit)</span>
             <button id="btn-setZero4" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(4)">
                 Tara
             </button>
         </div>
-        <div id="channel4" class="col-sm-4">
-            <div class="checkbox">
-                <input id="channel4_checkbox" type="checkbox">
-            </div>
+        <div id="channel4" class="col-sm-4 channelWithCheckboxExtraPadding">
             Kanal 5: <span id="channel4_value">-</span><span id="channel4_unit">(Einheit)</span>
             <button id="btn-setZero5" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(5)">
                 Tara
             </button>
         </div>
-        <div id="channel5" class="col-sm-4">
-            <div class="checkbox">
-                <input id="channel5_checkbox" type="checkbox">
-            </div>
+        <div id="channel5" class="col-sm-4 channelWithCheckboxExtraPadding">
             Kanal 6: <span id="channel5_value">-</span><span id="channel5_unit">(Einheit)</span>
             <button id="btn-setZero6" type="button" class="btn btn-xs btn-warning taraButtons" onclick="setZero(6)">
                 Tara
@@ -502,7 +497,14 @@
         <div class="panel-heading">
             <h3 class="panel-title">Plot
                 <span id="geraete_model" class="label label-success"></span>
-                <span id="channel0_label" class="label label-success">Kanal 1</span>
+                <button id="toChannel1" type="button" class="btn btn-sm btn-success" onclick="plotThisChannel(1)">Kanal
+                    1
+                </button>
+                <button id="toChannel2" type="button" class="btn btn-sm" onclick="plotThisChannel(2)">Kanal 2</button>
+                <button id="toChannel3" type="button" class="btn btn-sm" onclick="plotThisChannel(3)">Kanal 3</button>
+                <button id="toChannel4" type="button" class="btn btn-sm" onclick="plotThisChannel(4)">Kanal 4</button>
+                <button id="toChannel5" type="button" class="btn btn-sm" onclick="plotThisChannel(5)">Kanal 5</button>
+                <button id="toChannel6" type="button" class="btn btn-sm" onclick="plotThisChannel(6)">Kanal 6</button>
                 <span id="inputOverloadWarning" class="label label-warning">Eingang &Uuml;bersteuer!</span>
                 <span id="sixachsiserrorWarning" class="label label-danger">
                     <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>

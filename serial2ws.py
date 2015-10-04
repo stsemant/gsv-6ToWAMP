@@ -499,7 +499,7 @@ class GSVeventHandler():
 
     def writeDataRate(self, dataRateValue):
         dataRate = self.gsv_lib.convertFloatsToBytes([dataRateValue])
-        self.session.writeAntwort(self.gsv_lib.buildWriteDataRate(dataRate), 'rcvWriteSaveAll', dataRateValue)
+        self.session.writeAntwort(self.gsv_lib.buildWriteDataRate(dataRate), 'rcvWriteDataRate', dataRateValue)
 
     def writeSaveAll(self):
         self.session.writeAntwort(self.gsv_lib.buildWriteSaveAll(), 'rcvWriteSaveAll')

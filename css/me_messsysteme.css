@@ -2,46 +2,49 @@
 __author__ = 'dennis rump'
 */
 .nopadding {
-   padding: 0 !important;
-   margin: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .slider {
-   margin-left: 10px;
+    margin-left: 10px;
 }
 
 #option_channel_count .slider-selection {
-	background: #E8E3E3;
+    background: #E8E3E3;
 }
 
 #option_channel_count .slider-handle {
-	background: #333333;
+    background: #333333;
 }
 
 #option_channel_count .slider-tick.in-selection {
-	background: #777777;
+    background: #777777;
 }
 
-.box{
-  margin: 10px 0 10px 0;
-}
-.box:last-child{
-  margin: 10px 0 10px 0;
+.box {
+    margin: 10px 0 10px 0;
 }
 
-.select_gly{
+.box:last-child {
+    margin: 10px 0 10px 0;
+}
+
+.select_gly {
     right: 15px;
 }
 
-.badgeInsideInput{
+.badgeInsideInput {
     position: absolute;
     top: 8px;
     right: 63px;
 }
 
-.taraButtons{
+.taraButtons {
     padding: 0px;
     border: 0px;
 }
 
-.popover-title { display: none; }
+.popover-title {
+    display: none;
+}
