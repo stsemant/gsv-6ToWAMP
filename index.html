@@ -80,7 +80,7 @@
         }
 
         function startStopTransmission(turnOn) {
-            session.call('de.me_systeme.gsv.startStopTransmission', [turnOn], {}, {disclose_me: true});
+            session.call('de.me_systeme.gsv.startStopTransmission', [turnOn,true], {}, {disclose_me: true});
             //session.call("de.me_systeme.gsv.startStopTransmission", [turnOn]);
             if (turnOn) {
                 smoothie.start();
@@ -411,7 +411,7 @@
             <ul class="nav navbar-nav">
                 <li class="active"><a href="#">Messung</a></li>
                 <li><a href="config.html">Konfiguration</a></li>
-                <li><a href="#">Messungen</a></li>
+                <li><a href="messungen.html">Messungen</a></li>
                 <li><a href="#">Log</a></li>
             </ul>
         </div>

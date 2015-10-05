@@ -48,3 +48,14 @@ __author__ = 'dennis rump'
 .popover-title {
     display: none;
 }
+button.viewCSV{
+    margin-left: 11px;
+}
+
+button.downloadCSV{
+    margin-left: 15px;
+}
+
+button.deleteCSV{
+    margin-left: 10px;
+}

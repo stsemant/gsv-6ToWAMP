@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>GSV-6CPU | ME-Me&szlig;systeme GmbH</title>
+    <link rel="shortcut icon" href="images/favicon.ico"/>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/me_messsysteme.css" rel="stylesheet">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery.min.1.11.3.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/autobahn.min.js"></script>
+    <script src="js/smoothie.js"></script>
+    <script>
+
+        // the WAMP session we'll be using
+        //
+        var session = null;
+
+        var loadTimeOut = 5000;
+        var loadFilesTimer = null;
+
+        var debug_div = null;
+
+        function onLoadFilesError() {
+            alert("fehler");
+        }
+
+        function onReceiveError(args) {
+            //eventCnt += 1;
+            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
+        }
+
+        function deleteCSVFile(fileStr) {
+            session.call('de.me_systeme.gsv.deleteCSVFile', [fileStr]).then(function deleteFilesResult(res) {
+                if (res) {
+                    $(function () {
+                        $('table>tbody>tr').each(function () {
+                            var tdID = $(this).attr('id');
+                            if (tdID == fileStr) {
+                                $(this).closest('tr').fadeOut();
+                            }
+                        })
+                    });
+                }
+            }, session.log);
+        }
+        function askForDeleteCSVfile(fileStr) {
+            $('#modalDeleteFile_filename').html(fileStr);
+            $('#deleteFileDialoge').modal('show');
+        }
+
+        function buildFileTable(data) {
+            var fileTable = $('#filesTable');
+
+            var r = new Array(), j = -1;
+            for (var index = 0, size = data[0].length; index < size; index++) {
+                //r[++j] = '<tr id=\"' + data[0][index] + '\"><td>';
+                r[++j] = '<tr id=\"' + data[0][index] + '\"><td>';
+                r[++j] = data[0][index];
+                r[++j] = '</td><td>';
+                r[++j] = '<button type="button" class="btn btn-default viewCSV" onClick=\"location.href=\'messung_detail.html?file=' + data[0][index] + '\'\">  <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></button>';
+                r[++j] = '</td><td>';
+                r[++j] = '<button type="button" class="btn btn-default downloadCSV" onClick=\"window.location=\'' + data[1][index] + '\'\">  <span class="glyphicon glyphicon-save" aria-hidden="true"></span></button>';
+                r[++j] = '</td><td>';
+                r[++j] = '<button type="button" class="btn btn-default deleteCSV" onClick=\"askForDeleteCSVfile(\'' + data[0][index] + '\')\">  <span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+                r[++j] = '</td></tr>';
+            }
+
+            fileTable.html(r.join(''));
+        }
+
+        window.onload = function () {
+            $('#myPleaseWait').modal('show');
+            loadFilesTimer = setTimeout(onLoadFilesError, loadTimeOut);
+
+            // the URL of the WAMP Router (e.g. Crossbar.io)
+            //
+            var wsuri;
+            if (document.location.origin == "file://") {
+                wsuri = "ws://localhost:8080/ws";
+            } else {
+                wsuri = "ws://" + document.location.hostname + ":8080/ws";
+            }
+
+            // connect to WAMP server
+            //
+            var connection = new autobahn.Connection({
+                url: wsuri,
+                realm: 'me_gsv6'
+            });
+
+            connection.onopen = function (new_session) {
+                console.log("connected to " + wsuri);
+
+                session = new_session;
+
+                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
+
+                debug_div = document.getElementById('debug_out');
+
+                // try to get all cached informations and then get missing informations
+
+                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
+                    var log_section = document.getElementById('debug_out');
+                    res.forEach(function (entry) {
+                        //console.log(entry);
+                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
+                    });
+                }, session.log);
+                session.call('de.me_systeme.gsv.getCSVFileList').then(function listFIles(res) {
+                    doneLoading();
+                    var dir = res[0];
+                    var data = new Array();
+                    data[0] = new Array();
+                    data[1] = res[1];
+
+                    if (data.length <= 0) {
+                        return;
+                    }
+
+                    // isUnix or isWindows?
+                    if (data[1][0].indexOf(dir) < 0) {
+                        dir = dir.substring(0, dir.length - 1);
+                        dir += '\\';
+                    }
+                    //var indexStart = data[1][0].indexOf(dir);
+                    var lengthOfDir = dir.length;
+                    var index;
+                    for (index = 0; index < data[1].length; ++index) {
+                        console.log(data[1][index]);
+                        //data[0][index] = data[1][index].substring(indexStart, lengthOfDir);
+                        data[0].push(data[1][index].substring(lengthOfDir));
+                        data[1][index] = data[1][index].replace('\\', '/');
+                    }
+
+                    buildFileTable(data);
+
+                }, session.log);
+            };
+            connection.open();
+        }
+        ;
+
+        function doneLoading() {
+            $('#myPleaseWait').modal('hide');
+            clearTimeout(loadFilesTimer);
+        }
+    </script>
+
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">ME-Me&szlig;systeme GmbH</a>
+        </div>
+        <div>
+            <ul class="nav navbar-nav">
+                <li><a href="index.html">Messung</a></li>
+                <li><a href="config.html">Konfiguration</a></li>
+                <li class="active"><a href="#">Messungen</a></li>
+                <li><a href="#">Log</a></li>
+                <!-- <li><a id="worker"><img src="images/ajax-loader_rechteck.gif" alt="loader_gif"></a></li> -->
+            </ul>
+        </div>
+    </div>
+</nav>
+<!-- Loading Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="myPleaseWait" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-time">
+                    </span> Konfiguration wird geladen...
+                </h4>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-info
+                    progress-bar-striped active"
+                         style="width: 100%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Loading Modal ends Here -->
+<!-- deleteFile Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="deleteFileDialoge" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-question-sign">
+                    </span> L&ouml;schen einer CSV-Datei
+                </h4>
+            </div>
+            <div class="modal-body">
+                <dl>
+                    <dt>Wollen Sie wirklich folgende Datei L&ouml;schen?</dt>
+                    <dd id="modalDeleteFile_filename">-</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger"
+                        onclick="deleteCSVFile($('#modalDeleteFile_filename').html()); $('#deleteFileDialoge').modal('hide');">
+                    Ja, L&ouml;schen
+                </button>
+                <button type="button" class="btn btn-success" onclick="$('#deleteFileDialoge').modal('hide');">Nein,
+                    Abbruch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- deleteFile Modal ends Here -->
+<div class="container">
+    <div class="well well-sm">Messdaten</div>
+    <div class="row">
+        <div class="col-sm-5 box">
+            <table class="table table-condensed table-hover">
+                <thead>
+                <tr>
+                    <th>Datei</th>
+                    <th>Ansehen</th>
+                    <th>Download</th>
+                    <th>L&ouml;schen</th>
+                </tr>
+                </thead>
+                <tbody id="filesTable">
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="panel panel-primary">
+        <div class="panel-heading">Debug
+            <div id="event-cnt" style="float:right;">-</div>
+        </div>
+        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
+    </div>
+</div>
+</div>
+</div>
+</body>
+</html>

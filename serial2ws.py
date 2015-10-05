@@ -53,9 +53,18 @@ logger = logging.getLogger(__name__)
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # formatter = logging.Formatter('[%(levelname)s] %(message)s [%(module)s %(funcName)s %(lineno)d]')
 # logger.setFormatter(formatter)
+
+
+# config
+maxCacheMessCount = 20
+
+
 class GSV_6Protocol(protocol.Protocol):
     inDataBuffer = {}
     trace = False
+
+    def connectionLost(self, reason):
+        self.session.lostSerialConnection(reason.getErrorMessage())
 
     def __init__(self, session, frameQueue, anfrageQueue, debug=False):
         self.debug = debug
@@ -67,10 +76,10 @@ class GSV_6Protocol(protocol.Protocol):
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
         # logger.debug('[' + __name__ + '] serial data received.')
-        print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
+        # print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
 
         self.checkForCompleteFrame()
-        print("get DATA")
+        # print("get DATA")
 
     def checkForCompleteFrame(self, recursion=-1):
         state = 0
@@ -255,13 +264,50 @@ class GSV_6Protocol(protocol.Protocol):
         self.transport.write(data)
 
 
+import os.path
+import csv
+import threading
+
+
+class CSVwriter(threading.Thread):
+    def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, path='./messungen/', debug=False):
+        threading.Thread.__init__(self)
+        self.startTimeStampStr = startTimeStampStr
+        self.path = path
+        self.filenName = self.path + self.startTimeStampStr + '.csv'
+        self.dictListOfMessungen = dictListOfMessungen
+        self.csvList_lock = csvList_lock
+        self.debug = debug
+
+    def run(self):
+        if not os.path.exists(self.filenName):
+            self.writeHeader = True
+        else:
+            self.writeHeader = False
+
+        with open(self.filenName, 'ab') as csvfile:
+            fieldnames = ['timestamp', 'channel0', 'channel1', 'channel2', 'channel3', 'channel4', 'channel5']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
+
+            if self.writeHeader:
+                writer.writeheader()
+            self.csvList_lock.acquire()
+            writer.writerows(self.dictListOfMessungen)
+            del self.dictListOfMessungen[:]
+            self.csvList_lock.release()
+
+
 class MessFrameHandler():
     def __init__(self, session, gsv_lib, eventHandler):
         self.session = session
         self.gsv_lib = gsv_lib
         self.eventHandler = eventHandler
+        self.messCounter = 0
+        self.startTimeStampStr = ''
+        self.hasTOWriteCSV = False
 
     def computeFrame(self, frame):
+        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         payload = bytearray(frame.getPayload())
         values = self.gsv_lib.convertToFloat(payload)
 
@@ -279,8 +325,32 @@ class MessFrameHandler():
             sixAchisError = True
         else:
             sixAchisError = False
+
+        if self.hasTOWriteCSV:
+            # handle CSVwrting
+            self.messCounter += 1
+            # add data here
+            self.session.messCSVDictList_lock.acquire()
+
+            self.session.messCSVDictList.append(
+                {'timestamp': timestamp, 'channel0': values[0], 'channel1': values[1], 'channel2': values[2],
+                 'channel3': values[3], 'channel4': values[4], 'channel5': values[5]})
+            self.session.messCSVDictList_lock.release()
+            if (self.messCounter >= maxCacheMessCount):
+                self.messCounter = 0
+                # semaphore lock?
+                self.writeCSVdataNow()
+
         # publish WAMP event to all subscribers on topic
         self.session.publish(u"de.me_systeme.gsv.onMesswertReceived", [payload, inputOverload, sixAchisError])
+
+    def setStartTimeStamp(self, startTimeStampStr, hasToWriteCSV):
+        self.startTimeStampStr = startTimeStampStr
+        self.hasTOWriteCSV = hasToWriteCSV
+
+    def writeCSVdataNow(self, startTimeStampStr=''):
+        CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock,
+                  self.session.config.extra['csvpath']).run()
 
 
 class AntwortFrameHandler():
@@ -404,12 +474,17 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
 
+from datetime import datetime
+
+import glob
+import os
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
-    def __init__(self, session, gsv_lib, antwortQueue):
+    def __init__(self, session, gsv_lib, antwortQueue, eventHandler):
         self.session = session
         self.gsv_lib = gsv_lib
         self.antwortQueue = antwortQueue
+        self.eventHandler = eventHandler
         # start register
         self.regCalls()
 
@@ -435,14 +510,18 @@ class GSVeventHandler():
         self.session.register(self.writeDataRate, u"de.me_systeme.gsv.WriteDataRate")
         self.session.register(self.writeSaveAll, u"de.me_systeme.gsv.WriteSaveAll")
         self.session.register(self.writeSetZero, u"de.me_systeme.gsv.WriteSetZero")
+        self.session.register(self.getCSVFileList, u"de.me_systeme.gsv.getCSVFileList")
+        self.session.register(self.deleteCSVFile, u"de.me_systeme.gsv.deleteCSVFile")
 
-    def startStopTransmisson(self, start, **kwargs):
+    def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
             print('Start Transmission. Call from ' + str(kwargs['details'].caller))
             data = self.gsv_lib.buildStartTransmission()
+            self.eventHandler.setStartTimeStampStr(datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
         else:
             print('Stops Transmission. Call from ' + str(kwargs['details'].caller))
             data = self.gsv_lib.buildStopTransmission()
+            self.eventHandler.writeCSVdata()
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
     def getUnitText(self):
@@ -507,6 +586,31 @@ class GSVeventHandler():
     def writeSetZero(self, channelNo):
         self.session.writeAntwort(self.gsv_lib.buildWriteSetZero(channelNo), 'rcvWriteSetZero', channelNo)
 
+    def getCSVFileList(self):
+        # in this function, we write nothing to the GSV-modul
+        # source: http://stackoverflow.com/questions/168409/how-do-you-get-a-directory-listing-sorted-by-creation-date-in-python
+        search_dir = self.session.config.extra['csvpath']
+        files = filter(os.path.isfile, glob.glob(search_dir + "*.csv"))
+        files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        print files
+        return [search_dir,files]
+
+    def deleteCSVFile(self, fileName):
+        filepath = self.session.config.extra['csvpath'] + fileName
+        if(os.path.isfile(filepath)):
+            try:
+                os.remove(filepath)
+            except Exception, e:
+                msg = '[File I/O error] ' + fileName + ': ' + str(e)
+                self.session.addError(msg)
+                print(msg)
+                return False
+            else:
+                return True
+        else:
+            print("Datei konnte nicht gefunden werden (gelöscht werden")
+            return False
+
     # this fuction didnt write to the modul, its resets the antwort Queue
     def resetAntwortQueue(self):
         try:
@@ -521,13 +625,14 @@ class GSVeventHandler():
             return False
 
 
-import threading
 from gsv6_seriall_lib import GSV6_seriall_lib
 
 
 class FrameRouter(threading.Thread):
     # lock for running variale, nötig?
     lock = threading.Lock()
+    startTimeStampStr = ''
+    hasToWriteCSVdata = False
 
     def __init__(self, session, frameQueue, antwortQueue, debug=False):
         threading.Thread.__init__(self)
@@ -539,7 +644,7 @@ class FrameRouter(threading.Thread):
 
         # GSV-6CPU Lib
         self.gsv6 = GSV6_seriall_lib()
-        self.eventHandler = GSVeventHandler(self.session, self.gsv6, antwortQueue)
+        self.eventHandler = GSVeventHandler(self.session, self.gsv6, antwortQueue, self)
         self.messFrameEventHandler = MessFrameHandler(self.session, self.gsv6, self.eventHandler)
         self.antwortFrameEventHandler = AntwortFrameHandler(self.session, self.gsv6, self.eventHandler,
                                                             self.antwortQueue, )
@@ -564,7 +669,7 @@ class FrameRouter(threading.Thread):
             else:
                 if self.debug:
                     pass
-                    print('[router] ' + newFrame.toString())
+                    # print('[router] ' + newFrame.toString())
                 if newFrame.getFrameType() == 0:
                     # MesswertFrame
                     self.messFrameEventHandler.computeFrame(newFrame)
@@ -581,6 +686,18 @@ class FrameRouter(threading.Thread):
         FrameRouter.lock.acquire()
         self.running = False
         FrameRouter.lock.release()
+
+        # TODO: evtl reduanter aufruf! überprüfen!
+        self.writeCSVdata()
+
+    def setStartTimeStampStr(self, str, hasToWriteCSV):
+        self.startTimeStampStr = str
+        self.hasToWriteCSVdata = hasToWriteCSV
+        self.messFrameEventHandler.setStartTimeStamp(str, hasToWriteCSV)
+
+    def writeCSVdata(self):
+        if (self.hasToWriteCSVdata):
+            self.messFrameEventHandler.writeCSVdataNow(self.startTimeStampStr)
 
 
 class McuComponent(ApplicationSession):
@@ -600,8 +717,14 @@ class McuComponent(ApplicationSession):
     # this deque holds the errors as string
     errorQueue = deque([], 20)
 
+    # hier werden die messungen gespeichert
+    messCSVDictList = []
+    messCSVDictList_lock = threading.Lock()
+
     # to ensure that we have a thead-safe write function, we need that look
     serialWrite_lock = threading.Lock()
+
+    isSerialConnected = False
     '''
     def __init__(self):
         # x =  deque([])
@@ -623,6 +746,7 @@ class McuComponent(ApplicationSession):
 
         # first of all, register the getErrors Function
         yield self.register(self.getErrors, u"de.me_systeme.gsv.getErrors")
+        yield self.register(self.getIsSerialConnected, u"de.me_systeme.gsv.getIsSerialConnected")
 
         # create an router object/thread
         self.router = FrameRouter(self, self.frameInBuffer, self.antwortQueue, debug)
@@ -634,6 +758,7 @@ class McuComponent(ApplicationSession):
         print('About to open serial port {0} [{1} baud] ..'.format(port, baudrate))
         try:
             self.serialPort = SerialPort(serialProtocol, port, reactor, baudrate=baudrate)
+            self.isSerialConnected = True
 
             # data = self.gsv_lib.buildStopTransmission()
             # self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
@@ -691,6 +816,16 @@ class McuComponent(ApplicationSession):
     def publish_test(self, topic, args):
         self.publish(topic, args)
 
+    def getIsSerialConnected(self):
+        return self.isSerialConnected
+
+    def lostSerialConnection(self, errorMessage):
+        print("Lost SerialConnection: " + errorMessage)
+        self.addError("[serialConnection:LOST] " + errorMessage)
+        # TODO: reconnect?
+        self.isSerialConnected = False
+        self.publish(u"de.me_systeme.gsv.serialConnectionLost")
+
 
 if __name__ == '__main__':
 
@@ -721,7 +856,16 @@ if __name__ == '__main__':
     parser.add_argument("--router", type=str, default=None,
                         help='If given, connect to this WAMP router. Else run an embedded router on 8080.')
 
+    parser.add_argument("--csvpath", type=str, default='./messungen/',
+                        help='If given, the CSV-Files will be saved there.')
+
     args = parser.parse_args()
+
+    if args.csvpath[-1] != '/':
+        args.csvpath += '/'
+    if not os.path.exists(args.csvpath):
+        print('invailed CSV Path')
+        exit()
 
     try:
         # on Windows, we need port to be an integer
@@ -762,7 +906,8 @@ if __name__ == '__main__':
     router = args.router or u'ws://127.0.0.1:8080/ws/'
 
     runner = ApplicationRunner(router, u"me_gsv6",
-                               extra={'port': args.port, 'baudrate': args.baudrate, 'debug': True})
+                               extra={'port': args.port, 'baudrate': args.baudrate, 'csvpath': args.csvpath,
+                                      'debug': True})
     # extra={'port': args.port, 'baudrate': args.baudrate, 'debug': args.debug})
 
     # start the component and the Twisted reactor ..
