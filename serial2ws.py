@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 
 # config
-maxCacheMessCount = 20
+maxCacheMessCount = 1000
 
 
 class GSV_6Protocol(protocol.Protocol):

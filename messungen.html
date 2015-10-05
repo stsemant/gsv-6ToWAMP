@@ -121,7 +121,9 @@
                     data[0] = new Array();
                     data[1] = res[1];
 
-                    if (data.length <= 0) {
+                    if (data[1].length <= 0) {
+                        $('#filesRow').hide();
+                        $('#noFilesText').show();
                         return;
                     }
 
@@ -227,7 +229,9 @@
 <!-- deleteFile Modal ends Here -->
 <div class="container">
     <div class="well well-sm">Messdaten</div>
-    <div class="row">
+    <h4 id="noFilesText" hidden>keine CSV-Datein vorhanden.</h4>
+
+    <div id="filesRow" class="row">
         <div class="col-sm-5 box">
             <table class="table table-condensed table-hover">
                 <thead>

@@ -80,7 +80,7 @@
         }
 
         function startStopTransmission(turnOn) {
-            session.call('de.me_systeme.gsv.startStopTransmission', [turnOn,true], {}, {disclose_me: true});
+            session.call('de.me_systeme.gsv.startStopTransmission', [turnOn, $('#recordCheckbox').is(':checked')], {}, {disclose_me: true});
             //session.call("de.me_systeme.gsv.startStopTransmission", [turnOn]);
             if (turnOn) {
                 smoothie.start();
@@ -281,7 +281,7 @@
 
         window.onload = function () {
             smoothie = new SmoothieChart({
-                labels:{fontSize:13},
+                labels: {fontSize: 13},
                 grid: {
                     strokeStyle: 'rgb(125, 0, 0)',
                     fillStyle: 'rgb(60, 0, 0)',
@@ -450,6 +450,9 @@
     <button type="button" class="btn btn-danger" onclick="startStopTransmission(false)">Stop</button>
     <button id="btn-setZero0" type="button" class="btn btn-warning" onclick="$('#modalTaraAll').modal('show');">Tara all
     </button>
+    <div class="checkbox">
+        <label><input id="recordCheckbox" type="checkbox" value="" checked>Messung aufzeichen</label>
+    </div>
 
     <h2>Messwerte</h2>
 
