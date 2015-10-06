@@ -307,7 +307,7 @@ class MessFrameHandler():
         self.hasTOWriteCSV = False
 
     def computeFrame(self, frame):
-        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         payload = bytearray(frame.getPayload())
         values = self.gsv_lib.convertToFloat(payload)
 
@@ -473,7 +473,6 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onWriteSetZero",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
-
 from datetime import datetime
 
 import glob
@@ -517,7 +516,7 @@ class GSVeventHandler():
         if start:
             print('Start Transmission. Call from ' + str(kwargs['details'].caller))
             data = self.gsv_lib.buildStartTransmission()
-            self.eventHandler.setStartTimeStampStr(datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
+            self.eventHandler.setStartTimeStampStr(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
         else:
             print('Stops Transmission. Call from ' + str(kwargs['details'].caller))
             data = self.gsv_lib.buildStopTransmission()
@@ -798,6 +797,7 @@ class McuComponent(ApplicationSession):
         finally:
             self.serialWrite_lock.release()
 
+    '''
     def write(self, data):
         # okay this function have to be atomic
         # we protect it with a lock!
@@ -812,7 +812,7 @@ class McuComponent(ApplicationSession):
                 print('[MyComp] serialport not openend')
         finally:
             self.serialWrite_lock.release()
-
+    '''
     def publish_test(self, topic, args):
         self.publish(topic, args)
 

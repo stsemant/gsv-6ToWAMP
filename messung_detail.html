@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>GSV-6CPU | ME-Me&szlig;systeme GmbH</title>
+    <link rel="shortcut icon" href="images/favicon.ico"/>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/me_messsysteme.css" rel="stylesheet">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery.min.1.11.3.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/autobahn.min.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/modules/data.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+    <script>
+
+        // the WAMP session we'll be using
+        //
+        var session = null;
+
+        var loadTimeOut = 5000;
+        var loadFilesTimer = null;
+
+        var chart = null;
+
+        var debug_div = null;
+
+        function onLoadFilesError() {
+            alert("fehler");
+        }
+
+        function onReceiveError(args) {
+            //eventCnt += 1;
+            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
+        }
+
+        function parse(val) {
+            /*  this function is from:
+             http://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript
+             */
+            //var result = "Not found",
+            var result = null,
+                    tmp = [];
+            location.search
+                //.replace ( "?", "" )
+                // this is better, there might be a question mark inside
+                    .substr(1)
+                    .split("&")
+                    .forEach(function (item) {
+                        tmp = item.split("=");
+                        if (tmp[0] === val) result = decodeURIComponent(tmp[1]);
+                    });
+            return result;
+        }
+
+        window.onload = function () {
+            // the URL of the WAMP Router (e.g. Crossbar.io)
+            //
+            var wsuri;
+            if (document.location.origin == "file://") {
+                wsuri = "ws://localhost:8080/ws";
+            } else {
+                wsuri = "ws://" + document.location.hostname + ":8080/ws";
+            }
+
+            // connect to WAMP server
+            //
+            var connection = new autobahn.Connection({
+                url: wsuri,
+                realm: 'me_gsv6'
+            });
+
+            connection.onopen = function (new_session) {
+                console.log("connected to " + wsuri);
+
+                session = new_session;
+
+                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
+
+                debug_div = document.getElementById('debug_out');
+
+                // try to get all cached informations and then get missing informations
+
+                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
+                    var log_section = document.getElementById('debug_out');
+                    res.forEach(function (entry) {
+                        //console.log(entry);
+                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
+                    });
+                }, session.log);
+            };
+            connection.open();
+            var reggie = /(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/;
+            var dateArray = reggie.exec(parse('file'));
+            var chartTitle = 'Messung gestartet am ' + dateArray[3] + '.' + dateArray[2] + '.' + dateArray[1] + ' um ' + dateArray[4] + ':' + dateArray[5] + ':' + dateArray[6] + ' Uhr';
+
+            $.get('messungen/' + parse('file'), function (csv) {
+                //console.log(csv);
+                //$('#chartContainer').highcharts({
+                chart = new Highcharts.Chart({
+                    chart: {
+                        renderTo: 'chartContainer',
+                        events: {
+                            load: function (event) {
+                                //alert('Chart loaded');
+                                this.series.forEach(function (d, i) {
+                                    d.hide();
+                                    var nameAndUnit = d.name.split('[');
+                                    if (nameAndUnit.length <= 1) {
+                                        d.id = "undefined";
+                                    } else {
+                                        d.update({name: nameAndUnit[0]}, false);
+                                        // d.name = nameAndUnit[0];
+                                        d.id = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1)
+                                    }
+                                })
+                            }
+                        }
+                    },
+                    data: {
+                        csv: csv
+                    },
+                    yAxis: {
+                        title: {
+                            text: "[Einheit]"
+                        }
+                    },
+                    plotOptions: {
+                        series: {
+                            marker: {
+                                enabled: false
+                            },
+                            events: {
+                                show: function (e) {
+                                    chart.series.forEach(function (d, i) {
+                                        if (d.name != e.currentTarget.name) {
+                                            d.hide();
+                                        }
+                                    })
+                                    chart.yAxis[0].update({
+                                        title: {
+                                            text: e.currentTarget.id
+                                        }
+                                    }, true);
+                                }
+                            }
+                        }
+                    },
+                    title: {
+                        text: 'Messung'
+                    },
+                    subtitle: {
+                        text: chartTitle
+                    }
+                });
+                chart.series[0].show();
+            });
+        };
+    </script>
+
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">ME-Me&szlig;systeme GmbH</a>
+        </div>
+        <div>
+            <ul class="nav navbar-nav">
+                <li><a href="index.html">Messung</a></li>
+                <li><a href="config.html">Konfiguration</a></li>
+                <li class="active"><a href="#">Zur&uuml;ck zu den Messungen</a></li>
+                <li><a href="#">Log</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="container">
+    <div class="well well-sm">Messdaten</div>
+
+    <div id="chartContainer" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+
+    <div class="panel panel-primary">
+        <div class="panel-heading">Debug
+            <div id="event-cnt" style="float:right;">-</div>
+        </div>
+        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
+    </div>
+</div>
+</div>
+</div>
+</body>
+</html>
