@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 # config
 maxCacheMessCount = 1000
 
-
+import datetime
 class GSV_6Protocol(protocol.Protocol):
     inDataBuffer = {}
     trace = False
@@ -252,13 +252,6 @@ class GSV_6Protocol(protocol.Protocol):
         else:
             if self.trace:
                 print('[rec] no more rec')
-
-    def controlLed(self, str):
-        """
-        This method is exported as RPC and can be called by connected clients
-        """
-        print('[from Website] ' + str)
-        # self.transport.write(payload)
 
     def write(self, data):
         self.transport.write(data)
@@ -738,7 +731,7 @@ class FrameRouter(threading.Thread):
         if (self.hasToWriteCSVdata):
             self.messFrameEventHandler.writeCSVdataNow(self.startTimeStampStr)
 
-
+from time import sleep
 class McuComponent(ApplicationSession):
     """
     RPi WAMP application component.
@@ -764,6 +757,11 @@ class McuComponent(ApplicationSession):
     serialWrite_lock = threading.Lock()
 
     isSerialConnected = False
+
+    # GSV-6CPU RX bufferoverflow prevention
+    actTime = None
+    lastTime = datetime.now()
+
     '''
     def __init__(self):
         # x =  deque([])
@@ -806,7 +804,7 @@ class McuComponent(ApplicationSession):
             print('Could not open serial port: {0}'.format(e))
             self.leave()
         else:
-            yield self.register(serialProtocol.controlLed, u"com.myapp.mcu.control_led")
+            pass
 
     def __exit__(selfself):
         print('Exit.')
@@ -821,10 +819,22 @@ class McuComponent(ApplicationSession):
         self.errorQueue.append(errorString)
         self.publish(u"de.me_systeme.gsv.onError", errorString)
 
+    sendCounter = 0
     def writeAntwort(self, data, functionName, args=None):
         # okay this function have to be atomic
         # we protect it with a lock!
         self.serialWrite_lock.acquire()
+        self.actTime = datetime.now()
+        diffTime = self.actTime - self.lastTime
+        if diffTime.days<=0 and diffTime.seconds<=2:
+            if(diffTime.seconds==0 and diffTime.microseconds<2000):
+                self.sendCounter +=1
+                if self.sendCounter>=10:
+                    self.sendCounter=0
+                    print("serialWait, for GSV-6PU RX Buffer overflow")
+                    sleep(0.2) # Time in seconds
+            else:
+                self.sendCounter=0
         try:
             self.antwortQueue.put_nowait({functionName: args})
             self.serialPort.write(str(data))
@@ -835,6 +845,7 @@ class McuComponent(ApplicationSession):
             if self.debug:
                 print('[MyComp] serialport not openend')
         finally:
+            self.lastTime = datetime.now()
             self.serialWrite_lock.release()
 
     '''
