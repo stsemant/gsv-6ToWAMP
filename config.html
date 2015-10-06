@@ -27,14 +27,8 @@
         var modul_config = new Array();
 
         // die nummer soll spaeter durch eine aufzaehlung im array ersetzt werden, aber erst wenn das config caching des gsv programmiert ist
-        var modul_config_element_count_for_complete_load = 35;
+        var modul_config_element_count_for_complete_load = 34;
         var setFunctionsByID = {
-            'ReadZero1': 'WriteZero1',
-            'ReadZero2': 'WriteZero2',
-            'ReadZero3': 'WriteZero3',
-            'ReadZero4': 'WriteZero4',
-            'ReadZero5': 'WriteZero5',
-            'ReadZero6': 'WriteZero6',
             'ReadUserScale1': 'WriteUserScale1',
             'ReadUserScale2': 'WriteUserScale2',
             'ReadUserScale3': 'WriteUserScale3',
@@ -70,7 +64,7 @@
             //Array.prototype.push.apply(modul_config, args);
             //modul_config = $.extend({}, modul_config, args);
             //$.merge(modul_config,args);
-
+            //console.log(Object.keys(modul_config).length);
             modul_config = Object.extend(modul_config, args);
             if (Object.keys(modul_config).length >= modul_config_element_count_for_complete_load) {
                 // hide loading modal
@@ -147,62 +141,17 @@
             check_isConfig_complete(args);
         }
 
-        function onGetReadZero(args) {
+        function onGetReadInputType(args) {
             args = args[0];
             if (args[0] != 0) {
-                alert('fehler');
-                setInputError('ReadZero' + args[1])
+                console.log("Error rcv InputType");
                 return
             }
-            var inputID = 'ReadZero' + args[1];
-            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
-            setInputSuccess(inputID);
+            $('#' + 'ReadInputType' + args[1]).html((parseFloat(args[2])/100).toFixed(2) + ' mV/V');
 
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
             var data = {};
-            data['ReadZero' + args[1]] = parseFloat(args[2]);
+            data['ReadInputType' + args[1]] = parseFloat(args[2])/100;
             check_isConfig_complete(data);
-        }
-        function WriteZero1() {
-            var scale = parseFloat($('#ReadZero1_value').val());
-            session.call("de.me_systeme.gsv.WriteZero", [1, scale]);
-        }
-        function WriteZero2() {
-            var scale = parseFloat($('#ReadZero2_value').val());
-            session.call("de.me_systeme.gsv.WriteZero", [2, scale]);
-        }
-        function WriteZero3() {
-            var scale = parseFloat($('#ReadZero3_value').val());
-            session.call("de.me_systeme.gsv.WriteZero", [3, scale]);
-        }
-        function WriteZero4() {
-            var scale = parseFloat($('#ReadZero4_value').val());
-            session.call("de.me_systeme.gsv.WriteZero", [4, scale]);
-        }
-        function WriteZero5() {
-            var scale = parseFloat($('#ReadZero5_value').val());
-            session.call("de.me_systeme.gsv.WriteZero", [5, scale]);
-        }
-        function WriteZero6() {
-            var scale = parseFloat($('#ReadZero6_value').val());
-            session.call("de.me_systeme.gsv.WriteZero", [6, scale]);
-        }
-        function onWriteZero(args) {
-            args = args[0];
-            if (args[0] != 0) {
-                //alert("cant set Zero");
-                var error = '';
-                if (args[0] == 84) {
-                    error = 'Der Absolutwert des Parameters ist zu groß';
-                } else if (args[0] == 85) {
-                    error = 'Der Absolutwert des Parameters ist zu klein';
-                } else {
-                    error = 'Parameter nicht akzeptiert';
-                }
-                setInputError('ReadZero' + args[1], error);
-                return
-            }
-            session.call("de.me_systeme.gsv.getReadZero", [args[1]]);
         }
 
         function onGetReadUserScale(args) {
@@ -492,8 +441,6 @@
 
                 session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
-                session.subscribe("de.me_systeme.gsv.onGetReadZero", onGetReadZero);
-                session.subscribe("de.me_systeme.gsv.onWriteZero", onWriteZero);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
                 session.subscribe("de.me_systeme.gsv.onWriteUserScale", onWriteUserScale);
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
@@ -506,6 +453,7 @@
                 session.subscribe("de.me_systeme.gsv.onGetFirmwareVersion", onGetFirmwareVersion);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserOffset", onGetReadUserOffset);
                 session.subscribe("de.me_systeme.gsv.onWriteUserOffset", onWriteUserOffset);
+                session.subscribe("de.me_systeme.gsv.onGetReadInputType", onGetReadInputType);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -518,12 +466,6 @@
                         log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
                     });
                 }, session.log);
-                session.call("de.me_systeme.gsv.getReadZero", [1]);
-                session.call("de.me_systeme.gsv.getReadZero", [2]);
-                session.call("de.me_systeme.gsv.getReadZero", [3]);
-                session.call("de.me_systeme.gsv.getReadZero", [4]);
-                session.call("de.me_systeme.gsv.getReadZero", [5]);
-                session.call("de.me_systeme.gsv.getReadZero", [6]);
                 session.call("de.me_systeme.gsv.getGetIntetface");
                 session.call("de.me_systeme.gsv.getReadUserOffset", [1]);
                 session.call("de.me_systeme.gsv.getReadUserOffset", [2]);
@@ -547,6 +489,12 @@
                 session.call("de.me_systeme.gsv.getDeviceHours");
                 session.call("de.me_systeme.gsv.getDataRate");
                 session.call("de.me_systeme.gsv.getFirmwareVersion");
+                session.call("de.me_systeme.gsv.getReadInputType", [1]);
+                session.call("de.me_systeme.gsv.getReadInputType", [2]);
+                session.call("de.me_systeme.gsv.getReadInputType", [3]);
+                session.call("de.me_systeme.gsv.getReadInputType", [4]);
+                session.call("de.me_systeme.gsv.getReadInputType", [5]);
+                session.call("de.me_systeme.gsv.getReadInputType", [6]);
             };
             connection.open();
 
@@ -773,91 +721,6 @@
         <div class="panel-heading">Zero, Scaling, Einheiten</div>
         <div class="panel-body">
             <div class="row">
-                <div class="col-sm-3">
-                    <table class="table">
-                        <caption>Zero</caption>
-                        <thead>
-                        <tr>
-                            <th>Kanal</th>
-                            <th>Wert</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>
-                                <div id="ReadZero1" class="form-group has-success has-feedback">
-                                    <input id="ReadZero1_value" data-id="ReadZero1" type="number" step="0.01" min="-400"
-                                           max="400"
-                                           class="form-control modul_settings">
-                                    <span id="ReadZero1_glyphicon"
-                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>
-                                <div id="ReadZero2" class="form-group has-success has-feedback">
-                                    <input id="ReadZero2_value" data-id="ReadZero2" type="number" step="0.01" min="-400"
-                                           max="400"
-                                           class="form-control modul_settings">
-                                    <span id="ReadZero2_glyphicon"
-                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>
-                                <div id="ReadZero3" class="form-group has-success has-feedback">
-                                    <input id="ReadZero3_value" data-id="ReadZero3" type="number" step="0.01" min="-400"
-                                           max="400"
-                                           class="form-control modul_settings">
-                                    <span id="ReadZero3_glyphicon"
-                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>
-                                <div id="ReadZero4" class="form-group has-success has-feedback">
-                                    <input id="ReadZero4_value" data-id="ReadZero4" type="number" step="0.01" min="-400"
-                                           max="400"
-                                           class="form-control modul_settings">
-                                    <span id="ReadZero4_glyphicon"
-                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>5</td>
-                            <td>
-                                <div id="ReadZero5" class="form-group has-success has-feedback">
-                                    <input id="ReadZero5_value" data-id="ReadZero5" type="number" step="0.01" min="-400"
-                                           max="400"
-                                           class="form-control modul_settings">
-                                    <span id="ReadZero5_glyphicon"
-                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>6</td>
-                            <td>
-                                <div id="ReadZero6" class="form-group has-success has-feedback">
-                                    <input id="ReadZero6_value" data-id="ReadZero6" type="number" step="0.01" min="-400"
-                                           max="400"
-                                           class="form-control modul_settings">
-                                    <span id="ReadZero6_glyphicon"
-                                          class="glyphicon glyphicon-ok form-control-feedback"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
                 <div class="col-sm-3">
                     <table class="table">
                         <caption>UserOffset</caption>
@@ -1380,6 +1243,43 @@
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
                                 </div>
                             </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-sm-3">
+                    <table class="table">
+                        <caption>InputType</caption>
+                        <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>Wert</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td id="ReadInputType1">-</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td id="ReadInputType2">-</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td id="ReadInputType3">-</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td id="ReadInputType4">-</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td id="ReadInputType5">-</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td id="ReadInputType6">-</td>
                         </tr>
                         </tbody>
                     </table>

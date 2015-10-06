@@ -337,3 +337,6 @@ class GSV6_seriall_lib:
         data = bytearray([channelNo])
         data.extend(userOffset)
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteUserOffset'), data)
+
+    def buildReadInputType(self, channelNo):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetInputType'), [channelNo,0x00])

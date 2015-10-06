@@ -482,7 +482,6 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
             
     def rcvGetReadUserOffset(self, frame, channelNo):
-        print("jetzt")
         values = self.gsv_lib.convertToFloat(frame.getPayload())
         self.session.publish(u"de.me_systeme.gsv.onGetReadUserOffset",
                              [frame.getAntwortErrorCode(), channelNo, values[0]])
@@ -490,6 +489,11 @@ class AntwortFrameHandler():
     def rcvWriteUserOffset(self, frame, channelNo):
         self.session.publish(u"de.me_systeme.gsv.onWriteUserOffset",
                              [frame.getAntwortErrorCode(), channelNo])
+
+    def rcvGetReadInputType(self, frame, channelNo):
+        values = self.gsv_lib.convertToUint32_t(frame.getPayload())
+        self.session.publish(u"de.me_systeme.gsv.onGetReadInputType",
+                             [frame.getAntwortErrorCode(), channelNo, values[0]])
 
 from datetime import datetime
 
@@ -532,6 +536,7 @@ class GSVeventHandler():
         self.session.register(self.getFirmwareVersion, u"de.me_systeme.gsv.getFirmwareVersion")
         self.session.register(self.getReadUserOffset, u"de.me_systeme.gsv.getReadUserOffset")
         self.session.register(self.writeUserOffset, u"de.me_systeme.gsv.WriteUserOffset")
+        self.session.register(self.getReadInputType, u"de.me_systeme.gsv.getReadInputType")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -617,6 +622,8 @@ class GSVeventHandler():
         userOffset = self.gsv_lib.convertFloatsToBytes([userOffsetValue])
         self.session.writeAntwort(self.gsv_lib.buildWriteUserOffset(channelNo, userOffset), 'rcvWriteUserOffset',
                                   channelNo)
+    def getReadInputType(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildReadInputType(channelNo), 'rcvGetReadInputType', channelNo)
 
     def getCSVFileList(self):
         # in this function, we write nothing to the GSV-modul
