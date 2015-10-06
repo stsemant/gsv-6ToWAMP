@@ -329,3 +329,11 @@ class GSV6_seriall_lib:
 
     def buildgetFirmwareVersion(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetFirmwareVersion'))
+    
+    def buildReadUserOffset(self, channelNo):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('ReadUserOffset'), [channelNo])
+
+    def buildWriteUserOffset(self, channelNo, userOffset):
+        data = bytearray([channelNo])
+        data.extend(userOffset)
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteUserOffset'), data)

@@ -29,12 +29,6 @@
         // die nummer soll spaeter durch eine aufzaehlung im array ersetzt werden, aber erst wenn das config caching des gsv programmiert ist
         var modul_config_element_count_for_complete_load = 35;
         var setFunctionsByID = {
-            'ReadAoutScale1': 'WriteAoutScale1',
-            'ReadAoutScale2': 'WriteAoutScale2',
-            'ReadAoutScale3': 'WriteAoutScale3',
-            'ReadAoutScale4': 'WriteAoutScale4',
-            'ReadAoutScale5': 'WriteAoutScale5',
-            'ReadAoutScale6': 'WriteAoutScale6',
             'ReadZero1': 'WriteZero1',
             'ReadZero2': 'WriteZero2',
             'ReadZero3': 'WriteZero3',
@@ -47,6 +41,12 @@
             'ReadUserScale4': 'WriteUserScale4',
             'ReadUserScale5': 'WriteUserScale5',
             'ReadUserScale6': 'WriteUserScale6',
+            'ReadUserOffset1': 'WriteUserOffset1',
+            'ReadUserOffset2': 'WriteUserOffset2',
+            'ReadUserOffset3': 'WriteUserOffset3',
+            'ReadUserOffset4': 'WriteUserOffset4',
+            'ReadUserOffset5': 'WriteUserOffset5',
+            'ReadUserOffset6': 'WriteUserOffset6',
             'DataRate': 'WriteDataRate'
         };
         var doneTypingInterval = 250;
@@ -145,56 +145,6 @@
 
             // push config data
             check_isConfig_complete(args);
-        }
-
-        function onGetReadAoutScale(args) {
-            args = args[0];
-            if (args[0] != 0) {
-                //error
-                return
-            }
-            var inputID = 'ReadAoutScale' + args[1];
-            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
-            setInputSuccess(inputID);
-
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
-            var data = {};
-            data['ReadAoutScale' + args[1]] = parseFloat(args[2]);
-            check_isConfig_complete(data);
-        }
-        function WriteAoutScale1() {
-            var scale = parseFloat($('#ReadAoutScale1_value').val());
-            session.call("de.me_systeme.gsv.WriteAoutScale", [1, scale]);
-        }
-        function WriteAoutScale2() {
-            var scale = parseFloat($('#ReadAoutScale2_value').val());
-            session.call("de.me_systeme.gsv.WriteAoutScale", [2, scale]);
-        }
-        function WriteAoutScale3() {
-            var scale = parseFloat($('#ReadAoutScale3_value').val());
-            session.call("de.me_systeme.gsv.WriteAoutScale", [3, scale]);
-        }
-        function WriteAoutScale4() {
-            var scale = parseFloat($('#ReadAoutScale4_value').val());
-            session.call("de.me_systeme.gsv.WriteAoutScale", [4, scale]);
-        }
-        function WriteAoutScale5() {
-            var scale = parseFloat($('#ReadAoutScale5_value').val());
-            session.call("de.me_systeme.gsv.WriteAoutScale", [5, scale]);
-        }
-        function WriteAoutScale6() {
-            var scale = parseFloat($('#ReadAoutScale6_value').val());
-            session.call("de.me_systeme.gsv.WriteAoutScale", [6, scale]);
-        }
-        function onWriteAoutScale(args) {
-            args = args[0];
-            if (args[0] != 0) {
-                alert("cant set A out Scale");
-                setInputError('ReadAoutScale' + args[1]);
-                return
-            }
-            session.call("de.me_systeme.gsv.getReadAoutScale", [args[1]]);
-            //setInputSuccess('ReadAoutScale');
         }
 
         function onGetReadZero(args) {
@@ -313,6 +263,64 @@
             session.call("de.me_systeme.gsv.getReadUserScale", [args[1]]);
         }
 
+        function onGetReadUserOffset(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                setInputError('ReadUserOffset' + args[1], args[0])
+                return
+            }
+            var inputID = 'ReadUserOffset' + args[1];
+            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
+            setInputSuccess(inputID);
+
+            //modul_config['ReadAoutScale'][args[1]] = args[2];
+            var data = {};
+            data['ReadUserOffset' + args[1]] = parseFloat(args[2]);
+            check_isConfig_complete(data);
+        }
+        function WriteUserOffset1() {
+            var scale = parseFloat($('#ReadUserOffset1_value').val());
+            session.call("de.me_systeme.gsv.WriteUserOffset", [1, scale]);
+        }
+        function WriteUserOffset2() {
+            var scale = parseFloat($('#ReadUserOffset2_value').val());
+            session.call("de.me_systeme.gsv.WriteUserOffset", [2, scale]);
+        }
+        function WriteUserOffset3() {
+            var scale = parseFloat($('#ReadUserOffset3_value').val());
+            session.call("de.me_systeme.gsv.WriteUserOffset", [3, scale]);
+        }
+        function WriteUserOffset4() {
+            var scale = parseFloat($('#ReadUserOffset4_value').val());
+            session.call("de.me_systeme.gsv.WriteUserOffset", [4, scale]);
+        }
+        function WriteUserOffset5() {
+            var scale = parseFloat($('#ReadUserOffset5_value').val());
+            session.call("de.me_systeme.gsv.WriteUserOffset", [5, scale]);
+        }
+        function WriteUserOffset6() {
+            var scale = parseFloat($('#ReadUserOffset6_value').val());
+            session.call("de.me_systeme.gsv.WriteUserOffset", [6, scale]);
+        }
+        function onWriteUserOffset(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                //alert("cant set Zero");
+                setInputError('ReadUserOffset' + args[1]);
+                var error = '';
+                if (args[0] == 84) {
+                    error = 'Der Absolutwert des Parameters ist zu groß';
+                } else if (args[0] == 85) {
+                    error = 'Der Absolutwert des Parameters ist zu klein';
+                } else {
+                    error = 'Parameter nicht akzeptiert';
+                }
+                setInputError('ReadUserOffset' + args[1], error);
+                return
+            }
+            session.call("de.me_systeme.gsv.getReadUserOffset", [args[1]]);
+        }
+
         function onGetUnitNo(args) {
             args = args[0];
             if (args[0] != 0) {
@@ -382,11 +390,11 @@
                 check_isConfig_complete(data);
                 return
             }
-            if(!Array.isArray(args[2])){
+            if (!Array.isArray(args[2])) {
                 $('#device_fw_version').html("error");
                 return;
             }
-            var versionStr = 'Major: '+args[2][0] + '  Minor:' + args[2][1];
+            var versionStr = 'Major: ' + args[2][0] + '  Minor:' + args[2][1];
             $('#device_fw_version').html(versionStr);
 
             data['DeviceFWversion'] = versionStr;
@@ -484,8 +492,6 @@
 
                 session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
-                session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
-                session.subscribe("de.me_systeme.gsv.onWriteAoutScale", onWriteAoutScale);
                 session.subscribe("de.me_systeme.gsv.onGetReadZero", onGetReadZero);
                 session.subscribe("de.me_systeme.gsv.onWriteZero", onWriteZero);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
@@ -498,6 +504,8 @@
                 session.subscribe("de.me_systeme.gsv.onWriteDataRate", onWriteDataRate);
                 session.subscribe("de.me_systeme.gsv.onWriteSaveAll", onWriteSaveAll);
                 session.subscribe("de.me_systeme.gsv.onGetFirmwareVersion", onGetFirmwareVersion);
+                session.subscribe("de.me_systeme.gsv.onGetReadUserOffset", onGetReadUserOffset);
+                session.subscribe("de.me_systeme.gsv.onWriteUserOffset", onWriteUserOffset);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -510,19 +518,19 @@
                         log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
                     });
                 }, session.log);
-                session.call("de.me_systeme.gsv.getGetIntetface");
-                session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [2]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [3]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [4]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [5]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [6]);
                 session.call("de.me_systeme.gsv.getReadZero", [1]);
                 session.call("de.me_systeme.gsv.getReadZero", [2]);
                 session.call("de.me_systeme.gsv.getReadZero", [3]);
                 session.call("de.me_systeme.gsv.getReadZero", [4]);
                 session.call("de.me_systeme.gsv.getReadZero", [5]);
                 session.call("de.me_systeme.gsv.getReadZero", [6]);
+                session.call("de.me_systeme.gsv.getGetIntetface");
+                session.call("de.me_systeme.gsv.getReadUserOffset", [1]);
+                session.call("de.me_systeme.gsv.getReadUserOffset", [2]);
+                session.call("de.me_systeme.gsv.getReadUserOffset", [3]);
+                session.call("de.me_systeme.gsv.getReadUserOffset", [4]);
+                session.call("de.me_systeme.gsv.getReadUserOffset", [5]);
+                session.call("de.me_systeme.gsv.getReadUserOffset", [6]);
                 session.call("de.me_systeme.gsv.getReadUserScale", [1]);
                 session.call("de.me_systeme.gsv.getReadUserScale", [2]);
                 session.call("de.me_systeme.gsv.getReadUserScale", [3]);
@@ -762,7 +770,7 @@
     <div class="well well-sm">Modul Settings</div>
 
     <div class="panel panel-default">
-        <div class="panel-heading">Zero and Scaling</div>
+        <div class="panel-heading">Zero, Scaling, Einheiten</div>
         <div class="panel-body">
             <div class="row">
                 <div class="col-sm-3">
@@ -852,7 +860,7 @@
                 </div>
                 <div class="col-sm-3">
                     <table class="table">
-                        <caption>outScale</caption>
+                        <caption>UserOffset</caption>
                         <thead>
                         <tr>
                             <th>Kanal</th>
@@ -863,12 +871,13 @@
                         <tr>
                             <td>1</td>
                             <td>
-                                <div id="ReadAoutScale1" class="form-group has-success has-feedback">
-                                    <input id="ReadAoutScale1_value" data-id="ReadAoutScale1" type="number" step="0.01"
+                                <div id="ReadUserOffset1" class="form-group has-success has-feedback">
+                                    <input id="ReadUserOffset1_value" data-id="ReadUserOffset1" type="number"
+                                           step="0.01"
                                            min="-400"
                                            max="400"
                                            class="form-control modul_settings">
-                                    <span id="ReadAoutScale1_glyphicon"
+                                    <span id="ReadUserOffset1_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
                                 </div>
                             </td>
@@ -876,12 +885,13 @@
                         <tr>
                             <td>2</td>
                             <td>
-                                <div id="ReadAoutScale2" class="form-group has-success has-feedback">
-                                    <input id="ReadAoutScale2_value" data-id="ReadAoutScale2" type="number" step="0.01"
+                                <div id="ReadUserOffset2" class="form-group has-success has-feedback">
+                                    <input id="ReadUserOffset2_value" data-id="ReadUserOffset2" type="number"
+                                           step="0.01"
                                            min="-400"
                                            max="400"
                                            class="form-control modul_settings">
-                                    <span id="ReadAoutScale2_glyphicon"
+                                    <span id="ReadUserOffset2_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
                                 </div>
                             </td>
@@ -889,12 +899,13 @@
                         <tr>
                             <td>3</td>
                             <td>
-                                <div id="ReadAoutScale3" class="form-group has-success has-feedback">
-                                    <input id="ReadAoutScale3_value" data-id="ReadAoutScale3" type="number" step="0.01"
+                                <div id="ReadUserOffset3" class="form-group has-success has-feedback">
+                                    <input id="ReadUserOffset3_value" data-id="ReadUserOffset3" type="number"
+                                           step="0.01"
                                            min="-400"
                                            max="400"
                                            class="form-control modul_settings">
-                                    <span id="ReadAoutScale3_glyphicon"
+                                    <span id="ReadUserOffset3_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
                                 </div>
                             </td>
@@ -902,12 +913,13 @@
                         <tr>
                             <td>4</td>
                             <td>
-                                <div id="ReadAoutScale4" class="form-group has-success has-feedback">
-                                    <input id="ReadAoutScale4_value" data-id="ReadAoutScale4" type="number" step="0.01"
+                                <div id="ReadUserOffset4" class="form-group has-success has-feedback">
+                                    <input id="ReadUserOffset4_value" data-id="ReadUserOffset4" type="number"
+                                           step="0.01"
                                            min="-400"
                                            max="400"
                                            class="form-control modul_settings">
-                                    <span id="ReadAoutScale4_glyphicon"
+                                    <span id="ReadUserOffset4_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
                                 </div>
                             </td>
@@ -915,12 +927,13 @@
                         <tr>
                             <td>5</td>
                             <td>
-                                <div id="ReadAoutScale5" class="form-group has-success has-feedback">
-                                    <input id="ReadAoutScale5_value" data-id="ReadAoutScale5" type="number" step="0.01"
+                                <div id="ReadUserOffset5" class="form-group has-success has-feedback">
+                                    <input id="ReadUserOffset5_value" data-id="ReadUserOffset5" type="number"
+                                           step="0.01"
                                            min="-400"
                                            max="400"
                                            class="form-control modul_settings">
-                                    <span id="ReadAoutScale5_glyphicon"
+                                    <span id="ReadUserOffset5_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
                                 </div>
                             </td>
@@ -928,12 +941,13 @@
                         <tr>
                             <td>6</td>
                             <td>
-                                <div id="ReadAoutScale6" class="form-group has-success has-feedback">
-                                    <input id="ReadAoutScale6_value" data-id="ReadAoutScale6" type="number" step="0.01"
+                                <div id="ReadUserOffset6" class="form-group has-success has-feedback">
+                                    <input id="ReadUserOffset6_value" data-id="ReadUserOffset6" type="number"
+                                           step="0.01"
                                            min="-400"
                                            max="600"
                                            class="form-control modul_settings">
-                                    <span id="ReadAoutScale6_glyphicon"
+                                    <span id="ReadUserOffset6_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback"></span>
                                 </div>
                             </td>
@@ -1033,14 +1047,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="panel panel-default">
-        <div class="panel-heading">...</div>
-        <div class="panel-body">
-            <div class="row">
                 <div class="col-sm-3">
                     <table class="table">
                         <caption>Einheiten</caption>

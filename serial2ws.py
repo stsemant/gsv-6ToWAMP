@@ -415,7 +415,6 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), channelNo])
 
     def rcvGetReadUserScale(self, frame, channelNo):
-        print("jetzt")
         values = self.gsv_lib.convertToFloat(frame.getPayload())
         self.session.publish(u"de.me_systeme.gsv.onGetReadUserScale",
                              [frame.getAntwortErrorCode(), channelNo, values[0]])
@@ -481,6 +480,16 @@ class AntwortFrameHandler():
         else:
             self.session.publish(u"de.me_systeme.gsv.onGetFirmwareVersion",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
+            
+    def rcvGetReadUserOffset(self, frame, channelNo):
+        print("jetzt")
+        values = self.gsv_lib.convertToFloat(frame.getPayload())
+        self.session.publish(u"de.me_systeme.gsv.onGetReadUserOffset",
+                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+
+    def rcvWriteUserOffset(self, frame, channelNo):
+        self.session.publish(u"de.me_systeme.gsv.onWriteUserOffset",
+                             [frame.getAntwortErrorCode(), channelNo])
 
 from datetime import datetime
 
@@ -521,6 +530,8 @@ class GSVeventHandler():
         self.session.register(self.getCSVFileList, u"de.me_systeme.gsv.getCSVFileList")
         self.session.register(self.deleteCSVFile, u"de.me_systeme.gsv.deleteCSVFile")
         self.session.register(self.getFirmwareVersion, u"de.me_systeme.gsv.getFirmwareVersion")
+        self.session.register(self.getReadUserOffset, u"de.me_systeme.gsv.getReadUserOffset")
+        self.session.register(self.writeUserOffset, u"de.me_systeme.gsv.WriteUserOffset")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -597,6 +608,15 @@ class GSVeventHandler():
 
     def getFirmwareVersion(self):
         self.session.writeAntwort(self.gsv_lib.buildgetFirmwareVersion(), 'rcvGetFirmwareVersion')
+        
+    def getReadUserOffset(self, channelNo):
+        self.session.writeAntwort(self.gsv_lib.buildReadUserOffset(channelNo), 'rcvGetReadUserOffset', channelNo)
+
+    def writeUserOffset(self, channelNo, userOffsetValue):
+        # first convert float to bytes
+        userOffset = self.gsv_lib.convertFloatsToBytes([userOffsetValue])
+        self.session.writeAntwort(self.gsv_lib.buildWriteUserOffset(channelNo, userOffset), 'rcvWriteUserOffset',
+                                  channelNo)
 
     def getCSVFileList(self):
         # in this function, we write nothing to the GSV-modul

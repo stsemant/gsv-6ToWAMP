@@ -136,14 +136,14 @@
             session.call("de.me_systeme.gsv.getUnitNo", [channelNo]);
         }
 
-        function getReadAoutScale(channelNo) {
-            session.call("de.me_systeme.gsv.getReadAoutScale", [channelNo]);
+        function getReadUserScale(channelNo) {
+            session.call("de.me_systeme.gsv.getReadUserScale", [channelNo]);
         }
 
-        function onGetReadAoutScale(args) {
+        function onGetReadUserScale(args) {
             args = args[0];
             if (args[0] != 0) {
-                console.log("onGetReadAoutScale");
+                console.log("onGetReadUserScale");
                 // TODO: fehler text einbinden
                 console.log(args[0]);
                 return;
@@ -344,7 +344,7 @@
                 //session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
-                session.subscribe("de.me_systeme.gsv.onGetReadAoutScale", onGetReadAoutScale);
+                session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
                 session.subscribe("de.me_systeme.gsv.onWriteSetZero", onWriteSetZero);
 
                 debug_div = document.getElementById('debug_out');
@@ -362,12 +362,12 @@
                 session.call("de.me_systeme.gsv.getUnitNo", [5]);
                 session.call("de.me_systeme.gsv.getUnitNo", [6]);
                 session.call("de.me_systeme.gsv.getGetIntetface");
-                session.call("de.me_systeme.gsv.getReadAoutScale", [1]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [2]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [3]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [4]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [5]);
-                session.call("de.me_systeme.gsv.getReadAoutScale", [6]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [1]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [2]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [3]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [4]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [5]);
+                session.call("de.me_systeme.gsv.getReadUserScale", [6]);
 
                 eventCnt = 0;
 

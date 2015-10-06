@@ -23,5 +23,7 @@ anfrage_code_to_shortcut = {
     'GetFirmwareVersion': 0x2B,
     'GetDeviceHours': 0x56,
     'ReadDataRate': 0x8A,
-    'WriteDataRate': 0x8B
+    'WriteDataRate': 0x8B,
+    'ReadUserOffset': 0x9A,
+    'WriteUserOffset': 0x9B
 }
