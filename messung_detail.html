@@ -41,69 +41,8 @@
             debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
         }
 
-        function parse(val) {
-            /*  this function is from:
-             http://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript
-             */
-            //var result = "Not found",
-            var result = null,
-                    tmp = [];
-            location.search
-                //.replace ( "?", "" )
-                // this is better, there might be a question mark inside
-                    .substr(1)
-                    .split("&")
-                    .forEach(function (item) {
-                        tmp = item.split("=");
-                        if (tmp[0] === val) result = decodeURIComponent(tmp[1]);
-                    });
-            return result;
-        }
-
-        window.onload = function () {
-            // the URL of the WAMP Router (e.g. Crossbar.io)
-            //
-            var wsuri;
-            if (document.location.origin == "file://") {
-                wsuri = "ws://localhost:8080/ws";
-            } else {
-                wsuri = "ws://" + document.location.hostname + ":8080/ws";
-            }
-
-            // connect to WAMP server
-            //
-            var connection = new autobahn.Connection({
-                url: wsuri,
-                realm: 'me_gsv6'
-            });
-
-            connection.onopen = function (new_session) {
-                console.log("connected to " + wsuri);
-
-                session = new_session;
-
-                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
-
-                debug_div = document.getElementById('debug_out');
-
-                // try to get all cached informations and then get missing informations
-
-                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
-                    var log_section = document.getElementById('debug_out');
-                    res.forEach(function (entry) {
-                        //console.log(entry);
-                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
-                    });
-                }, session.log);
-            };
-            connection.open();
-            var reggie = /(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/;
-            var dateArray = reggie.exec(parse('file'));
-            var chartTitle = 'Messung gestartet am ' + dateArray[3] + '.' + dateArray[2] + '.' + dateArray[1] + ' um ' + dateArray[4] + ':' + dateArray[5] + ':' + dateArray[6] + ' Uhr';
-
+        function test() {
             $.get('messungen/' + parse('file'), function (csv) {
-                //console.log(csv);
-                //$('#chartContainer').highcharts({
                 chart = new Highcharts.Chart({
                     chart: {
                         renderTo: 'chartContainer',
@@ -113,8 +52,8 @@
                                 this.series.forEach(function (d, i) {
                                     d.hide();
                                     var nameAndUnit = d.name.split('[');
-                                    var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length-1)) +1)
-                                    d.update({name: 'Kanal '+channleNo}, false);
+                                    var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1)
+                                    d.update({name: 'Kanal ' + channleNo}, false);
                                     if (nameAndUnit.length <= 1) {
                                         d.id = "undefined";
                                     } else {
@@ -162,6 +101,144 @@
                 });
                 chart.series[0].show();
             });
+        }
+
+        function parse(val) {
+            /*  this function is from:
+             http://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript
+             */
+            //var result = "Not found",
+            var result = null,
+                    tmp = [];
+            location.search
+                //.replace ( "?", "" )
+                // this is better, there might be a question mark inside
+                    .substr(1)
+                    .split("&")
+                    .forEach(function (item) {
+                        tmp = item.split("=");
+                        if (tmp[0] === val) result = decodeURIComponent(tmp[1]);
+                    });
+            return result;
+        }
+
+        window.onload = function () {
+            $('#myPleaseWait').modal('show');
+            /*
+            $(document).ajaxStart(function () {
+                $('#myPleaseWait').modal('show');
+            })
+            $(document).ajaxComplete(function () {
+                $('#myPleaseWait').modal('hide');
+            })
+            */
+
+            // the URL of the WAMP Router (e.g. Crossbar.io)
+            //
+            var wsuri;
+            if (document.location.origin == "file://") {
+                wsuri = "ws://localhost:8080/ws";
+            } else {
+                wsuri = "ws://" + document.location.hostname + ":8080/ws";
+            }
+
+            // connect to WAMP server
+            //
+            var connection = new autobahn.Connection({
+                url: wsuri,
+                realm: 'me_gsv6'
+            });
+
+            connection.onopen = function (new_session) {
+                console.log("connected to " + wsuri);
+
+                session = new_session;
+
+                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
+
+                debug_div = document.getElementById('debug_out');
+
+                // try to get all cached informations and then get missing informations
+
+                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
+                    var log_section = document.getElementById('debug_out');
+                    res.forEach(function (entry) {
+                        //console.log(entry);
+                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
+                    });
+                }, session.log);
+            };
+            connection.open();
+            var reggie = /(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/;
+            var dateArray = reggie.exec(parse('file'));
+            var chartTitle = 'Messung gestartet am ' + dateArray[3] + '.' + dateArray[2] + '.' + dateArray[1] + ' um ' + dateArray[4] + ':' + dateArray[5] + ':' + dateArray[6] + ' Uhr';
+
+            // timeout reason, wait for showup modal
+
+            setTimeout(function () {
+                $.get('messungen/' + parse('file'), function (csv) {
+                    //console.log(csv);
+                    //$('#chartContainer').highcharts({
+                    chart = new Highcharts.Chart({
+                        chart: {
+                            renderTo: 'chartContainer',
+                            events: {
+                                load: function (event) {
+                                    //alert('Chart loaded');
+                                    this.series.forEach(function (d, i) {
+                                        d.hide();
+                                        var nameAndUnit = d.name.split('[');
+                                        var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1)
+                                        d.update({name: 'Kanal ' + channleNo}, false);
+                                        if (nameAndUnit.length <= 1) {
+                                            d.id = "undefined";
+                                        } else {
+                                            d.id = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1)
+                                        }
+                                    })
+                                }
+                            }
+                        },
+                        data: {
+                            csv: csv
+                        },
+                        yAxis: {
+                            title: {
+                                text: "[Einheit]"
+                            }
+                        },
+                        plotOptions: {
+                            series: {
+                                marker: {
+                                    enabled: false
+                                },
+                                events: {
+                                    show: function (e) {
+                                        chart.series.forEach(function (d, i) {
+                                            if (d.name != e.currentTarget.name) {
+                                                d.hide();
+                                            }
+                                        })
+                                        chart.yAxis[0].update({
+                                            title: {
+                                                text: e.currentTarget.id
+                                            }
+                                        }, true);
+                                    }
+                                }
+                            }
+                        },
+                        title: {
+                            text: 'Messung'
+                        },
+                        subtitle: {
+                            text: chartTitle
+                        }
+                    });
+                    chart.series[0].show();
+                    $('#myPleaseWait').modal('hide');
+                });
+            }, 500);
         };
     </script>
 
@@ -182,6 +259,29 @@
         </div>
     </div>
 </nav>
+<!-- Loading Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="myPleaseWait" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-time">
+                    </span> Messung wird geladen...
+                </h4>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-info
+                    progress-bar-striped active"
+                         style="width: 100%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Loading Modal ends Here -->
 <div class="container">
     <div class="well well-sm">Messdaten</div>
 
