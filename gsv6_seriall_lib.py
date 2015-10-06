@@ -117,7 +117,7 @@ class GSV6_seriall_lib:
             return
 
         # B	= unsigned char; Python-Type: integer, size:1
-        return unpack(str(length) + "B", data)
+        return unpack('>' + str(length) + "B", data)
 
     def convertToUint16_t(self, data):
         length = len(data)
@@ -126,7 +126,7 @@ class GSV6_seriall_lib:
             return
 
         # H	= unsigned short; Python-Type: integer, size:2
-        return unpack(str(length / 2) + "H", data)
+        return unpack('>' + str(length / 2) + "H", data)
 
     def convertToU24(self, data):
         raise GSV6_ConversionError_Exception('U24 not yet supported')
@@ -155,7 +155,7 @@ class GSV6_seriall_lib:
             return
 
         # I	= unsigned int; Python-Type: integer, size:4
-        return unpack(str(length / 4) + "I", data)
+        return unpack('>' + str(length / 4) + "I", data)
 
     def convertToSint32_t(self, data):
         length = len(data)
@@ -164,7 +164,7 @@ class GSV6_seriall_lib:
             return
 
         # i	= int; Python-Type: integer, size:4
-        return unpack(str(length / 4) + "i", data)
+        return unpack('>' + str(length / 4) + "i", data)
 
     # decimal can help here
     def convertToS7_24(self, data):
@@ -175,7 +175,7 @@ class GSV6_seriall_lib:
             return
 
         # ?	= ?; Python-Type: integer, size:?
-        return unpack(str(length / 4) + "f", data)
+        return unpack('>' + str(length / 4) + "f", data)
 
     def convertToFloat(self, data):
         length = len(data)
@@ -313,7 +313,7 @@ class GSV6_seriall_lib:
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetSerialNo'))
 
     def buildGetDeviceHours(self, slot=0):
-        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetDeviceHours'),[slot])
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetDeviceHours'), [slot])
 
     def buildGetDataRate(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('ReadDataRate'))
@@ -326,3 +326,6 @@ class GSV6_seriall_lib:
 
     def buildWriteSetZero(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetZero'), [channelNo])
+
+    def buildgetFirmwareVersion(self):
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetFirmwareVersion'))

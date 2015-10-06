@@ -352,7 +352,7 @@ class MessFrameHandler():
         CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock,
                   self.session.config.extra['csvpath']).run()
 
-
+import collections
 class AntwortFrameHandler():
     # thread-safe? nothing to do here -> queue-Object is an thread-safe
 
@@ -473,6 +473,15 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onWriteSetZero",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
+    def rcvGetFirmwareVersion(self, frame):
+        versionCodes = self.gsv_lib.convertToUint16_t(frame.getPayload())
+        if isinstance(versionCodes, collections.Sequence) and len(versionCodes) >1:
+            self.session.publish(u"de.me_systeme.gsv.onGetFirmwareVersion",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), versionCodes])
+        else:
+            self.session.publish(u"de.me_systeme.gsv.onGetFirmwareVersion",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
+
 from datetime import datetime
 
 import glob
@@ -511,6 +520,7 @@ class GSVeventHandler():
         self.session.register(self.writeSetZero, u"de.me_systeme.gsv.WriteSetZero")
         self.session.register(self.getCSVFileList, u"de.me_systeme.gsv.getCSVFileList")
         self.session.register(self.deleteCSVFile, u"de.me_systeme.gsv.deleteCSVFile")
+        self.session.register(self.getFirmwareVersion, u"de.me_systeme.gsv.getFirmwareVersion")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -584,6 +594,9 @@ class GSVeventHandler():
 
     def writeSetZero(self, channelNo):
         self.session.writeAntwort(self.gsv_lib.buildWriteSetZero(channelNo), 'rcvWriteSetZero', channelNo)
+
+    def getFirmwareVersion(self):
+        self.session.writeAntwort(self.gsv_lib.buildgetFirmwareVersion(), 'rcvGetFirmwareVersion')
 
     def getCSVFileList(self):
         # in this function, we write nothing to the GSV-modul
