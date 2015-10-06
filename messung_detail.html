@@ -125,13 +125,13 @@
         window.onload = function () {
             $('#myPleaseWait').modal('show');
             /*
-            $(document).ajaxStart(function () {
-                $('#myPleaseWait').modal('show');
-            })
-            $(document).ajaxComplete(function () {
-                $('#myPleaseWait').modal('hide');
-            })
-            */
+             $(document).ajaxStart(function () {
+             $('#myPleaseWait').modal('show');
+             })
+             $(document).ajaxComplete(function () {
+             $('#myPleaseWait').modal('hide');
+             })
+             */
 
             // the URL of the WAMP Router (e.g. Crossbar.io)
             //
@@ -175,6 +175,27 @@
 
             // timeout reason, wait for showup modal
 
+            Highcharts.setOptions({
+                lang: {
+                    loading: 'Lade...',
+                    months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+                    weekdays: ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+                    shortMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+                    exportButtonTitle: "Exportieren",
+                    printButtonTitle: "Drucken",
+                    rangeSelectorFrom: "Von",
+                    rangeSelectorTo: "Bis",
+                    rangeSelectorZoom: "Zoom",
+                    downloadPNG: 'Download als PNG',
+                    downloadJPEG: 'Download als JPEG',
+                    downloadPDF: 'Download als PDF',
+                    downloadSVG: 'Download als SVG',
+                    // resetZoom: "Reset",
+                    // resetZoomTitle: "Reset,
+                    // thousandsSep: ".",
+                    decimalPoint: ','
+                }
+            });
             setTimeout(function () {
                 $.get('messungen/' + parse('file'), function (csv) {
                     //console.log(csv);
@@ -233,6 +254,13 @@
                         },
                         subtitle: {
                             text: chartTitle
+                        },
+                        // export needs internetconnection
+                        exporting: {
+                            enabled: false
+                        },
+                        credits: {
+                            enabled: false
                         }
                     });
                     chart.series[0].show();
