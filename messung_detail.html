@@ -113,11 +113,11 @@
                                 this.series.forEach(function (d, i) {
                                     d.hide();
                                     var nameAndUnit = d.name.split('[');
+                                    var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length-1)) +1)
+                                    d.update({name: 'Kanal '+channleNo}, false);
                                     if (nameAndUnit.length <= 1) {
                                         d.id = "undefined";
                                     } else {
-                                        d.update({name: nameAndUnit[0]}, false);
-                                        // d.name = nameAndUnit[0];
                                         d.id = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1)
                                     }
                                 })
@@ -176,7 +176,7 @@
             <ul class="nav navbar-nav">
                 <li><a href="index.html">Messung</a></li>
                 <li><a href="config.html">Konfiguration</a></li>
-                <li class="active"><a href="#">Zur&uuml;ck zu den Messungen</a></li>
+                <li class="active"><a href="messungen.html">Zur&uuml;ck zu den Messungen</a></li>
                 <li><a href="#">Log</a></li>
             </ul>
         </div>
