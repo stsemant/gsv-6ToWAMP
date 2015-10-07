@@ -831,7 +831,7 @@ class McuComponent(ApplicationSession):
                 self.sendCounter +=1
                 if self.sendCounter>=10:
                     self.sendCounter=0
-                    print("serialWait, for GSV-6PU RX Buffer overflow")
+                    print("serialWait, for GSV-6CPU RX Buffer overflow")
                     sleep(0.2) # Time in seconds
             else:
                 self.sendCounter=0

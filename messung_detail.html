@@ -122,6 +122,15 @@
             return result;
         }
 
+        function showFileNotFoundError(filename){
+            $('#modal_filename').html(filename)
+            $('#errorModal').modal('show');
+        }
+
+        function backToMessungen(){
+            window.location.href = './messungen.html';
+        }
+
         window.onload = function () {
             $('#myPleaseWait').modal('show');
             /*
@@ -169,12 +178,18 @@
                 }, session.log);
             };
             connection.open();
-            var reggie = /(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/;
-            var dateArray = reggie.exec(parse('file'));
-            var chartTitle = 'Messung gestartet am ' + dateArray[3] + '.' + dateArray[2] + '.' + dateArray[1] + ' um ' + dateArray[4] + ':' + dateArray[5] + ':' + dateArray[6] + ' Uhr';
+            try {
+                var reggie = /(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/;
+                var dateArray = reggie.exec(parse('file'));
+                var chartTitle = 'Messung gestartet am ' + dateArray[3] + '.' + dateArray[2] + '.' + dateArray[1] + ' um ' + dateArray[4] + ':' + dateArray[5] + ':' + dateArray[6] + ' Uhr';
+            } catch (err) {
+                console.log("filename format invalid!");
+                $('#myPleaseWait').modal('hide');
+                showFileNotFoundError(parse('file'));
+                return;
+            }
 
             // timeout reason, wait for showup modal
-
             Highcharts.setOptions({
                 lang: {
                     loading: 'Lade...',
@@ -196,9 +211,11 @@
                     decimalPoint: ','
                 }
             });
+            // timeout reason, wait for showup modal
             setTimeout(function () {
-                $.get('messungen/' + parse('file'), function (csv) {
-                    //console.log(csv);
+                var request = $.get('messungen/' + parse('file'));
+                request.success(function (csv) {
+                    console.log(csv);
                     //$('#chartContainer').highcharts({
                     chart = new Highcharts.Chart({
                         chart: {
@@ -266,6 +283,14 @@
                     chart.series[0].show();
                     $('#myPleaseWait').modal('hide');
                 });
+                request.error(function (jqXHR, textStatus, errorThrown) {
+                    if (textStatus == 'timeout')
+                        console.log('CSV Fileserver is not responding');
+                    if (textStatus == 'error')
+                        console.log("Can't get CSV File; error: " + errorThrown);
+                    $('#myPleaseWait').modal('hide');
+                    showFileNotFoundError(parse('file'));
+                });
             }, 500);
         };
     </script>
@@ -310,6 +335,33 @@
     </div>
 </div>
 <!-- Loading Modal ends Here -->
+<!-- Error Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="errorModal" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-alert">
+                    </span> Ladetimeout erreicht
+                </h4>
+            </div>
+            <div class="modal-body">
+                <dl>
+                    <dt>Folgende Datei konnte nicht geladen werden!</dt>
+                    <dd id="modal_filename">-</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success"
+                        onclick="backToMessungen()">
+                    Zur&uuml;ck zu den Messugen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Error Modal ends Here -->
 <div class="container">
     <div class="well well-sm">Messdaten</div>
 
