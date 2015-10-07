@@ -951,7 +951,7 @@ if __name__ == '__main__':
 
         #reactor.listenTCP(args.web, Site(File(".")))
         # wwwroot
-        root = File(".")
+        root = File("./wwwroot/")
         # messungenroot
         root.putChild("messungen", File(args.csvpath))
         reactor.listenTCP(args.web, Site(root))
