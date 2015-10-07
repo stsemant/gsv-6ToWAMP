@@ -882,6 +882,7 @@ if __name__ == '__main__':
 
     import sys
     import argparse
+    from twisted.web.resource import Resource
     # log.setLevel(logging.DEBUG)
     # parse command line arguments
     ##
@@ -915,7 +916,7 @@ if __name__ == '__main__':
     if args.csvpath[-1] != '/':
         args.csvpath += '/'
     if not os.path.exists(args.csvpath):
-        print('invailed CSV Path')
+        print('invalid CSV Path')
         exit()
 
     try:
@@ -948,7 +949,12 @@ if __name__ == '__main__':
         from twisted.web.server import Site
         from twisted.web.static import File
 
-        reactor.listenTCP(args.web, Site(File(".")))
+        #reactor.listenTCP(args.web, Site(File(".")))
+        # wwwroot
+        root = File(".")
+        # messungenroot
+        root.putChild("messungen", File(args.csvpath))
+        reactor.listenTCP(args.web, Site(root))
 
     # run WAMP application component
     ##
