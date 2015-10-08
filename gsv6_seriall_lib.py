@@ -85,7 +85,7 @@ class GSV6_seriall_lib:
         try:
             if self.isConfigCached(major, minor):
                 self.cacheLock.acquire()
-                self.cachedConfig[major][minor] = None
+                self.cachedConfig[major].pop(minor)
                 result = True
         except:
             print('gsv6-lib cache error, remove ' + major + ' from cache!')
