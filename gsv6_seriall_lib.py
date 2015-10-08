@@ -8,9 +8,119 @@ import error_codes
 import GSV6_BasicFrameType
 from struct import *
 from anfrage_codes import anfrage_code_to_shortcut
+import threading
 
 
 class GSV6_seriall_lib:
+    cachedConfig = {}
+    cacheLock = None
+
+    def __init__(self):
+        self.cacheLock = threading.Lock()
+        # now preinit cachedConfig
+        self.cachedConfig['GetInterface'] = {}
+        self.cachedConfig['AoutScale'] = {}
+        self.cachedConfig['Zero'] = {}
+        self.cachedConfig['UserScale'] = {}
+        self.cachedConfig['UnitText'] = {}
+        self.cachedConfig['UnitNo'] = {}
+        self.cachedConfig['SerialNo'] = {}
+        self.cachedConfig['DeviceHours'] = {}
+        self.cachedConfig['DataRate'] = {}
+        self.cachedConfig['FirmwareVersion'] = {}
+        self.cachedConfig['UserOffset'] = {}
+        self.cachedConfig['InputType'] = {}
+
+    def isConfigCached(self, major):
+        self.isConfigCached(major, major)
+
+    def isConfigCached(self, major, minor):
+        result = False
+        if isinstance(minor, (int, long, float, complex)):
+            minor = str(minor)
+        self.cacheLock.acquire()
+        try:
+            if self.cachedConfig.has_key(major):
+                if self.cachedConfig[major].has_key(minor):
+                    result = True
+        except:
+            print('gsv6-lib cache error, can\'t find ' + major + ' in cache!')
+        finally:
+            self.cacheLock.release()
+            #print('isCache: ' + major + ' ' + minor)
+            return result
+
+    def addConfigToCache(self, major, value):
+        self.addConfigToCache(major, major, value)
+
+    def addConfigToCache(self, major, minor, value):
+        result = False
+        if isinstance(minor, (int, long, float, complex)):
+            minor = str(minor)
+
+        try:
+            if self.cachedConfig.has_key(major):
+                '''
+                if isinstance(value, (list, tuple)):
+                    print("is list")
+                '''
+                self.cacheLock.acquire()
+                self.cachedConfig[major][minor] = value
+                result = True
+        except:
+            print('gsv6-lib cache error, can\'t write ' + major)
+        finally:
+            if self.cacheLock.locked():
+                self.cacheLock.release()
+            #print('addCache: ' + major + ' ' + minor)
+            return result
+
+    def markChachedConfiAsDirty(self, major):
+        self.markChachedConfiAsDirty(major, major)
+
+    def markChachedConfiAsDirty(self, major, minor):
+        result = False
+        if isinstance(minor, (int, long, float, complex)):
+            minor = str(minor)
+        try:
+            if self.isConfigCached(major, minor):
+                self.cacheLock.acquire()
+                self.cachedConfig[major][minor] = None
+                result = True
+        except:
+            print('gsv6-lib cache error, remove ' + major + ' from cache!')
+        finally:
+            if self.cacheLock.locked():
+                self.cacheLock.release()
+            #print('dirtyCache: ' + major + ' ' + minor)
+            return result
+
+    def getCachedProperty(self, major, minor):
+        result = None
+        if isinstance(minor, (int, long, float, complex)):
+            minor = str(minor)
+        try:
+            if self.isConfigCached(major, minor):
+                self.cacheLock.acquire()
+                result = self.cachedConfig.get(major).get(minor)
+        except:
+            print('gsv6-lib cache error, can\'t get cachedConfig!')
+        finally:
+            if self.cacheLock.locked():
+                self.cacheLock.release()
+            return result
+
+    def getCachedConfig(self):
+        result = None
+        self.cacheLock.acquire()
+        try:
+            result = self.cachedConfig
+        except:
+            print('gsv6-lib cache error, can\'t get cachedConfig!')
+        finally:
+            self.cacheLock.release()
+            return result
+
     # ist doch so qutasch!!!
     def selectFrameType(self, firstByte):
         if 0 == firstByte:
@@ -329,7 +439,7 @@ class GSV6_seriall_lib:
 
     def buildgetFirmwareVersion(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetFirmwareVersion'))
-    
+
     def buildReadUserOffset(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('ReadUserOffset'), [channelNo])
 
@@ -339,4 +449,4 @@ class GSV6_seriall_lib:
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('WriteUserOffset'), data)
 
     def buildReadInputType(self, channelNo):
-        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetInputType'), [channelNo,0x00])
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetInputType'), [channelNo, 0x00])

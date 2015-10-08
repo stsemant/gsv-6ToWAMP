@@ -65,6 +65,7 @@
             //modul_config = $.extend({}, modul_config, args);
             //$.merge(modul_config,args);
             //console.log(Object.keys(modul_config).length);
+            //console.log(modul_config);
             modul_config = Object.extend(modul_config, args);
             if (Object.keys(modul_config).length >= modul_config_element_count_for_complete_load) {
                 // hide loading modal
@@ -118,55 +119,76 @@
         function onGetInterface(args) {
             //console.log(args[0]);
             args = args[0];
-            var channels = parseInt(args['anzahl_messwert-frame-objekte']) + 1;
-            $('#activeChannels').html(channels);
-            var ge_schreibschutz = $('#ge_schreibschutz');
-            if (args['genereller_schreibschutz']) {
-                ge_schreibschutz.html('<span class=\"label label-default label-warning\">aktiviert</span>');
-            } else {
-                ge_schreibschutz.html('<span class=\"label label-default label-success\">deaktiviert</span>');
-            }
-            var sp_schreibschutz = $('#sp_schreibschutz');
-            if (args['schnittstellen_spezifischer_schreibschutz']) {
-                sp_schreibschutz.html('<span class=\"label label-default label-warning\">aktiviert</span>');
-            } else {
-                sp_schreibschutz.html('<span class=\"label label-default label-success\">deaktiviert</span>');
-            }
-            var model_name = $('#model_name');
-            model_name.html('<span class=\"label label-default label-primary\">' + args['geraete_model'] + '</span>');
-            var measure_datatype = $('#measure_datatype');
-            measure_datatype.html('<span class=\"label label-default label-primary\">' + args['messwertdatentype'] + '</span>');
+            if (args[0] != 0) {
+                $('#activeChannels').html('Fehler');
+                args['anzahl_messwert-frame-objekte'] = -1;
 
+                $('#ge_schreibschutz').html('Fehler');
+                args['genereller_schreibschutz'] = false;
+
+                $('#sp_schreibschutz').html('Fehler');
+                args['schnittstellen_spezifischer_schreibschutz'] = false;
+
+                $('#model_name').html('Fehler');
+                args['geraete_model'] = 'fehler';
+
+                $('#measure_datatype').html('Fehler');
+                args['messwertdatentype'] = 'Fehler';
+            } else {
+                args = args[2];
+                var channels = parseInt(args['anzahl_messwert-frame-objekte']) + 1;
+                $('#activeChannels').html(channels);
+
+                var ge_schreibschutz = $('#ge_schreibschutz');
+                if (args['genereller_schreibschutz']) {
+                    ge_schreibschutz.html('<span class=\"label label-default label-warning\">aktiviert</span>');
+                } else {
+                    ge_schreibschutz.html('<span class=\"label label-default label-success\">deaktiviert</span>');
+                }
+
+                var sp_schreibschutz = $('#sp_schreibschutz');
+                if (args['schnittstellen_spezifischer_schreibschutz']) {
+                    sp_schreibschutz.html('<span class=\"label label-default label-warning\">aktiviert</span>');
+                } else {
+                    sp_schreibschutz.html('<span class=\"label label-default label-success\">deaktiviert</span>');
+                }
+
+                var model_name = $('#model_name');
+                model_name.html('<span class=\"label label-default label-primary\">' + args['geraete_model'] + '</span>');
+
+                var measure_datatype = $('#measure_datatype');
+                measure_datatype.html('<span class=\"label label-default label-primary\">' + args['messwertdatentype'] + '</span>');
+            }
             // push config data
             check_isConfig_complete(args);
         }
 
         function onGetReadInputType(args) {
             args = args[0];
+            var data = {};
             if (args[0] != 0) {
                 console.log("Error rcv InputType");
+                data['ReadInputType' + args[2]] = args[1];
                 return
+            } else {
+                $('#' + 'ReadInputType' + args[2]).html((parseFloat(args[3]) / 100).toFixed(2) + ' mV/V');
+                data['ReadInputType' + args[2]] = parseFloat(args[3]) / 100;
             }
-            $('#' + 'ReadInputType' + args[1]).html((parseFloat(args[2])/100).toFixed(2) + ' mV/V');
-
-            var data = {};
-            data['ReadInputType' + args[1]] = parseFloat(args[2])/100;
             check_isConfig_complete(data);
         }
 
         function onGetReadUserScale(args) {
             args = args[0];
-            if (args[0] != 0) {
-                setInputError('ReadUserScale' + args[1], args[0])
-                return
-            }
-            var inputID = 'ReadUserScale' + args[1];
-            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
-            setInputSuccess(inputID);
-
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
             var data = {};
-            data['ReadUserScale' + args[1]] = parseFloat(args[2]);
+            if (args[0] != 0) {
+                setInputError('ReadUserScale' + args[2], args[1])
+                return
+            } else {
+                var inputID = 'ReadUserScale' + args[2];
+                $('#' + inputID + '_value').val(parseFloat(args[3]).toFixed(4));
+                data['ReadUserScale' + args[2]] = parseFloat(args[3]);
+                setInputSuccess(inputID);
+            }
             check_isConfig_complete(data);
         }
         function WriteUserScale1() {
@@ -197,34 +219,24 @@
             args = args[0];
             if (args[0] != 0) {
                 //alert("cant set Zero");
-                setInputError('ReadUserScale' + args[1]);
-                var error = '';
-                if (args[0] == 84) {
-                    error = 'Der Absolutwert des Parameters ist zu groß';
-                } else if (args[0] == 85) {
-                    error = 'Der Absolutwert des Parameters ist zu klein';
-                } else {
-                    error = 'Parameter nicht akzeptiert';
-                }
-                setInputError('ReadUserScale' + args[1], error);
-                return
+                setInputError('ReadUserScale' + args[2], args[1]);
+            } else {
+                session.call("de.me_systeme.gsv.getReadUserScale", [args[2]]);
             }
-            session.call("de.me_systeme.gsv.getReadUserScale", [args[1]]);
         }
 
         function onGetReadUserOffset(args) {
             args = args[0];
-            if (args[0] != 0) {
-                setInputError('ReadUserOffset' + args[1], args[0])
-                return
-            }
-            var inputID = 'ReadUserOffset' + args[1];
-            $('#' + inputID + '_value').val(parseFloat(args[2]).toFixed(4));
-            setInputSuccess(inputID);
-
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
             var data = {};
-            data['ReadUserOffset' + args[1]] = parseFloat(args[2]);
+            if (args[0] != 0) {
+                setInputError('ReadUserOffset' + args[2], args[1])
+                data['ReadUserOffset' + args[2]] = args[1];
+            } else {
+                var inputID = 'ReadUserOffset' + args[2];
+                $('#' + inputID + '_value').val(parseFloat(args[3]).toFixed(4));
+                data['ReadUserOffset' + args[2]] = parseFloat(args[3]);
+                setInputSuccess(inputID);
+            }
             check_isConfig_complete(data);
         }
         function WriteUserOffset1() {
@@ -256,62 +268,50 @@
             if (args[0] != 0) {
                 //alert("cant set Zero");
                 setInputError('ReadUserOffset' + args[1]);
-                var error = '';
-                if (args[0] == 84) {
-                    error = 'Der Absolutwert des Parameters ist zu groß';
-                } else if (args[0] == 85) {
-                    error = 'Der Absolutwert des Parameters ist zu klein';
-                } else {
-                    error = 'Parameter nicht akzeptiert';
-                }
-                setInputError('ReadUserOffset' + args[1], error);
-                return
+                setInputError('ReadUserOffset' + args[1], args[1]);
+            } else {
+                session.call("de.me_systeme.gsv.getReadUserOffset", [args[1]]);
             }
-            session.call("de.me_systeme.gsv.getReadUserOffset", [args[1]]);
         }
 
         function onGetUnitNo(args) {
             args = args[0];
+            var data = {};
             if (args[0] != 0) {
                 setInputError('UnitNo' + args[2], args[1])
-                return
+                data['UnitNo' + args[2]] = args[1];
             }
-            var inputID = 'UnitNo' + args[2];
-            $('#' + inputID + ' option')[args[3]].selected = true;
-            setInputSuccess(inputID);
-
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
-
-            var data = {};
-            data['UnitNo' + args[2]] = parseInt(args[4]);
+            else {
+                var inputID = 'UnitNo' + args[2];
+                $('#' + inputID + ' option')[args[3]].selected = true;
+                setInputSuccess(inputID);
+                data['UnitNo' + args[2]] = parseInt(args[3]);
+            }
             check_isConfig_complete(data);
         }
         function onWriteUnitNo(args) {
             args = args[0];
             if (args[0] != 0) {
-                //alert("cant set Zero");
-                setInputError('UnitNo' + args[1]);
-                var error = 'Parameter nicht akzeptiert: ' + args[2];
-                setInputError('UnitNo' + args[1], error);
+                setInputError('UnitNo' + args[2], args[1]);
                 return
             }
-            session.call("de.me_systeme.gsv.getUnitNo", [args[1]]);
+            session.call("de.me_systeme.gsv.getUnitNo", [args[2]]);
         }
 
         function onGetSerialNo(args) {
             args = args[0];
-            if (args[0] != 0) {
-                alert('can\'t get SerialNo');
-                return
-            }
-            if (args[2] == '') {
-                $('#serialNo').html('(leer)');
-            } else {
-                $('#serialNo').html(args[2]);
-            }
-
             var data = {};
-            data['SerialNo' + args[2]] = parseInt(args[4]);
+            if (args[0] != 0) {
+                $('#serialNo').html(args[1]);
+                data['SerialNo'] = args[1];
+            } else {
+                if (args[2] == '') {
+                    $('#serialNo').html('(leer)');
+                } else {
+                    $('#serialNo').html(args[2]);
+                }
+                data['SerialNo'] = parseInt(args[2]);
+            }
             check_isConfig_complete(data);
         }
 
@@ -322,11 +322,10 @@
                 $('#device_hours_counter').html(args[1]);
                 data['DeviceHoursAbs'] = args[1];
                 check_isConfig_complete(data);
-                return
+            }else{
+                $('#device_hours_counter').html(args[2]);
+                data['DeviceHoursAbs'] = parseInt(args[2]);
             }
-            $('#device_hours_counter').html(args[2]);
-
-            data['DeviceHoursAbs'] = parseInt(args[2]);
             check_isConfig_complete(data);
         }
 
@@ -495,6 +494,13 @@
                 session.call("de.me_systeme.gsv.getReadInputType", [4]);
                 session.call("de.me_systeme.gsv.getReadInputType", [5]);
                 session.call("de.me_systeme.gsv.getReadInputType", [6]);
+
+                /*
+                session.call('de.me_systeme.gsv.getCachedConfig').then(function (res) {
+                    console.log("CachedConfig");
+                    console.log(res);
+                }, session.log);
+                */
             };
             connection.open();
 

@@ -59,6 +59,8 @@ logger = logging.getLogger(__name__)
 maxCacheMessCount = 1000
 
 import datetime
+
+
 class GSV_6Protocol(protocol.Protocol):
     inDataBuffer = {}
     trace = False
@@ -345,7 +347,10 @@ class MessFrameHandler():
         CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock,
                   self.session.config.extra['csvpath']).run()
 
+
 import collections
+
+
 class AntwortFrameHandler():
     # thread-safe? nothing to do here -> queue-Object is an thread-safe
 
@@ -373,49 +378,83 @@ class AntwortFrameHandler():
             print(msg)
 
     def rcvStartStopTransmission(self, frame, start):
-        self.session.publish(u"de.me_systeme.gsv.onStartStopTransmission", [frame.getAntwortErrorCode(), start])
+        self.session.publish(u"de.me_systeme.gsv.onStartStopTransmission", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), start])
 
     def rcvGetUnitText(self, frame):
+        # TODO: what about cache?
         if not (frame.getPayload()[0] == 0):
             print('error')
         else:
             text = self.gsv_lib.convertToString(frame.getPayload()[1:])[0]
-            self.session.publish(u"de.me_systeme.gsv.onGetUnitText", [frame.getAntwortErrorCode(), text])
+            self.session.publish(u"de.me_systeme.gsv.onGetUnitText", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), text])
 
     def rcvSetUnitText(self, frame):
-        self.session.publish(u"de.me_systeme.gsv.onSetUnitText", frame.getAntwortErrorCode())
+        # for cache
+        if frame.getAntwortErrorCode() == 0:
+            # TODO: Slot 0 und 1 beachten! -> nicht impl.
+            self.gsv_lib.markChachedConfiAsDirty('UnitText')
+        # answer from GSV-6CPU
+        self.session.publish(u"de.me_systeme.gsv.onSetUnitText", [frame.getAntwortErrorCode(), frame.getAntwortErrorText()])
 
     def rcvGetGetInterface(self, frame, ubertragung=None):
-        reuslt = self.gsv_lib.decodeGetInterface(frame.getPayload())
-        self.session.publish(u"de.me_systeme.gsv.onGetInterface", reuslt)
+        # datatype-conversion
+        result = self.gsv_lib.decodeGetInterface(frame.getPayload())
+        # answer from GSV-6CPU
+        self.session.publish(u"de.me_systeme.gsv.onGetInterface", [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), result])
 
     def rcvGetReadAoutScale(self, frame, channelNo):
-        values = self.gsv_lib.convertToFloat(frame.getPayload())
+        # datatype-conversion
+        value = self.gsv_lib.convertToFloat(frame.getPayload())[0]
+        # for cache
+        self.gsv_lib.addConfigToCache('AoutScale', channelNo, value)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetReadAoutScale",
-                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
 
     def rcvWriteAoutScale(self, frame, channelNo):
+        # for cache
+        if frame.getAntwortErrorCode() == 0:
+            self.gsv_lib.markChachedConfiAsDirty('AoutScale', channelNo)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteAoutScale",
-                             [frame.getAntwortErrorCode(), channelNo])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
     def rcvGetReadZero(self, frame, channelNo):
-        values = self.gsv_lib.convertToFloat(frame.getPayload())
+        # datatype-conversion
+        value = self.gsv_lib.convertToFloat(frame.getPayload())[0]
+        # for cache
+        self.gsv_lib.addConfigToCache('Zero', channelNo, value)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetReadZero",
-                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
 
     def rcvWriteZero(self, frame, channelNo):
+        # for cache
+        if frame.getAntwortErrorCode() == 0:
+            self.gsv_lib.markChachedConfiAsDirty('Zero', channelNo)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteZero",
-                             [frame.getAntwortErrorCode(), channelNo])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
     def rcvGetReadUserScale(self, frame, channelNo):
+        # datatype-conversion
+        value = self.gsv_lib.convertToFloat(frame.getPayload())[0]
+        # for cache
+        self.gsv_lib.addConfigToCache('UserScale', channelNo, value)
+        # answer from GSV-6CPU
         values = self.gsv_lib.convertToFloat(frame.getPayload())
         self.session.publish(u"de.me_systeme.gsv.onGetReadUserScale",
-                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
 
     def rcvWriteUserScale(self, frame, channelNo):
+        # for cache
+        if frame.getAntwortErrorCode() == 0:
+            self.gsv_lib.markChachedConfiAsDirty('UserScale', channelNo)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteUserScale",
-                             [frame.getAntwortErrorCode(), channelNo])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
+    # TODO: this function is obsoate. !remove!
     def rcvGetUnitNoAsText(self, frame, channelNo):
         unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
         self.session.publish(u"de.me_systeme.gsv.onGetUnitNoAsText",
@@ -424,22 +463,36 @@ class AntwortFrameHandler():
     def rcvGetUnitNo(self, frame, channelNo):
         # unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
         # self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
+        # datatype-conversion
         unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
         unit_str = unit_str.decode("utf8")
+        # for cache
+        self.gsv_lib.addConfigToCache('UnitNo', channelNo, frame.getPayload()[0])
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetUnitNo",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo,
                               frame.getPayload()[0], unit_str])
 
     def rcvWriteUnitNo(self, frame, channelNo):
+        # for cache
+        if frame.getAntwortErrorCode() == 0:
+            self.gsv_lib.markChachedConfiAsDirty('UnitNo', channelNo)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteUnitNo",
-                             [frame.getAntwortErrorCode(), channelNo, frame.getAntwortErrorText()])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
     def rcvGetSerialNo(self, frame):
+        # datatype-conversion
         serialNo = self.gsv_lib.convertToUint32_t(frame.getPayload())[0]
+        # for cache
+        self.gsv_lib.addConfigToCache('SerialNo', 'SerialNo', serialNo)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetSerialNo",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), serialNo])
 
     def rcvGetDeviceHours(self, frame):
+        # his property is not suitable for caching
+        # answer from GSV-6CPU
         if frame.getAntwortErrorCode() == 0:
             deviceHours = self.gsv_lib.convertToFloat(frame.getPayload())
             self.session.publish(u"de.me_systeme.gsv.onGetDeviceHours",
@@ -449,11 +502,19 @@ class AntwortFrameHandler():
                                  [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
 
     def rcvGetDataRate(self, frame):
+        # datatype-conversion
         dataRate = self.gsv_lib.convertToFloat(frame.getPayload())[0]
+        # for cache
+        self.gsv_lib.addConfigToCache('DataRate', 'DataRate', dataRate)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetDataRate",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRate])
 
     def rcvWriteDataRate(self, frame, dataRateValue):
+        # for cache
+        if frame.getAntwortErrorCode == 0:
+            self.gsv_lib.markChachedConfiAsDirty('DataRate')
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteDataRate",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRateValue])
 
@@ -466,32 +527,52 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
     def rcvGetFirmwareVersion(self, frame):
+        # datatype-conversion
         versionCodes = self.gsv_lib.convertToUint16_t(frame.getPayload())
-        if isinstance(versionCodes, collections.Sequence) and len(versionCodes) >1:
+        # answer from GSV-6CPU
+        if isinstance(versionCodes, collections.Sequence) and len(versionCodes) > 1:
+            # for cache
+            self.gsv_lib.addConfigToCache('FirmwareVersion', 'major', versionCodes[0])
+            self.gsv_lib.addConfigToCache('FirmwareVersion', 'minor', versionCodes[1])
             self.session.publish(u"de.me_systeme.gsv.onGetFirmwareVersion",
-                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), versionCodes])
+                                 [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), versionCodes])
         else:
+            self.gsv_lib.addConfigToCache('FirmwareVersion', -1)
             self.session.publish(u"de.me_systeme.gsv.onGetFirmwareVersion",
-                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
-            
+                                 [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), -1])
+
     def rcvGetReadUserOffset(self, frame, channelNo):
+        # datatype-conversion
         values = self.gsv_lib.convertToFloat(frame.getPayload())
+        # for cache
+        self.gsv_lib.addConfigToCache('UserOffset', channelNo, values[0])
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetReadUserOffset",
-                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, values[0]])
 
     def rcvWriteUserOffset(self, frame, channelNo):
+        # for cache
+        if frame.getAntwortErrorCode == 0:
+            self.gsv_lib.markChachedConfiAsDirty('UserOffset', channelNo)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteUserOffset",
-                             [frame.getAntwortErrorCode(), channelNo])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
     def rcvGetReadInputType(self, frame, channelNo):
-        values = self.gsv_lib.convertToUint32_t(frame.getPayload())
+        value = self.gsv_lib.convertToUint32_t(frame.getPayload())[0]
+        # for cache
+        self.gsv_lib.addConfigToCache('InputType', channelNo, value)
+        # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetReadInputType",
-                             [frame.getAntwortErrorCode(), channelNo, values[0]])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
+
 
 from datetime import datetime
 
 import glob
 import os
+
+
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
     def __init__(self, session, gsv_lib, antwortQueue, eventHandler):
@@ -530,6 +611,7 @@ class GSVeventHandler():
         self.session.register(self.getReadUserOffset, u"de.me_systeme.gsv.getReadUserOffset")
         self.session.register(self.writeUserOffset, u"de.me_systeme.gsv.WriteUserOffset")
         self.session.register(self.getReadInputType, u"de.me_systeme.gsv.getReadInputType")
+        self.session.register(self.getCachedConfig, u"de.me_systeme.gsv.getCachedConfig")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -549,6 +631,7 @@ class GSVeventHandler():
         self.session.writeAntwort(self.gsv_lib.buildSetUnitText(text), 'rcvSetUnitText')
 
     def getGetInterface(self, ubertragung=None):
+        # this property is not suitable for caching
         self.session.writeAntwort(self.gsv_lib.buildGetInterface(ubertragung), 'rcvGetGetInterface', ubertragung)
 
     def getReadAoutScale(self, channelNo):
@@ -560,7 +643,11 @@ class GSVeventHandler():
         self.session.writeAntwort(self.gsv_lib.buildWriteAoutScale(channelNo, scale), 'rcvWriteAoutScale', channelNo)
 
     def getReadZero(self, channelNo):
-        self.session.writeAntwort(self.gsv_lib.buildReadZero(channelNo), 'rcvGetReadZero', channelNo)
+        if self.gsv_lib.isConfigCached('Zero', channelNo):
+            self.session.publish(u"de.me_systeme.gsv.onGetReadZero",
+                             [0x00, 'ERR_OK', channelNo, self.gsv_lib.getCachedProperty('Zero',channelNo)])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildReadZero(channelNo), 'rcvGetReadZero', channelNo)
 
     def writeZero(self, channelNo, zeroValue):
         # first convert float to bytes
@@ -568,7 +655,11 @@ class GSVeventHandler():
         self.session.writeAntwort(self.gsv_lib.buildWriteZero(channelNo, zero), 'rcvWriteZero', channelNo)
 
     def getReadUserScale(self, channelNo):
-        self.session.writeAntwort(self.gsv_lib.buildReadUserScale(channelNo), 'rcvGetReadUserScale', channelNo)
+        if self.gsv_lib.isConfigCached('UserScale', channelNo):
+            self.session.publish(u"de.me_systeme.gsv.onGetReadUserScale",
+                             [0x00, 'ERR_OK', channelNo, self.gsv_lib.getCachedProperty('UserScale',channelNo)])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildReadUserScale(channelNo), 'rcvGetReadUserScale', channelNo)
 
     def writeUserScale(self, channelNo, userScaleValue):
         # first convert float to bytes
@@ -580,19 +671,34 @@ class GSVeventHandler():
         self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNoAsText', channelNo)
 
     def getUnitNo(self, channelNo):
-        self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNo', channelNo)
+        if self.gsv_lib.isConfigCached('UnitNo', channelNo):
+            unitNo = self.gsv_lib.getCachedProperty('UnitNo',channelNo)
+            unit_str = unit_codes.unit_code_to_shortcut.get(unitNo)
+            unit_str = unit_str.decode("utf8")
+            self.session.publish(u"de.me_systeme.gsv.onGetUnitNo",
+                             [0x00, 'ERR_OK', channelNo, unitNo, unit_str])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildGetUnitNo(channelNo), 'rcvGetUnitNo', channelNo)
 
     def writeUnitNo(self, channelNo, unitNo):
         self.session.writeAntwort(self.gsv_lib.buildWriteUnitNo(channelNo, unitNo), 'rcvWriteUnitNo', channelNo)
 
     def getSerialNo(self):
-        self.session.writeAntwort(self.gsv_lib.buildGetSerialNo(), 'rcvGetSerialNo')
+        if self.gsv_lib.isConfigCached('SerialNo', 'SerialNo'):
+            self.session.publish(u"de.me_systeme.gsv.onGetSerialNo",
+                             [0x00, 'ERR_OK', self.gsv_lib.getCachedProperty('SerialNo', 'SerialNo')])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildGetSerialNo(), 'rcvGetSerialNo')
 
     def getDeviceHours(self):
         self.session.writeAntwort(self.gsv_lib.buildGetDeviceHours(), 'rcvGetDeviceHours')
 
     def getDataRate(self):
-        self.session.writeAntwort(self.gsv_lib.buildGetDataRate(), 'rcvGetDataRate')
+        if self.gsv_lib.isConfigCached('DataRate', 'DataRate'):
+            self.session.publish(u"de.me_systeme.gsv.onGetDataRate",
+                             [0x00, 'ERR_OK', self.gsv_lib.getCachedProperty('DataRate', 'DataRate')])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildGetDataRate(), 'rcvGetDataRate')
 
     def writeDataRate(self, dataRateValue):
         dataRate = self.gsv_lib.convertFloatsToBytes([dataRateValue])
@@ -605,18 +711,34 @@ class GSVeventHandler():
         self.session.writeAntwort(self.gsv_lib.buildWriteSetZero(channelNo), 'rcvWriteSetZero', channelNo)
 
     def getFirmwareVersion(self):
-        self.session.writeAntwort(self.gsv_lib.buildgetFirmwareVersion(), 'rcvGetFirmwareVersion')
-        
+        if self.gsv_lib.isConfigCached('FirmwareVersion', 'major'):
+            self.session.publish(u"de.me_systeme.gsv.onGetFirmwareVersion",
+                                 [0x00, 'ERR_OK', [self.gsv_lib.getCachedProperty('FirmwareVersion', 'major'),self.gsv_lib.getCachedProperty('FirmwareVersion', 'minor')]])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildgetFirmwareVersion(), 'rcvGetFirmwareVersion')
+
     def getReadUserOffset(self, channelNo):
-        self.session.writeAntwort(self.gsv_lib.buildReadUserOffset(channelNo), 'rcvGetReadUserOffset', channelNo)
+        if self.gsv_lib.isConfigCached('UserOffset', channelNo):
+            self.session.publish(u"de.me_systeme.gsv.onGetReadUserOffset",
+                             [0x00, 'ERR_OK', channelNo, self.gsv_lib.getCachedProperty('UserOffset',channelNo)])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildReadUserOffset(channelNo), 'rcvGetReadUserOffset', channelNo)
 
     def writeUserOffset(self, channelNo, userOffsetValue):
         # first convert float to bytes
         userOffset = self.gsv_lib.convertFloatsToBytes([userOffsetValue])
         self.session.writeAntwort(self.gsv_lib.buildWriteUserOffset(channelNo, userOffset), 'rcvWriteUserOffset',
                                   channelNo)
+
     def getReadInputType(self, channelNo):
-        self.session.writeAntwort(self.gsv_lib.buildReadInputType(channelNo), 'rcvGetReadInputType', channelNo)
+        if self.gsv_lib.isConfigCached('InputType', channelNo):
+            self.session.publish(u"de.me_systeme.gsv.onGetReadInputType",
+                             [0x00, 'ERR_OK', channelNo, self.gsv_lib.getCachedProperty('InputType',channelNo)])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildReadInputType(channelNo), 'rcvGetReadInputType', channelNo)
+
+    def getCachedConfig(self):
+        return self.gsv_lib.getCachedConfig()
 
     def getCSVFileList(self):
         # in this function, we write nothing to the GSV-modul
@@ -625,11 +747,11 @@ class GSVeventHandler():
         files = filter(os.path.isfile, glob.glob(search_dir + "*.csv"))
         files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
         print files
-        return [search_dir,files]
+        return [search_dir, files]
 
     def deleteCSVFile(self, fileName):
         filepath = self.session.config.extra['csvpath'] + fileName
-        if(os.path.isfile(filepath)):
+        if (os.path.isfile(filepath)):
             try:
                 os.remove(filepath)
             except Exception, e:
@@ -731,7 +853,10 @@ class FrameRouter(threading.Thread):
         if (self.hasToWriteCSVdata):
             self.messFrameEventHandler.writeCSVdataNow(self.startTimeStampStr)
 
+
 from time import sleep
+
+
 class McuComponent(ApplicationSession):
     """
     RPi WAMP application component.
@@ -820,21 +945,22 @@ class McuComponent(ApplicationSession):
         self.publish(u"de.me_systeme.gsv.onError", errorString)
 
     sendCounter = 0
+
     def writeAntwort(self, data, functionName, args=None):
         # okay this function have to be atomic
         # we protect it with a lock!
         self.serialWrite_lock.acquire()
         self.actTime = datetime.now()
         diffTime = self.actTime - self.lastTime
-        if diffTime.days<=0 and diffTime.seconds<=2:
-            if(diffTime.seconds==0 and diffTime.microseconds<2000):
-                self.sendCounter +=1
-                if self.sendCounter>=10:
-                    self.sendCounter=0
-                    print("serialWait, for GSV-6CPU RX Buffer overflow")
-                    sleep(0.2) # Time in seconds
+        if diffTime.days <= 0 and diffTime.seconds <= 2:
+            if (diffTime.seconds == 0 and diffTime.microseconds < 2000):
+                self.sendCounter += 1
+                if self.sendCounter >= 10:
+                    self.sendCounter = 0
+                    print("serialWait, prevent GSV-6CPU RX Buffer overflow")
+                    sleep(0.2)  # Time in seconds
             else:
-                self.sendCounter=0
+                self.sendCounter = 0
         try:
             self.antwortQueue.put_nowait({functionName: args})
             self.serialPort.write(str(data))
@@ -864,6 +990,7 @@ class McuComponent(ApplicationSession):
         finally:
             self.serialWrite_lock.release()
     '''
+
     def publish_test(self, topic, args):
         self.publish(topic, args)
 
@@ -949,7 +1076,7 @@ if __name__ == '__main__':
         from twisted.web.server import Site
         from twisted.web.static import File
 
-        #reactor.listenTCP(args.web, Site(File(".")))
+        # reactor.listenTCP(args.web, Site(File(".")))
         # wwwroot
         root = File("./wwwroot/")
         # messungenroot

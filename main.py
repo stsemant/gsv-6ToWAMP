@@ -70,21 +70,20 @@ print('Payload: ' + ' '.join(format(x, '02x') for x in result.getPayload()))
 print('Laenge des Payloads ' + str(frame.getLength()))
 print('Payload: ' + ' '.join(format(x, '02x') for x in frame.getPayload()))
 '''
+config = {}
+config['xyz'] = "test"
+config['a'] = []
+config['a'].append("r")
+testobj = 'asd'
 
-from datetime import datetime
+if config.has_key(testobj):
+    print("ja1")
 
-print datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-print datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-import csv
-fileWritingStarted=False
-fileName='test.csv'
-#fileName = datetime.utcnow().strftime('%Y-%m-%d %H-%M-%S')
-with open('./messungen/'+fileName, 'ab') as csvfile:
-    fieldnames = ['timestamp', 'channel0', 'channel1', 'channel2', 'channel3', 'channel4', 'channel5']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
+testobj = 'xyz'
+if config.has_key(testobj):
+    print("ja2")
 
-    writer.writeheader()
-    writer.writerow({'timestamp': '2015-10-05 13:00:05.544', 'channel3': -3.2044434192357585e-05, 'channel2': 0.00016022217459976673, 'channel1': 3.2044434192357585e-05, 'channel0': 6.408886838471517e-05, 'channel5': 0.0002563554735388607, 'channel4': 6.408886838471517e-05})
-    writer.writerow({'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 'channel0': 3.23})
-    writer.writerow({'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 'channel0': 3.23})
-    writer.writerow({'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 'channel0': 3.23})
+config.pop(testobj, None)
+
+if config.has_key(testobj):
+    print("ja3")

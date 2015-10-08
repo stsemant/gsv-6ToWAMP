@@ -92,10 +92,10 @@
         function onStartStopTransmission(args) {
             args = args[0];
             if (parseInt(args[0]) != 0) {
-                alert('can#t StartStop: ' + args[0]);
+                alert('can#t StartStop: ' + args[1]);
             } else {
                 // no Error
-                if (args[1]) {
+                if (args[2]) {
                     smoothie.start();
                 } else {
                     $("#inputOverloadWarning").hide();
@@ -120,6 +120,7 @@
 
         function onSetUnitText(args) {
             console.log(args[0]);
+            console.log(args[1]);
         }
 
         function onReceiveError(args) {
@@ -143,19 +144,19 @@
         function onGetReadUserScale(args) {
             args = args[0];
             if (args[0] != 0) {
-                console.log("onGetReadUserScale");
                 // TODO: fehler text einbinden
                 console.log(args[0]);
-                return;
-            }
-            var channelNo = parseInt(args[1]);
-            var channelScale = parseFloat(args[2]);
-            userScales[channelNo] = channelScale;
+                console.log(args[1])
+            } else {
+                var channelNo = parseInt(args[2]);
+                var channelScale = parseFloat(args[3]);
+                userScales[channelNo] = channelScale;
 
-            if (channelNo == aktiveChannel) {
-                var scaleWithTenPercent = (channelScale * 1.10).toFixed(2);
-                smoothie.options.minValue = -1 * scaleWithTenPercent;
-                smoothie.options.maxValue = scaleWithTenPercent;
+                if (channelNo == aktiveChannel) {
+                    var scaleWithTenPercent = (channelScale * 1.10).toFixed(2);
+                    smoothie.options.minValue = -1 * scaleWithTenPercent;
+                    smoothie.options.maxValue = scaleWithTenPercent;
+                }
             }
         }
 
@@ -163,7 +164,8 @@
             args = args[0];
             if (parseInt(args[0]) != 0) {
                 //error
-                alert("fehler getUnitNo");
+                console.log(args[0]);
+                console.log(args[1])
             } else {
                 var channel_unit = null;
                 switch (parseInt(args[2])) {
@@ -196,40 +198,45 @@
         }
 
         function onGetInterface(args) {
-            //console.log(args[0]);
             args = args[0];
-
-            var channels = parseInt(args['anzahl_messwert-frame-objekte']);
-            if (channels > 0)
-                $("#channel1").show();
-            else
-                $("#channel1").hide();
-            if (channels > 1)
-                $("#channel2").show();
-            else
-                $("#channel2").hide();
-            if (channels > 2)
-                $("#channel3").show();
-            else
-                $("#channel3").hide();
-            if (channels > 3)
-                $("#channel4").show();
-            else
-                $("#channel4").hide();
-            if (channels > 4)
-                $("#channel5").show();
-            else
-                $("#channel5").hide();
-
-            $("#geraete_model").html(args['geraete_model']);
-
-            if (args['messuebertragung'] == true) {
-                smoothie.start();
+            if (args[0] != 0) {
+                // TODO: Fehler meldung
+                console.log(args[0]);
+                console.log(args[1]);
             } else {
-                smoothie.stop();
-                $("#inputOverloadWarning").hide();
-                $("#sixachsiserrorWarning").hide();
+                args = args[2];
+                var channels = parseInt(args['anzahl_messwert-frame-objekte']);
+                if (channels > 0)
+                    $("#channel1").show();
+                else
+                    $("#channel1").hide();
+                if (channels > 1)
+                    $("#channel2").show();
+                else
+                    $("#channel2").hide();
+                if (channels > 2)
+                    $("#channel3").show();
+                else
+                    $("#channel3").hide();
+                if (channels > 3)
+                    $("#channel4").show();
+                else
+                    $("#channel4").hide();
+                if (channels > 4)
+                    $("#channel5").show();
+                else
+                    $("#channel5").hide();
+
+                $("#geraete_model").html(args['geraete_model']);
+                if (args['messuebertragung'] == true) {
+                    smoothie.start();
+                } else {
+                    smoothie.stop();
+                    $("#inputOverloadWarning").hide();
+                    $("#sixachsiserrorWarning").hide();
+                }
             }
+
         }
 
         function setZero(channelNo) {
@@ -252,16 +259,16 @@
             $('#btn-setZero' + args[2]).popover("destroy");
             if (args[0] != 0) {
                 $('#btn-setZero' + args[2]).prop('title', args[1]).tooltip('show');
-                return
+            } else {
+                $('#btn-setZero' + args[2]).prop('title', 'setZero(Tara) erfolgreich').tooltip('show');
+                $('#btn-setZero' + args[2]).removeClass("btn-warning disabled");
+                $('#btn-setZero' + args[2]).addClass("btn-success");
+                taraTimers[args[2]] = setTimeout(function () {
+                    $('#btn-setZero' + args[2]).tooltip("destroy");
+                    $('#btn-setZero' + args[2]).removeClass("btn-success disabled");
+                    $('#btn-setZero' + args[2]).addClass("btn-warning");
+                }, 3500);
             }
-            $('#btn-setZero' + args[2]).prop('title', 'setZero(Tara) erfolgreich').tooltip('show');
-            $('#btn-setZero' + args[2]).removeClass("btn-warning disabled");
-            $('#btn-setZero' + args[2]).addClass("btn-success");
-            taraTimers[args[2]] = setTimeout(function () {
-                $('#btn-setZero' + args[2]).tooltip("destroy");
-                $('#btn-setZero' + args[2]).removeClass("btn-success disabled");
-                $('#btn-setZero' + args[2]).addClass("btn-warning");
-            }, 3500);
         }
 
         function plotThisChannel(channelNo) {
@@ -398,6 +405,9 @@
             //-----------> responsive Canvas
 
         });
+        function xyz() {
+            session.call("de.me_systeme.gsv.getGetIntetface");
+        }
     </script>
 
 </head>
@@ -450,6 +460,7 @@
     <button type="button" class="btn btn-danger" onclick="startStopTransmission(false)">Stop</button>
     <button id="btn-setZero0" type="button" class="btn btn-warning" onclick="$('#modalTaraAll').modal('show');">Tara all
     </button>
+    <button type="button" class="btn btn-warning" onclick="xyz()">test</button>
     <div class="checkbox">
         <label><input id="recordCheckbox" type="checkbox" value="" checked>Messung aufzeichen</label>
     </div>
