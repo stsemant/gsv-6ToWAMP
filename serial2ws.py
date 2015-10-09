@@ -78,7 +78,7 @@ class GSV_6Protocol(protocol.Protocol):
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
         # logger.debug('[' + __name__ + '] serial data received.')
-        # print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
+        print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
 
         self.checkForCompleteFrame()
         # print("get DATA")
@@ -416,20 +416,21 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onStartStopTransmission",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), start])
 
-    def rcvGetUnitText(self, frame):
-        # TODO: what about cache?
-        if not (frame.getPayload()[0] == 0):
-            print('error')
-        else:
-            text = self.gsv_lib.convertToString(frame.getPayload()[1:])[0]
-            self.session.publish(u"de.me_systeme.gsv.onGetUnitText",
-                                 [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), text])
+    def rcvGetUnitText(self, frame, slot):
+        # datatype-conversion
+        text = self.gsv_lib.convertToString(frame.getPayload()[1:])[0]
+        text = text.decode("utf8")
+        # for cache
+        self.gsv_lib.addConfigToCache('UnitText', slot, text)
+        # answer from GSV-6CPU
+        self.session.publish(u"de.me_systeme.gsv.onGetUnitText",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), text])
 
-    def rcvSetUnitText(self, frame):
+    def rcvSetUnitText(self, frame, slot):
         # for cache
         if frame.getAntwortErrorCode() == 0:
             # TODO: Slot 0 und 1 beachten! -> nicht impl.
-            self.gsv_lib.markChachedConfiAsDirty('UnitText')
+            self.gsv_lib.markChachedConfiAsDirty('UnitText', slot)
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onSetUnitText",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText()])
@@ -654,20 +655,24 @@ class GSVeventHandler():
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
-            print('Start Transmission. Call from ' + str(kwargs['details'].caller))
+            msg = 'Start Transmission. Call from ' + str(kwargs['details'].caller)
+            print(msg)
+            self.session.addError(msg)
             data = self.gsv_lib.buildStartTransmission()
             self.eventHandler.setStartTimeStampStr(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
         else:
-            print('Stops Transmission. Call from ' + str(kwargs['details'].caller))
+            msg = 'Stop Transmission. Call from ' + str(kwargs['details'].caller)
+            print(msg)
+            self.session.addError(msg)
             data = self.gsv_lib.buildStopTransmission()
             self.eventHandler.writeCSVdata()
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
-    def getUnitText(self):
-        self.session.writeAntwort(self.gsv_lib.buildGetUnitText(), 'rcvGetUnitText')
+    def getUnitText(self, slot=0):
+        self.session.writeAntwort(self.gsv_lib.buildGetUnitText(), 'rcvGetUnitText', slot)
 
-    def setUnitText(self, text):
-        self.session.writeAntwort(self.gsv_lib.buildSetUnitText(text), 'rcvSetUnitText')
+    def setUnitText(self, text, slot=0):
+        self.session.writeAntwort(self.gsv_lib.buildSetUnitText(text, slot), 'rcvSetUnitText', slot)
 
     def getGetInterface(self, ubertragung=None):
         # this property is not suitable for caching
@@ -847,15 +852,20 @@ class FrameRouter(threading.Thread):
         self.daemon = True
 
     def run(self):
-        # now wait for GSV-6CPU
-        while not self.session.isSerialConnected:
-            pass
-        self.checkForGSVavailableAndFillCache()
-        print("[router] start loop.")
         # arbeits Thread: router -> routen von AntwortFrames und MessFrames
         FrameRouter.lock.acquire()
         self.running = True
         FrameRouter.lock.release()
+        msg = "[router] started"
+        print(msg)
+        self.session.addError(msg)
+
+        # now wait for GSV-6CPU
+        while not self.session.isSerialConnected and self.running:
+            pass
+        self.checkForGSVavailableAndFillCache()
+
+        # enter rooter loop
         while self.running:
             try:
                 # newFrame = self.frameQueue.popleft()
@@ -879,7 +889,9 @@ class FrameRouter(threading.Thread):
                     print('nothing to do with an FrameType != Messwert/Antwort')
                     self.session.addError('nothing to do with an FrameType != Messwert/Antwort')
 
-        print("[router] exit loop.")
+        msg = "[router] exit"
+        print(msg)
+        self.session.addError(msg)
 
     def stop(self):
         FrameRouter.lock.acquire()
@@ -901,15 +913,22 @@ class FrameRouter(threading.Thread):
     def checkForGSVavailableAndFillCache(self):
         data = self.gsv6.buildStopTransmission()
         while True:
-            print("try to reach GSV-6CPU ...")
+            msg = "try to reach GSV-6CPU ..."
+            print(msg)
+            self.session.addError(msg)
+
             self.session.write(data)
             sleep(1.0)
             if not self.frameQueue.empty():
                 frame = self.frameQueue.get()
                 if frame.getAntwortErrorCode() != 0x00:
-                    print("error init modul-communication. re-try")
-                    pass
+                    msg = "error init modul-communication. re-try"
+                    print(msg)
+                    self.session.addError(msg)
                 else:
+                    msg = "GSV-6CPU found."
+                    print(msg)
+                    self.session.addError(msg)
                     # fill cache
                     self.eventHandler.getDataRate()
                     self.eventHandler.getFirmwareVersion()
@@ -937,10 +956,16 @@ class FrameRouter(threading.Thread):
                     self.eventHandler.getUnitNo(4)
                     self.eventHandler.getUnitNo(5)
                     self.eventHandler.getUnitNo(6)
+                    self.eventHandler.getUnitText(0)
+                    self.eventHandler.getUnitText(1)
+                    msg = "cache filled"
+                    print(msg)
+                    self.session.addError(msg)
                     break;
-                    pass
             else:
-                print("GSV-6CPU didn't answer, will wait 5 sec. and try again...")
+                msg = "GSV-6CPU didn't answer, will wait 5 sec. and try again..."
+                print(msg)
+                self.session.addError(msg)
                 sleep(5.0)
 
 
@@ -1013,6 +1038,9 @@ class McuComponent(ApplicationSession):
             self.isSerialConnected = True
         except Exception as e:
             print('Could not open serial port: {0}'.format(e))
+            self.router.stop()
+            # wait max 1 Sec.
+            self.router.join(1.0)
             self.leave()
         else:
             pass

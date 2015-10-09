@@ -45,6 +45,11 @@
                             var tdID = $(this).attr('id');
                             if (tdID == fileStr) {
                                 $(this).closest('tr').fadeOut();
+                                $(this).closest('tr').remove();
+                                if($('#filesTable').empty()){
+                                    $('#filesRow').hide();
+                                    $('#noFilesText').show();
+                                }
                             }
                         })
                     });

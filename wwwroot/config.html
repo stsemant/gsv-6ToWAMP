@@ -322,7 +322,7 @@
                 $('#device_hours_counter').html(args[1]);
                 data['DeviceHoursAbs'] = args[1];
                 check_isConfig_complete(data);
-            }else{
+            } else {
                 $('#device_hours_counter').html(args[2]);
                 data['DeviceHoursAbs'] = parseInt(args[2]);
             }
@@ -413,6 +413,33 @@
             }, session.log);
         }
 
+        function setUnitText(slot) {
+            var newStr = $('#newUnitText').val();
+            if (newStr.length > 8) {
+                $('#newUnitText').prop('title', 'UnitText darf nicht mehr als 8 Zeichen lang sein!').tooltip('show');
+            } else {
+                $('#newUnitText').tooltip('destroy');
+                $('#setUnitTextModal').modal('hide');
+                $('#newUnitText').val('');
+                session.call("de.me_systeme.gsv.setUnitText", [newStr, slot]);
+            }
+        }
+        function onSetUnitText(args) {
+            args = args[0];
+            console.log(args);
+            if (args[0] != 0) {
+                showGeError('UnitText konnte nicht gesetzt werde!', args[1]);
+            } else {
+                // TODO: selects aktualisieren
+            }
+        }
+
+        function showGeError(title, detail) {
+            $('#geError_header').html(title);
+            $('#geError_detail').html(detail);
+            $('#geErrorModal').modal('show');
+        }
+
         window.onload = function () {
             $('#myPleaseWait').modal('show');
             loadConfigTimer = setTimeout(onLoadConfigError, loadTimeOut);
@@ -453,6 +480,7 @@
                 session.subscribe("de.me_systeme.gsv.onGetReadUserOffset", onGetReadUserOffset);
                 session.subscribe("de.me_systeme.gsv.onWriteUserOffset", onWriteUserOffset);
                 session.subscribe("de.me_systeme.gsv.onGetReadInputType", onGetReadInputType);
+                session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -496,11 +524,11 @@
                 session.call("de.me_systeme.gsv.getReadInputType", [6]);
 
                 /*
-                session.call('de.me_systeme.gsv.getCachedConfig').then(function (res) {
-                    console.log("CachedConfig");
-                    console.log(res);
-                }, session.log);
-                */
+                 session.call('de.me_systeme.gsv.getCachedConfig').then(function (res) {
+                 console.log("CachedConfig");
+                 console.log(res);
+                 }, session.log);
+                 */
             };
             connection.open();
 
@@ -631,6 +659,64 @@
     </div>
 </div>
 <!-- Error Modal ends Here -->
+<!-- setUserText Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="setUnitTextModal" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="setUnitTextTitle"><span class="glyphicon glyphicon-pencil"></span> Setzten
+                    des Unit-Textes</h4>
+            </div>
+            <div class="modal-body">
+                <dl>
+                    <dt>Slot</dt>
+                    <dd id="setUnitTextSlot">-</dd>
+                </dl>
+                <input id="newUnitText" maxlength="8" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning"
+                        onclick="setUnitText(parseInt($('#setUnitTextSlot').html()));">
+                    Ja, &uuml;bernehmen
+                </button>
+                <button type="button" class="btn btn-success"
+                        onclick="$('#newUnitText').val('');$('#setUnitTextModal').modal('hide');">Nein,
+                    Abbruch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<!-- setUserText Modal ends Here -->
+<!-- setUserText Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="geErrorModal" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+
+                <h4 class="modal-title"><span class="glyphicon glyphicon-alert"></span> Es ist ein Fehler aufgetreten
+                </h4>
+            </div>
+            <div class="modal-body">
+                <dl>
+                    <dt id="geError_header">-</dt>
+                    <dd id="geError_detail">-</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning"
+                        onclick="$('#geErrorModal').modal('hide');">
+                    O.K.
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<!-- setUserText Modal ends Here -->
 <div class="container">
 
     <div class="well well-sm">Modul Info</div>
@@ -1294,10 +1380,36 @@
         </div>
     </div>
 
-    <div class="panel panel-danger">
-        <div class="panel-heading">Danger-Zone</div>
-        <div class="panel-body">
-            <button id="btn-saveAll" type="button" class="btn btn-warning" onclick="WriteSaveAll()">SaveAll</button>
+    <div class="row">
+        <div class="col-sm-4 box">
+            <div class="panel panel-danger">
+                <div class="panel-heading">Danger-Zone</div>
+                <div class="panel-body">
+                    <div class="col-sm-3 box">
+                        <button id="btn-saveAll" type="button" class="btn btn-warning" onclick="WriteSaveAll()">SaveAll
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-8 box">
+            <div class="panel panel-default">
+                <div class="panel-heading">User-UnitText</div>
+                <div class="panel-body">
+                    <div class="col-sm-3 box">
+                        <button id="btn-setUnitText0" type="button" class="btn btn-default"
+                                onclick="$('#setUnitTextSlot').html('0');$('#setUnitTextModal').modal('show');">
+                            <span class="glyphicon glyphicon-pencil"></span> set UnitText slot 0
+                        </button>
+                    </div>
+                    <div class="col-sm-3 box">
+                        <button id="btn-setUnitText1" type="button" class="btn btn-default"
+                                onclick="$('#setUnitTextSlot').html('1');$('#setUnitTextModal').modal('show');">
+                            <span class="glyphicon glyphicon-pencil"></span> set UnitText slot 1
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

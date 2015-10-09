@@ -44,5 +44,7 @@ unit_code_to_shortcut = {
     39: 'm³/h',
     40: 'mA',
     41: 'A',
-    42: 'm/s²'
+    42: 'm/s²',
+    254:'nicht gesetzt',
+    255:'nicht gesetzt'
 }
