@@ -53,7 +53,8 @@
             for (var key in args[0]) {
                 channel_value = document.getElementById(key);
                 var channelNo = parseInt(key.slice(-7)) + 1;
-                var value = parseFloat(args[0][key]) * userScales[channelNo];
+                //var value = parseFloat(args[0][key]) * userScales[channelNo];
+                var value = parseFloat(args[0][key]);
                 if (value < 0) {
                     channel_value.innerHTML = value.toFixed(4);
                 } else {
