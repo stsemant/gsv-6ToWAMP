@@ -4,6 +4,8 @@
 This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
 
 ## Dependencies
+All Dependencies are included
+`TODO: replace Highcharts by an MIT licensed version`
 Dependencie | License
 --- | ---
 [Autobahn](http://autobahn.ws/) | MIT License

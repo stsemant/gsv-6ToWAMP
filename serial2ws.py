@@ -109,7 +109,7 @@ class GSV_6Protocol(protocol.Protocol):
     def dataReceived(self, data):
         self.inDataBuffer.extend(data)
         # logger.debug('[' + __name__ + '] serial data received.')
-        print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
+        # print('[serial|data received] ' + ' '.join(format(x, '02x') for x in bytearray(data)))
 
         self.checkForCompleteFrame()
         # print("get DATA")
