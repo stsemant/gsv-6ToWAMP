@@ -46,7 +46,7 @@
                             if (tdID == fileStr) {
                                 $(this).closest('tr').fadeOut();
                                 $(this).closest('tr').remove();
-                                if($('#filesTable').empty()){
+                                if($('#filesTable').html()==""){
                                     $('#filesRow').hide();
                                     $('#noFilesText').show();
                                 }
@@ -213,7 +213,7 @@
             </div>
             <div class="modal-body">
                 <dl>
-                    <dt>Wollen Sie wirklich folgende Datei L&ouml;schen?</dt>
+                    <dt>Wollen Sie wirklich folgende Datei l&ouml;schen?</dt>
                     <dd id="modalDeleteFile_filename">-</dd>
                 </dl>
             </div>
@@ -232,7 +232,7 @@
 <!-- deleteFile Modal ends Here -->
 <div class="container">
     <div class="well well-sm">Messdaten</div>
-    <h4 id="noFilesText" hidden>keine CSV-Datein vorhanden.</h4>
+    <h4 id="noFilesText" hidden>keine CSV-Dateien vorhanden.</h4>
 
     <div id="filesRow" class="row">
         <div class="col-sm-5 box">
