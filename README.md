@@ -5,7 +5,9 @@ This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-tim
 
 ## Dependencies
 All Dependencies are included
+
 `TODO: replace Highcharts by an MIT licensed version`
+
 Dependencie | License
 --- | ---
 [Autobahn](http://autobahn.ws/) | MIT License
