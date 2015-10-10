@@ -450,12 +450,13 @@ class AntwortFrameHandler():
     def rcvGetUnitText(self, frame, slot):
         # datatype-conversion
         text = self.gsv_lib.convertToString(frame.getPayload()[1:])[0]
+        text = text.decode("ascii")
         text = text.decode("utf8")
         # for cache
         self.gsv_lib.addConfigToCache('UnitText', slot, text)
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetUnitText",
-                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), text])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), slot, text])
 
     def rcvSetUnitText(self, frame, slot):
         # for cache
@@ -464,7 +465,7 @@ class AntwortFrameHandler():
             self.gsv_lib.markChachedConfiAsDirty('UnitText', slot)
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onSetUnitText",
-                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText()])
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), slot])
 
     def rcvGetGetInterface(self, frame, ubertragung=None):
         # datatype-conversion
@@ -532,8 +533,6 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
 
     def rcvGetUnitNo(self, frame, channelNo):
-        # unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
-        # self.session.publish(u"de.me_systeme.gsv.onGetUnitNo", [frame.getAntwortErrorCode(), channelNo, unit_str, frame.getAntwortErrorText()])
         # datatype-conversion
         unit_str = unit_codes.unit_code_to_shortcut.get(frame.getPayload()[0])
         unit_str = unit_str.decode("utf8")
@@ -639,11 +638,8 @@ class AntwortFrameHandler():
 
 
 from datetime import datetime
-
 import glob
 import os
-
-
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
     def __init__(self, session, gsv_lib, antwortQueue, eventHandler):

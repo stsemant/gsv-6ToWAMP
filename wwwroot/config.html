@@ -283,7 +283,7 @@
             }
             else {
                 var inputID = 'UnitNo' + args[2];
-                $('#' + inputID + ' option')[args[3]].selected = true;
+                //$('#' + inputID + '_value option[value="' + args[3] + '"]').prop('selected', true);
                 setInputSuccess(inputID);
                 data['UnitNo' + args[2]] = parseInt(args[3]);
             }
@@ -351,16 +351,16 @@
 
         function onGetDataRate(args) {
             args = args[0];
+            var data = {};
             if (args[0] != 0) {
                 setInputError('DataRate', args[1])
-                return
+                data['DataRate'] = -1;
             }
-            $('#DataRate_value').val(parseFloat(args[2]).toFixed(2));
-            setInputSuccess('DataRate');
-
-            //modul_config['ReadAoutScale'][args[1]] = args[2];
-            var data = {};
-            data['DataRate'] = parseFloat(args[2]);
+            else {
+                $('#DataRate_value').val(parseFloat(args[2]).toFixed(2));
+                setInputSuccess('DataRate');
+                data['DataRate'] = parseFloat(args[2]);
+            }
             check_isConfig_complete(data);
         }
         function WriteDataRate() {
@@ -413,6 +413,36 @@
             }, session.log);
         }
 
+        function onGetUnitText(args) {
+            args = args[0];
+            //console.log(args);
+            var data = {};
+            if (args[0] != 0) {
+                alert("UnitText konnte nicht ermittelt werden.")
+                data['UnitText' + args[2]] = "";
+            }
+            else {
+                var effectiveID = 0;
+                if(parseInt(args[2]) == 0){
+                    effectiveID = 255;
+                }else{
+                    effectiveID = 254;
+                }
+                if(args[3] == ""){
+                    args[3] = 'Slot '+ args[2] + ' nicht gesetzt';
+                }
+
+                $('#UnitNo1 option[value="' + effectiveID + '"]').html(args[3]);
+                $('#UnitNo2 option[value="' + effectiveID + '"]').html(args[3]);
+                $('#UnitNo3 option[value="' + effectiveID + '"]').html(args[3]);
+                $('#UnitNo4 option[value="' + effectiveID + '"]').html(args[3]);
+                $('#UnitNo5 option[value="' + effectiveID + '"]').html(args[3]);
+                $('#UnitNo6 option[value="' + effectiveID + '"]').html(args[3]);
+
+                data['UnitText' + args[2]] = args[3];
+            }
+            check_isConfig_complete(data);
+        }
         function setUnitText(slot) {
             var newStr = $('#newUnitText').val();
             if (newStr.length > 8) {
@@ -431,6 +461,7 @@
                 showGeError('UnitText konnte nicht gesetzt werde!', args[1]);
             } else {
                 // TODO: selects aktualisieren
+                session.call("de.me_systeme.gsv.getUnitText", slot);
             }
         }
 
@@ -481,6 +512,7 @@
                 session.subscribe("de.me_systeme.gsv.onWriteUserOffset", onWriteUserOffset);
                 session.subscribe("de.me_systeme.gsv.onGetReadInputType", onGetReadInputType);
                 session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
+                session.subscribe("de.me_systeme.gsv.onGetUnitText", onGetUnitText);
 
                 debug_div = document.getElementById('debug_out');
 
@@ -522,6 +554,8 @@
                 session.call("de.me_systeme.gsv.getReadInputType", [4]);
                 session.call("de.me_systeme.gsv.getReadInputType", [5]);
                 session.call("de.me_systeme.gsv.getReadInputType", [6]);
+                session.call("de.me_systeme.gsv.getUnitText", [0]);
+                session.call("de.me_systeme.gsv.getUnitText", [1]);
 
                 /*
                  session.call('de.me_systeme.gsv.getCachedConfig').then(function (res) {
@@ -586,7 +620,7 @@
 
         function doneSelect(e) {
             var inputID = $(this).data('id');
-            var index = $(this)[0].selectedIndex;
+            var index = parseInt($('#'+inputID+'_value').val())
             var inputIDno = parseInt(inputID.charAt(inputID.length - 1))
             setInputWarning(inputID, "wird übertragen...");
             session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno, index]);
@@ -1017,49 +1051,51 @@
                             <td>
                                 <div id="UnitNo1" class="form-group has-success has-feedback">
                                     <select id="UnitNo1_value" data-id="UnitNo1" class="form-control unitNo">
-                                        <option>mV/V</option>
-                                        <option>kg</option>
-                                        <option>g</option>
-                                        <option>N</option>
-                                        <option>cN</option>
-                                        <option>V</option>
-                                        <option>µm/m</option>
-                                        <option>(keine)</option>
-                                        <option>t</option>
-                                        <option>kN</option>
-                                        <option>lb</option>
-                                        <option>oz</option>
-                                        <option>kp</option>
-                                        <option>lbf</option>
-                                        <option>pdl</option>
-                                        <option>mm</option>
-                                        <option>m</option>
-                                        <option>cNm</option>
-                                        <option>Nm</option>
-                                        <option>°C</option>
-                                        <option>°F</option>
-                                        <option>K</option>
-                                        <option>oztr</option>
-                                        <option>dwt</option>
-                                        <option>kNm</option>
-                                        <option>%</option>
-                                        <option>‰</option>
-                                        <option>W</option>
-                                        <option>kW</option>
-                                        <option>rpm</option>
-                                        <option>bar</option>
-                                        <option>Pa</option>
-                                        <option>hPa</option>
-                                        <option>MPa</option>
-                                        <option>N/mm²</option>
-                                        <option>°</option>
-                                        <option>Hz</option>
-                                        <option>m/s</option>
-                                        <option>km/h</option>
-                                        <option>m³/h</option>
-                                        <option>mA</option>
-                                        <option>A</option>
-                                        <option>m/s²</option>
+                                        <option value="0">mV/V</option>
+                                        <option value="1">kg</option>
+                                        <option value="2">g</option>
+                                        <option value="3">N</option>
+                                        <option value="4">cN</option>
+                                        <option value="5">V</option>
+                                        <option value="6">µm/m</option>
+                                        <option value="7">(keine)</option>
+                                        <option value="8">t</option>
+                                        <option value="9">kN</option>
+                                        <option value="10">lb</option>
+                                        <option value="11">oz</option>
+                                        <option value="12">kp</option>
+                                        <option value="13">lbf</option>
+                                        <option value="14">pdl</option>
+                                        <option value="15">mm</option>
+                                        <option value="16">m</option>
+                                        <option value="17">cNm</option>
+                                        <option value="18">Nm</option>
+                                        <option value="19">°C</option>
+                                        <option value="20">°F</option>
+                                        <option value="21">K</option>
+                                        <option value="22">oztr</option>
+                                        <option value="23">dwt</option>
+                                        <option value="24">kNm</option>
+                                        <option value="25">%</option>
+                                        <option value="26">‰</option>
+                                        <option value="27">W</option>
+                                        <option value="28">kW</option>
+                                        <option value="29">rpm</option>
+                                        <option value="30">bar</option>
+                                        <option value="31">Pa</option>
+                                        <option value="32">hPa</option>
+                                        <option value="33">MPa</option>
+                                        <option value="34">N/mm²</option>
+                                        <option value="35">°</option>
+                                        <option value="36">Hz</option>
+                                        <option value="37">m/s</option>
+                                        <option value="38">km/h</option>
+                                        <option value="39">m³/h</option>
+                                        <option value="40">mA</option>
+                                        <option value="41">A</option>
+                                        <option value="42">m/s²</option>
+                                        <option value="255">UnitText slot 0</option>
+                                        <option value="254">UnitText slot 1</option>
                                     </select>
                                     <span id="UnitNo1_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
@@ -1071,49 +1107,51 @@
                             <td>
                                 <div id="UnitNo2" class="form-group has-success has-feedback">
                                     <select id="UnitNo2_value" data-id="UnitNo2" class="form-control unitNo">
-                                        <option>mV/V</option>
-                                        <option>kg</option>
-                                        <option>g</option>
-                                        <option>N</option>
-                                        <option>cN</option>
-                                        <option>V</option>
-                                        <option>µm/m</option>
-                                        <option>(keine)</option>
-                                        <option>t</option>
-                                        <option>kN</option>
-                                        <option>lb</option>
-                                        <option>oz</option>
-                                        <option>kp</option>
-                                        <option>lbf</option>
-                                        <option>pdl</option>
-                                        <option>mm</option>
-                                        <option>m</option>
-                                        <option>cNm</option>
-                                        <option>Nm</option>
-                                        <option>°C</option>
-                                        <option>°F</option>
-                                        <option>K</option>
-                                        <option>oztr</option>
-                                        <option>dwt</option>
-                                        <option>kNm</option>
-                                        <option>%</option>
-                                        <option>‰</option>
-                                        <option>W</option>
-                                        <option>kW</option>
-                                        <option>rpm</option>
-                                        <option>bar</option>
-                                        <option>Pa</option>
-                                        <option>hPa</option>
-                                        <option>MPa</option>
-                                        <option>N/mm²</option>
-                                        <option>°</option>
-                                        <option>Hz</option>
-                                        <option>m/s</option>
-                                        <option>km/h</option>
-                                        <option>m³/h</option>
-                                        <option>mA</option>
-                                        <option>A</option>
-                                        <option>m/s²</option>
+                                        <option value="0">mV/V</option>
+                                        <option value="1">kg</option>
+                                        <option value="2">g</option>
+                                        <option value="3">N</option>
+                                        <option value="4">cN</option>
+                                        <option value="5">V</option>
+                                        <option value="6">µm/m</option>
+                                        <option value="7">(keine)</option>
+                                        <option value="8">t</option>
+                                        <option value="9">kN</option>
+                                        <option value="10">lb</option>
+                                        <option value="11">oz</option>
+                                        <option value="12">kp</option>
+                                        <option value="13">lbf</option>
+                                        <option value="14">pdl</option>
+                                        <option value="15">mm</option>
+                                        <option value="16">m</option>
+                                        <option value="17">cNm</option>
+                                        <option value="18">Nm</option>
+                                        <option value="19">°C</option>
+                                        <option value="20">°F</option>
+                                        <option value="21">K</option>
+                                        <option value="22">oztr</option>
+                                        <option value="23">dwt</option>
+                                        <option value="24">kNm</option>
+                                        <option value="25">%</option>
+                                        <option value="26">‰</option>
+                                        <option value="27">W</option>
+                                        <option value="28">kW</option>
+                                        <option value="29">rpm</option>
+                                        <option value="30">bar</option>
+                                        <option value="31">Pa</option>
+                                        <option value="32">hPa</option>
+                                        <option value="33">MPa</option>
+                                        <option value="34">N/mm²</option>
+                                        <option value="35">°</option>
+                                        <option value="36">Hz</option>
+                                        <option value="37">m/s</option>
+                                        <option value="38">km/h</option>
+                                        <option value="39">m³/h</option>
+                                        <option value="40">mA</option>
+                                        <option value="41">A</option>
+                                        <option value="42">m/s²</option>
+                                        <option value="255">UnitText slot 0</option>
+                                        <option value="254">UnitText slot 1</option>
                                     </select>
                                     <span id="UnitNo2_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
@@ -1125,49 +1163,51 @@
                             <td>
                                 <div id="UnitNo3" class="form-group has-success has-feedback">
                                     <select id="UnitNo3_value" data-id="UnitNo3" class="form-control unitNo">
-                                        <option>mV/V</option>
-                                        <option>kg</option>
-                                        <option>g</option>
-                                        <option>N</option>
-                                        <option>cN</option>
-                                        <option>V</option>
-                                        <option>µm/m</option>
-                                        <option>(keine)</option>
-                                        <option>t</option>
-                                        <option>kN</option>
-                                        <option>lb</option>
-                                        <option>oz</option>
-                                        <option>kp</option>
-                                        <option>lbf</option>
-                                        <option>pdl</option>
-                                        <option>mm</option>
-                                        <option>m</option>
-                                        <option>cNm</option>
-                                        <option>Nm</option>
-                                        <option>°C</option>
-                                        <option>°F</option>
-                                        <option>K</option>
-                                        <option>oztr</option>
-                                        <option>dwt</option>
-                                        <option>kNm</option>
-                                        <option>%</option>
-                                        <option>‰</option>
-                                        <option>W</option>
-                                        <option>kW</option>
-                                        <option>rpm</option>
-                                        <option>bar</option>
-                                        <option>Pa</option>
-                                        <option>hPa</option>
-                                        <option>MPa</option>
-                                        <option>N/mm²</option>
-                                        <option>°</option>
-                                        <option>Hz</option>
-                                        <option>m/s</option>
-                                        <option>km/h</option>
-                                        <option>m³/h</option>
-                                        <option>mA</option>
-                                        <option>A</option>
-                                        <option>m/s²</option>
+                                        <option value="0">mV/V</option>
+                                        <option value="1">kg</option>
+                                        <option value="2">g</option>
+                                        <option value="3">N</option>
+                                        <option value="4">cN</option>
+                                        <option value="5">V</option>
+                                        <option value="6">µm/m</option>
+                                        <option value="7">(keine)</option>
+                                        <option value="8">t</option>
+                                        <option value="9">kN</option>
+                                        <option value="10">lb</option>
+                                        <option value="11">oz</option>
+                                        <option value="12">kp</option>
+                                        <option value="13">lbf</option>
+                                        <option value="14">pdl</option>
+                                        <option value="15">mm</option>
+                                        <option value="16">m</option>
+                                        <option value="17">cNm</option>
+                                        <option value="18">Nm</option>
+                                        <option value="19">°C</option>
+                                        <option value="20">°F</option>
+                                        <option value="21">K</option>
+                                        <option value="22">oztr</option>
+                                        <option value="23">dwt</option>
+                                        <option value="24">kNm</option>
+                                        <option value="25">%</option>
+                                        <option value="26">‰</option>
+                                        <option value="27">W</option>
+                                        <option value="28">kW</option>
+                                        <option value="29">rpm</option>
+                                        <option value="30">bar</option>
+                                        <option value="31">Pa</option>
+                                        <option value="32">hPa</option>
+                                        <option value="33">MPa</option>
+                                        <option value="34">N/mm²</option>
+                                        <option value="35">°</option>
+                                        <option value="36">Hz</option>
+                                        <option value="37">m/s</option>
+                                        <option value="38">km/h</option>
+                                        <option value="39">m³/h</option>
+                                        <option value="40">mA</option>
+                                        <option value="41">A</option>
+                                        <option value="42">m/s²</option>
+                                        <option value="255">UnitText slot 0</option>
+                                        <option value="254">UnitText slot 1</option>
                                     </select>
                                     <span id="UnitNo3_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
@@ -1179,49 +1219,51 @@
                             <td>
                                 <div id="UnitNo4" class="form-group has-success has-feedback">
                                     <select id="UnitNo4_value" data-id="UnitNo4" class="form-control unitNo">
-                                        <option>mV/V</option>
-                                        <option>kg</option>
-                                        <option>g</option>
-                                        <option>N</option>
-                                        <option>cN</option>
-                                        <option>V</option>
-                                        <option>µm/m</option>
-                                        <option>(keine)</option>
-                                        <option>t</option>
-                                        <option>kN</option>
-                                        <option>lb</option>
-                                        <option>oz</option>
-                                        <option>kp</option>
-                                        <option>lbf</option>
-                                        <option>pdl</option>
-                                        <option>mm</option>
-                                        <option>m</option>
-                                        <option>cNm</option>
-                                        <option>Nm</option>
-                                        <option>°C</option>
-                                        <option>°F</option>
-                                        <option>K</option>
-                                        <option>oztr</option>
-                                        <option>dwt</option>
-                                        <option>kNm</option>
-                                        <option>%</option>
-                                        <option>‰</option>
-                                        <option>W</option>
-                                        <option>kW</option>
-                                        <option>rpm</option>
-                                        <option>bar</option>
-                                        <option>Pa</option>
-                                        <option>hPa</option>
-                                        <option>MPa</option>
-                                        <option>N/mm²</option>
-                                        <option>°</option>
-                                        <option>Hz</option>
-                                        <option>m/s</option>
-                                        <option>km/h</option>
-                                        <option>m³/h</option>
-                                        <option>mA</option>
-                                        <option>A</option>
-                                        <option>m/s²</option>
+                                        <option value="0">mV/V</option>
+                                        <option value="1">kg</option>
+                                        <option value="2">g</option>
+                                        <option value="3">N</option>
+                                        <option value="4">cN</option>
+                                        <option value="5">V</option>
+                                        <option value="6">µm/m</option>
+                                        <option value="7">(keine)</option>
+                                        <option value="8">t</option>
+                                        <option value="9">kN</option>
+                                        <option value="10">lb</option>
+                                        <option value="11">oz</option>
+                                        <option value="12">kp</option>
+                                        <option value="13">lbf</option>
+                                        <option value="14">pdl</option>
+                                        <option value="15">mm</option>
+                                        <option value="16">m</option>
+                                        <option value="17">cNm</option>
+                                        <option value="18">Nm</option>
+                                        <option value="19">°C</option>
+                                        <option value="20">°F</option>
+                                        <option value="21">K</option>
+                                        <option value="22">oztr</option>
+                                        <option value="23">dwt</option>
+                                        <option value="24">kNm</option>
+                                        <option value="25">%</option>
+                                        <option value="26">‰</option>
+                                        <option value="27">W</option>
+                                        <option value="28">kW</option>
+                                        <option value="29">rpm</option>
+                                        <option value="30">bar</option>
+                                        <option value="31">Pa</option>
+                                        <option value="32">hPa</option>
+                                        <option value="33">MPa</option>
+                                        <option value="34">N/mm²</option>
+                                        <option value="35">°</option>
+                                        <option value="36">Hz</option>
+                                        <option value="37">m/s</option>
+                                        <option value="38">km/h</option>
+                                        <option value="39">m³/h</option>
+                                        <option value="40">mA</option>
+                                        <option value="41">A</option>
+                                        <option value="42">m/s²</option>
+                                        <option value="255">UnitText slot 0</option>
+                                        <option value="254">UnitText slot 1</option>
                                     </select>
                                     <span id="UnitNo4_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
@@ -1233,49 +1275,51 @@
                             <td>
                                 <div id="UnitNo5" class="form-group has-success has-feedback">
                                     <select id="UnitNo5_value" data-id="UnitNo5" class="form-control unitNo">
-                                        <option>mV/V</option>
-                                        <option>kg</option>
-                                        <option>g</option>
-                                        <option>N</option>
-                                        <option>cN</option>
-                                        <option>V</option>
-                                        <option>µm/m</option>
-                                        <option>(keine)</option>
-                                        <option>t</option>
-                                        <option>kN</option>
-                                        <option>lb</option>
-                                        <option>oz</option>
-                                        <option>kp</option>
-                                        <option>lbf</option>
-                                        <option>pdl</option>
-                                        <option>mm</option>
-                                        <option>m</option>
-                                        <option>cNm</option>
-                                        <option>Nm</option>
-                                        <option>°C</option>
-                                        <option>°F</option>
-                                        <option>K</option>
-                                        <option>oztr</option>
-                                        <option>dwt</option>
-                                        <option>kNm</option>
-                                        <option>%</option>
-                                        <option>‰</option>
-                                        <option>W</option>
-                                        <option>kW</option>
-                                        <option>rpm</option>
-                                        <option>bar</option>
-                                        <option>Pa</option>
-                                        <option>hPa</option>
-                                        <option>MPa</option>
-                                        <option>N/mm²</option>
-                                        <option>°</option>
-                                        <option>Hz</option>
-                                        <option>m/s</option>
-                                        <option>km/h</option>
-                                        <option>m³/h</option>
-                                        <option>mA</option>
-                                        <option>A</option>
-                                        <option>m/s²</option>
+                                        <option value="0">mV/V</option>
+                                        <option value="1">kg</option>
+                                        <option value="2">g</option>
+                                        <option value="3">N</option>
+                                        <option value="4">cN</option>
+                                        <option value="5">V</option>
+                                        <option value="6">µm/m</option>
+                                        <option value="7">(keine)</option>
+                                        <option value="8">t</option>
+                                        <option value="9">kN</option>
+                                        <option value="10">lb</option>
+                                        <option value="11">oz</option>
+                                        <option value="12">kp</option>
+                                        <option value="13">lbf</option>
+                                        <option value="14">pdl</option>
+                                        <option value="15">mm</option>
+                                        <option value="16">m</option>
+                                        <option value="17">cNm</option>
+                                        <option value="18">Nm</option>
+                                        <option value="19">°C</option>
+                                        <option value="20">°F</option>
+                                        <option value="21">K</option>
+                                        <option value="22">oztr</option>
+                                        <option value="23">dwt</option>
+                                        <option value="24">kNm</option>
+                                        <option value="25">%</option>
+                                        <option value="26">‰</option>
+                                        <option value="27">W</option>
+                                        <option value="28">kW</option>
+                                        <option value="29">rpm</option>
+                                        <option value="30">bar</option>
+                                        <option value="31">Pa</option>
+                                        <option value="32">hPa</option>
+                                        <option value="33">MPa</option>
+                                        <option value="34">N/mm²</option>
+                                        <option value="35">°</option>
+                                        <option value="36">Hz</option>
+                                        <option value="37">m/s</option>
+                                        <option value="38">km/h</option>
+                                        <option value="39">m³/h</option>
+                                        <option value="40">mA</option>
+                                        <option value="41">A</option>
+                                        <option value="42">m/s²</option>
+                                        <option value="255">UnitText slot 0</option>
+                                        <option value="254">UnitText slot 1</option>
                                     </select>
                                     <span id="UnitNo5_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
@@ -1287,49 +1331,51 @@
                             <td>
                                 <div id="UnitNo6" class="form-group has-success has-feedback">
                                     <select id="UnitNo6_value" data-id="UnitNo6" class="form-control unitNo">
-                                        <option>mV/V</option>
-                                        <option>kg</option>
-                                        <option>g</option>
-                                        <option>N</option>
-                                        <option>cN</option>
-                                        <option>V</option>
-                                        <option>µm/m</option>
-                                        <option>(keine)</option>
-                                        <option>t</option>
-                                        <option>kN</option>
-                                        <option>lb</option>
-                                        <option>oz</option>
-                                        <option>kp</option>
-                                        <option>lbf</option>
-                                        <option>pdl</option>
-                                        <option>mm</option>
-                                        <option>m</option>
-                                        <option>cNm</option>
-                                        <option>Nm</option>
-                                        <option>°C</option>
-                                        <option>°F</option>
-                                        <option>K</option>
-                                        <option>oztr</option>
-                                        <option>dwt</option>
-                                        <option>kNm</option>
-                                        <option>%</option>
-                                        <option>‰</option>
-                                        <option>W</option>
-                                        <option>kW</option>
-                                        <option>rpm</option>
-                                        <option>bar</option>
-                                        <option>Pa</option>
-                                        <option>hPa</option>
-                                        <option>MPa</option>
-                                        <option>N/mm²</option>
-                                        <option>°</option>
-                                        <option>Hz</option>
-                                        <option>m/s</option>
-                                        <option>km/h</option>
-                                        <option>m³/h</option>
-                                        <option>mA</option>
-                                        <option>A</option>
-                                        <option>m/s²</option>
+                                        <option value="0">mV/V</option>
+                                        <option value="1">kg</option>
+                                        <option value="2">g</option>
+                                        <option value="3">N</option>
+                                        <option value="4">cN</option>
+                                        <option value="5">V</option>
+                                        <option value="6">µm/m</option>
+                                        <option value="7">(keine)</option>
+                                        <option value="8">t</option>
+                                        <option value="9">kN</option>
+                                        <option value="10">lb</option>
+                                        <option value="11">oz</option>
+                                        <option value="12">kp</option>
+                                        <option value="13">lbf</option>
+                                        <option value="14">pdl</option>
+                                        <option value="15">mm</option>
+                                        <option value="16">m</option>
+                                        <option value="17">cNm</option>
+                                        <option value="18">Nm</option>
+                                        <option value="19">°C</option>
+                                        <option value="20">°F</option>
+                                        <option value="21">K</option>
+                                        <option value="22">oztr</option>
+                                        <option value="23">dwt</option>
+                                        <option value="24">kNm</option>
+                                        <option value="25">%</option>
+                                        <option value="26">‰</option>
+                                        <option value="27">W</option>
+                                        <option value="28">kW</option>
+                                        <option value="29">rpm</option>
+                                        <option value="30">bar</option>
+                                        <option value="31">Pa</option>
+                                        <option value="32">hPa</option>
+                                        <option value="33">MPa</option>
+                                        <option value="34">N/mm²</option>
+                                        <option value="35">°</option>
+                                        <option value="36">Hz</option>
+                                        <option value="37">m/s</option>
+                                        <option value="38">km/h</option>
+                                        <option value="39">m³/h</option>
+                                        <option value="40">mA</option>
+                                        <option value="41">A</option>
+                                        <option value="42">m/s²</option>
+                                        <option value="255">UnitText slot 0</option>
+                                        <option value="254">UnitText slot 1</option>
                                     </select>
                                     <span id="UnitNo6_glyphicon"
                                           class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
