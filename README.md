@@ -1,7 +1,16 @@
 #gsv-6ToWAMP
 ## GSV-6CPU Modul to WAMP
 
-This demo shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
+This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
+
+## Dependencies
+Dependencie | License
+--- | ---
+[Autobahn](http://autobahn.ws/) | MIT License
+[Bootstrap](http://getbootstrap.com/) | MIT License
+[jQuery](https://jquery.com/) | MIT License
+[Smoothie](http://smoothiecharts.org/) | MIT License
+[Highcharts](http://www.highcharts.com/) | Do you want to use Highcharts for a personal or non-profit project? Then you can use Highchcarts for free under the  Creative Commons Attribution-NonCommercial 3.0 License
 
 ## How it works
 

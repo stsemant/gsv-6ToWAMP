@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+__author__ = 'Dennis Rump'
 ###############################################################################
 #
 # The MIT License (MIT)
 #
-# Copyright (c) Tavendo GmbH
+# Copyright (c) 2015 Dennis Rump
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +23,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+#
+# Hiermit wird unentgeltlich, jeder Person, die eine Kopie der Software
+# und der zugehörigen Dokumentationen (die "Software") erhält, die
+# Erlaubnis erteilt, uneingeschränkt zu benutzen, inklusive und ohne
+# Ausnahme, dem Recht, sie zu verwenden, kopieren, ändern, fusionieren,
+# verlegen, verbreiten, unter-lizenzieren und/oder zu verkaufen, und
+# Personen, die diese Software erhalten, diese Rechte zu geben, unter
+# den folgenden Bedingungen:
+#
+# Der obige Urheberrechtsvermerk und dieser Erlaubnisvermerk sind in
+# alle Kopien oder Teilkopien der Software beizulegen.
+#
+# DIE SOFTWARE WIRD OHNE JEDE AUSDRÜCKLICHE ODER IMPLIZIERTE GARANTIE
+# BEREITGESTELLT, EINSCHLIESSLICH DER GARANTIE ZUR BENUTZUNG FÜR DEN
+# VORGESEHENEN ODER EINEM BESTIMMTEN ZWECK SOWIE JEGLICHER
+# RECHTSVERLETZUNG, JEDOCH NICHT DARAUF BESCHRÄNKT. IN KEINEM FALL SIND
+# DIE AUTOREN ODER COPYRIGHTINHABER FÜR JEGLICHEN SCHADEN ODER SONSTIGE
+# ANSPRUCH HAFTBAR ZU MACHEN, OB INFOLGE DER ERFÜLLUNG VON EINEM
+# VERTRAG, EINEM DELIKT ODER ANDERS IM ZUSAMMENHANG MIT DER BENUTZUNG
+# ODER SONSTIGE VERWENDUNG DER SOFTWARE ENTSTANDEN.
+#
+###############################################################################
+#
+# Based on WebSocket/WAMP Serial2ws Example (https://github.com/tavendo/AutobahnPython/tree/master/examples/twisted/wamp/app/serial2ws)
+# Dependencies:
+#   Autobahn    http://autobahn.ws/         (MIT License)
+#   Bootstrap   http://getbootstrap.com/    (MIT License)
+#   jQuery      https://jquery.com/         (MIT License)
+#   Smoothie    http://smoothiecharts.org/  (MIT License)
+#   Highcharts  http://www.highcharts.com/  (Do you want to use Highcharts for a personal or non-profit project? Then you can use Highchcarts for free under the  Creative Commons Attribution-NonCommercial 3.0 License
 #
 ###############################################################################
 
