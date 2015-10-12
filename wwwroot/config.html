@@ -283,7 +283,7 @@
             }
             else {
                 var inputID = 'UnitNo' + args[2];
-                //$('#' + inputID + '_value option[value="' + args[3] + '"]').prop('selected', true);
+                $('#' + inputID + '_value option[value="' + args[3] + '"]').prop('selected', true);
                 setInputSuccess(inputID);
                 data['UnitNo' + args[2]] = parseInt(args[3]);
             }

@@ -582,8 +582,8 @@ class AntwortFrameHandler():
 
     def rcvWriteDataRate(self, frame, dataRateValue):
         # for cache
-        if frame.getAntwortErrorCode == 0:
-            self.gsv_lib.markChachedConfiAsDirty('DataRate')
+        if frame.getAntwortErrorCode() == 0:
+            self.gsv_lib.markChachedConfiAsDirty('DataRate','DataRate')
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteDataRate",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRateValue])

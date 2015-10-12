@@ -88,6 +88,9 @@ now we have to comment one line in the twisted-source-code
 	cd ~/
 	git clone xxx
 	
+### create folder for csv-files
+	mkdir messungen
+	
 ### run crossbar server
 	cd <projectname>
 	crossbar start &
