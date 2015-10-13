@@ -290,33 +290,6 @@ class GSV_6Protocol(protocol.Protocol):
         self.transport.write(data)
 
 
-import sys, os
-
-
-def change(s):
-    if s == 1:
-        os.system('date -s "2 OCT 2006 18:00:00"')  # don't forget to change it , i've used date command for linux
-    elif s == 2:
-        try:
-            import pywin32
-        except ImportError:
-            print 'pywin32 module is missing'
-            sys.exit(1)
-        pywin32.SetSystemTime(year, month, dayOfWeek, day, hour, minute, second,
-                              millseconds)  # fill all Parameters with int numbers
-    else:
-        print 'wrong param'
-
-
-def check_os():
-    if sys.platform == 'linux2':
-        change(1)
-    elif sys.platform == 'win32':
-        change(2)
-    else:
-        print 'unknown system'
-
-
 import csv
 import threading
 
@@ -662,6 +635,16 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onGetReadInputType",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
 
+    def rcvSetMEid(self, frame, minor):
+        msg = "cache filled"
+        print(msg)
+        self.session.addError(msg)
+        self.session.sys_ready = True
+        if frame.getAntwortErrorCode() != 0:
+            self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', True)
+        else:
+            self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', False)
+
 
 from datetime import datetime
 import glob
@@ -708,6 +691,7 @@ class GSVeventHandler():
         self.session.register(self.getReadInputType, u"de.me_systeme.gsv.getReadInputType")
         self.session.register(self.getCachedConfig, u"de.me_systeme.gsv.getCachedConfig")
         self.session.register(self.setDateTimeFromBrowser, u"de.me_systeme.gsv.setDateTimeFromBrowser")
+        self.session.register(self.isSystemReady, u"de.me_systeme.gsv.isSystemReady")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -854,6 +838,8 @@ class GSVeventHandler():
                 return [0, "ERR_OK", dateTimeStr]
             else:
                 return [x, "an error occurred"]
+    def isSystemReady(self):
+        return self.session.sys_ready
 
     def getCSVFileList(self):
         # in this function, we write nothing to the GSV-modul
@@ -894,6 +880,25 @@ class GSVeventHandler():
             return False
 
 
+class ThreadingWaitForFirmwareVersion(threading.Thread):
+    def __init__(self, session, gsv_lib):
+        threading.Thread.__init__(self)
+        self.session = session
+        self.gsv_lib = gsv_lib
+
+    def run(self):
+        for x in range(0, 10):
+            if self.gsv_lib.isConfigCached('FirmwareVersion', 'minor'):
+                minor = self.gsv_lib.getCachedProperty('FirmwareVersion', 'minor')
+                minor = int(minor)
+                self.gsv_lib.buildSetMEid(minor)
+                self.session.writeAntwort(self.gsv_lib.buildSetMEid(minor), 'rcvSetMEid', minor)
+                break
+            else:
+                print("wait for cache...")
+                sleep(0.5)
+
+
 from gsv6_seriall_lib import GSV6_seriall_lib
 
 
@@ -918,6 +923,7 @@ class FrameRouter(threading.Thread):
         self.antwortFrameEventHandler = AntwortFrameHandler(self.session, self.gsv6, self.eventHandler,
                                                             self.antwortQueue, )
 
+        self.waitFirmwareVersionThread = ThreadingWaitForFirmwareVersion(self.session, self.gsv6)
         # fallback, this flag kills this thread if main thread killed
         self.daemon = True
 
@@ -1001,7 +1007,6 @@ class FrameRouter(threading.Thread):
                     self.session.addError(msg)
                     # fill cache
                     self.eventHandler.getDataRate()
-                    self.eventHandler.getFirmwareVersion()
                     self.eventHandler.getReadInputType(1)
                     self.eventHandler.getReadInputType(2)
                     self.eventHandler.getReadInputType(3)
@@ -1028,9 +1033,10 @@ class FrameRouter(threading.Thread):
                     self.eventHandler.getUnitNo(6)
                     self.eventHandler.getUnitText(0)
                     self.eventHandler.getUnitText(1)
-                    msg = "cache filled"
-                    print(msg)
-                    self.session.addError(msg)
+
+                    # getFirmwareVersion() have to bee the last one
+                    self.eventHandler.getFirmwareVersion()
+                    self.waitFirmwareVersionThread.start()
                     break;
             else:
                 msg = "GSV-6CPU didn't answer, will wait 5 sec. and try again..."
@@ -1071,6 +1077,9 @@ class McuComponent(ApplicationSession):
     # GSV-6CPU RX bufferoverflow prevention
     actTime = None
     lastTime = datetime.now()
+
+    # ready falg
+    sys_ready = False
 
     '''
     def __init__(self):

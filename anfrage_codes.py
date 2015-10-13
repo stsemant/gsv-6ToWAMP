@@ -65,6 +65,7 @@ anfrage_code_to_shortcut = {
     'SetUnitText': 0x12,
     'GetUnitNo': 0x0F,
     'SetUnitNo': 0x10,
+    'MEsetID': 0x19,
     'GetFirmwareVersion': 0x2B,
     'GetDeviceHours': 0x56,
     'ReadDataRate': 0x8A,

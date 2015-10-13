@@ -495,3 +495,7 @@ class GSV6_seriall_lib:
 
     def buildReadInputType(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetInputType'), [channelNo, 0x00])
+
+    def buildSetMEid(self, minor):
+        magicCode = bytearray([0x4D,0x45,0x69, minor])
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('MEsetID'), magicCode)
