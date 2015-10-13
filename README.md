@@ -14,7 +14,7 @@ Dependencie | License
 [Bootstrap](http://getbootstrap.com/) | MIT License
 [jQuery](https://jquery.com/) | MIT License
 [Smoothie](http://smoothiecharts.org/) | MIT License
-[Highcharts](http://www.highcharts.com/) | Do you want to use Highcharts for a personal or non-profit project? Then you can use Highchcarts for free under the  Creative Commons Attribution-NonCommercial 3.0 License
+[Highstock](http://www.highcharts.com/products/highstock) | Do you want to use Highcharts/Highstock for a personal or non-profit project? Then you can use Highchcarts/Hightock for free under the  Creative Commons Attribution-NonCommercial 3.0 License
 
 ## How it works
 

@@ -16,7 +16,7 @@
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
     <script src="js/autobahn.min.js"></script>
-    <script src="js/highcharts.js"></script>
+    <script src="js/highstock.js"></script>
     <script src="js/highcharts_data.js"></script>
     <!--<script src="http://code.highcharts.com/modules/exporting.js"></script>-->
     <script>
@@ -41,67 +41,6 @@
             debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
         }
 
-        function test() {
-            $.get('messungen/' + parse('file'), function (csv) {
-                chart = new Highcharts.Chart({
-                    chart: {
-                        renderTo: 'chartContainer',
-                        events: {
-                            load: function (event) {
-                                //alert('Chart loaded');
-                                this.series.forEach(function (d, i) {
-                                    d.hide();
-                                    var nameAndUnit = d.name.split('[');
-                                    var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1)
-                                    d.update({name: 'Kanal ' + channleNo}, false);
-                                    if (nameAndUnit.length <= 1) {
-                                        d.id = "undefined";
-                                    } else {
-                                        d.id = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1)
-                                    }
-                                })
-                            }
-                        }
-                    },
-                    data: {
-                        csv: csv
-                    },
-                    yAxis: {
-                        title: {
-                            text: "[Einheit]"
-                        }
-                    },
-                    plotOptions: {
-                        series: {
-                            marker: {
-                                enabled: false
-                            },
-                            events: {
-                                show: function (e) {
-                                    chart.series.forEach(function (d, i) {
-                                        if (d.name != e.currentTarget.name) {
-                                            d.hide();
-                                        }
-                                    })
-                                    chart.yAxis[0].update({
-                                        title: {
-                                            text: e.currentTarget.id
-                                        }
-                                    }, true);
-                                }
-                            }
-                        }
-                    },
-                    title: {
-                        text: 'Messung'
-                    },
-                    subtitle: {
-                        text: chartTitle
-                    }
-                });
-                chart.series[0].show();
-            });
-        }
 
         function parse(val) {
             /*  this function is from:
@@ -122,12 +61,12 @@
             return result;
         }
 
-        function showFileNotFoundError(filename){
+        function showFileNotFoundError(filename) {
             $('#modal_filename').html(filename)
             $('#errorModal').modal('show');
         }
 
-        function backToMessungen(){
+        function backToMessungen() {
             window.location.href = './messungen.html';
         }
 
@@ -217,21 +156,24 @@
                 request.success(function (csv) {
                     //console.log(csv);
                     //$('#chartContainer').highcharts({
-                    chart = new Highcharts.Chart({
+                    chart = new Highcharts.StockChart({
                         chart: {
                             renderTo: 'chartContainer',
                             events: {
                                 load: function (event) {
-                                    //alert('Chart loaded');
                                     this.series.forEach(function (d, i) {
+                                        //d.tooltip.valueSuffix = "test";
                                         d.hide();
                                         var nameAndUnit = d.name.split('[');
-                                        var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1)
+                                        var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1);
                                         d.update({name: 'Kanal ' + channleNo}, false);
                                         if (nameAndUnit.length <= 1) {
+                                            d.update({tooltip:{valueSuffix: ''}});
                                             d.id = "undefined";
                                         } else {
-                                            d.id = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1)
+                                            var unitName = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1);
+                                            d.update({tooltip:{valueSuffix: ' '+ unitName}});
+                                            d.id = unitName;
                                         }
                                     })
                                 }
@@ -241,20 +183,40 @@
                             csv: csv
                         },
                         yAxis: {
+                            opposite: false,
                             title: {
                                 text: "[Einheit]"
+                            },
+                            labels: {
+                                align: 'right'
                             }
+                        },
+                        rangeSelector: {
+                            enabled: false
+                        },
+                        legend: {
+                            enabled: true,
+                            align: 'right',
+                            verticalAlign: 'top',
+                            layout: 'vertical',
+                            x: 0,
+                            y: 100
                         },
                         plotOptions: {
                             series: {
                                 marker: {
                                     enabled: false
                                 },
+                                tooltip: {
+                                    valueSuffix: "test"
+                                },
                                 events: {
                                     show: function (e) {
                                         chart.series.forEach(function (d, i) {
                                             if (d.name != e.currentTarget.name) {
                                                 d.hide();
+                                            } else {
+
                                             }
                                         })
                                         chart.yAxis[0].update({
@@ -278,10 +240,14 @@
                         },
                         credits: {
                             enabled: false
+                        },
+                        tooltip: {
+                            valueSuffix: ''
                         }
                     });
                     chart.series[0].show();
                     $('#myPleaseWait').modal('hide');
+                    console.log(chart.options.plotOptions.series.tooltip.valueSuffix);
                 });
                 request.error(function (jqXHR, textStatus, errorThrown) {
                     if (textStatus == 'timeout')
