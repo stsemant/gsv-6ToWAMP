@@ -290,24 +290,37 @@ class GSV_6Protocol(protocol.Protocol):
         self.transport.write(data)
 
 
-import sys,os
+import sys, os
+
+
 def change(s):
-    if s == 1:os.system('date -s "2 OCT 2006 18:00:00"')#don't forget to change it , i've used date command for linux
+    if s == 1:
+        os.system('date -s "2 OCT 2006 18:00:00"')  # don't forget to change it , i've used date command for linux
     elif s == 2:
         try:
-          import pywin32
+            import pywin32
         except ImportError:
-          print 'pywin32 module is missing'
-          sys.exit(1)
-        pywin32.SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )# fill all Parameters with int numbers
-    else:print 'wrong param'
+            print 'pywin32 module is missing'
+            sys.exit(1)
+        pywin32.SetSystemTime(year, month, dayOfWeek, day, hour, minute, second,
+                              millseconds)  # fill all Parameters with int numbers
+    else:
+        print 'wrong param'
+
+
 def check_os():
-    if sys.platform=='linux2':change(1)
-    elif  sys.platform=='win32':change(2)
-    else:print 'unknown system'
+    if sys.platform == 'linux2':
+        change(1)
+    elif sys.platform == 'win32':
+        change(2)
+    else:
+        print 'unknown system'
+
 
 import csv
 import threading
+
+
 class CSVwriter(threading.Thread):
     def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, units, path='./messungen/', debug=False):
         threading.Thread.__init__(self)
@@ -596,7 +609,7 @@ class AntwortFrameHandler():
     def rcvWriteDataRate(self, frame, dataRateValue):
         # for cache
         if frame.getAntwortErrorCode() == 0:
-            self.gsv_lib.markChachedConfiAsDirty('DataRate','DataRate')
+            self.gsv_lib.markChachedConfiAsDirty('DataRate', 'DataRate')
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteDataRate",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRateValue])
@@ -653,6 +666,8 @@ class AntwortFrameHandler():
 from datetime import datetime
 import glob
 import os
+
+
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
     def __init__(self, session, gsv_lib, antwortQueue, eventHandler):
@@ -692,6 +707,7 @@ class GSVeventHandler():
         self.session.register(self.writeUserOffset, u"de.me_systeme.gsv.WriteUserOffset")
         self.session.register(self.getReadInputType, u"de.me_systeme.gsv.getReadInputType")
         self.session.register(self.getCachedConfig, u"de.me_systeme.gsv.getCachedConfig")
+        self.session.register(self.setDateTimeFromBrowser, u"de.me_systeme.gsv.setDateTimeFromBrowser")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -709,10 +725,10 @@ class GSVeventHandler():
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
     def getUnitText(self, slot=0):
-         if self.gsv_lib.isConfigCached('UnitText', slot):
+        if self.gsv_lib.isConfigCached('UnitText', slot):
             self.session.publish(u"de.me_systeme.gsv.onGetUnitText",
                                  [0x00, 'ERR_OK', slot, self.gsv_lib.getCachedProperty('UnitText', slot)])
-         else:
+        else:
             self.session.writeAntwort(self.gsv_lib.buildGetUnitText(slot), 'rcvGetUnitText', slot)
 
     def setUnitText(self, text, slot=0):
@@ -828,6 +844,16 @@ class GSVeventHandler():
 
     def getCachedConfig(self):
         return self.gsv_lib.getCachedConfig()
+
+    def setDateTimeFromBrowser(self, dateTimeStr):
+        if sys.platform == 'win32':
+            return [0x01, "Windows not supported"]
+        else:
+            x = os.system("sudo date -u -s \"%s\"" % (dateTimeStr))
+            if x == 0:
+                return [0, "ERR_OK", datetime]
+            else:
+                return [x, "an error occurred"]
 
     def getCSVFileList(self):
         # in this function, we write nothing to the GSV-modul

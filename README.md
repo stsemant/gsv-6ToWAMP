@@ -66,7 +66,8 @@ For the update, we have to download the latest pypy-version, extract files and u
 	wget https://pypi.python.org/packages/source/T/Twisted/Twisted-15.4.0.tar.bz2
 	cd ~/install
 	tar xvjf ../downloads/Twisted-15.4.0.tar.bz2
-now we have to comment one line in the twisted-source-code
+
+##### now we have to comment one line in the twisted-source-code
 	cd Twisted-15.4.0
 	nano setup.py
 	line 63 comment with a # -> -> #conditionalExtensions=getExtensions(),
@@ -86,7 +87,13 @@ now we have to comment one line in the twisted-source-code
 	
 ### checkout from github
 	cd ~/
-	git clone xxx
+	git clone https://github.com/flashbac/gsv-6ToWAMP.git
+	
+### set timezone
+	cd ~/
+	echo "TZ='Europe/Berlin';" >> ~/.profile
+	echo "export TZ" >> ~/.profile
+	source ~/.profile
 	
 ### create folder for csv-files
 	mkdir messungen

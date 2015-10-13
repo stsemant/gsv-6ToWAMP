@@ -465,6 +465,24 @@
             }
         }
 
+        var timerForSetDateTime = 0;
+        function setDateTimeFromBrowser() {
+            clearTimeout(timerForSetDateTime);
+            session.call('de.me_systeme.gsv.setDateTimeFromBrowser',[(new Date()).toUTCString()]).then(function set(res) {
+                if (res[0] != 0) {
+                    showGeError("Datum und Uhrzeit konnten nicht gesetzt werden.", "Fehlercode: " + res[0] + '; ' + res[1]);
+                } else {
+                    $('#btn_setDateTime').popover({
+                        content: 'DateTime wurde erflogreich gesetzt (' + res[2] + ')',
+                        placement: "top"
+                    }).popover("show");
+                    timerForSetDateTime = setTimeout(function () {
+                        $('#btn_setDateTime').popover('destroy');
+                    }, 5000);
+                }
+            }, session.log);
+        }
+
         function showGeError(title, detail) {
             $('#geError_header').html(title);
             $('#geError_detail').html(detail);
@@ -1433,6 +1451,12 @@
                 <div class="panel-body">
                     <div class="col-sm-3 box">
                         <button id="btn-saveAll" type="button" class="btn btn-warning" onclick="WriteSaveAll()">SaveAll
+                        </button>
+                    </div>
+                    <div class="col-sm-3 box">
+                        <button id="btn_setDateTime" type="button" class="btn btn-warning"
+                                onclick="setDateTimeFromBrowser()">Browser Zeit
+                            setzten
                         </button>
                     </div>
                 </div>
