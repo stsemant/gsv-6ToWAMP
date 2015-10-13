@@ -1146,7 +1146,7 @@ class McuComponent(ApplicationSession):
         self.actTime = datetime.now()
         diffTime = self.actTime - self.lastTime
         if diffTime.days <= 0 and diffTime.seconds <= 2:
-            if (diffTime.seconds == 0 and diffTime.microseconds < 2000):
+            if (diffTime.seconds == 0 and diffTime.microseconds < 4000):
                 self.sendCounter += 1
                 if self.sendCounter >= 10:
                     self.sendCounter = 0
