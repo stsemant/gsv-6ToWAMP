@@ -444,9 +444,9 @@ class GSV6_seriall_lib:
     def buildStopTransmission(self):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('StopTransmission'))
 
-    def buildGetUnitText(self):
+    def buildGetUnitText(self, slot):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetUnitText'), [
-            0])  # + self.encode_anfrage_frame(anfrage_code_to_shortcut.get(' GetUnitText'),[1])
+            slot])
 
     def buildSetUnitText(self, text, slot=0):
         if slot <= 0 or slot > 1:

@@ -423,13 +423,13 @@
             }
             else {
                 var effectiveID = 0;
-                if(parseInt(args[2]) == 0){
+                if (parseInt(args[2]) == 0) {
                     effectiveID = 255;
-                }else{
+                } else {
                     effectiveID = 254;
                 }
-                if(args[3] == ""){
-                    args[3] = 'Slot '+ args[2] + ' nicht gesetzt';
+                if (args[3] == "") {
+                    args[3] = 'Slot ' + args[2] + ' nicht gesetzt';
                 }
 
                 $('#UnitNo1 option[value="' + effectiveID + '"]').html(args[3]);
@@ -620,8 +620,8 @@
 
         function doneSelect(e) {
             var inputID = $(this).data('id');
-            var index = parseInt($('#'+inputID+'_value').val())
-            var inputIDno = parseInt(inputID.charAt(inputID.length - 1))
+            var index = parseInt($('#' + inputID + '_value').val());
+            var inputIDno = parseInt(inputID.charAt(inputID.length - 1));
             setInputWarning(inputID, "wird übertragen...");
             session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno, index]);
         }

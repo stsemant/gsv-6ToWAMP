@@ -290,11 +290,24 @@ class GSV_6Protocol(protocol.Protocol):
         self.transport.write(data)
 
 
-import os.path
+import sys,os
+def change(s):
+    if s == 1:os.system('date -s "2 OCT 2006 18:00:00"')#don't forget to change it , i've used date command for linux
+    elif s == 2:
+        try:
+          import pywin32
+        except ImportError:
+          print 'pywin32 module is missing'
+          sys.exit(1)
+        pywin32.SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )# fill all Parameters with int numbers
+    else:print 'wrong param'
+def check_os():
+    if sys.platform=='linux2':change(1)
+    elif  sys.platform=='win32':change(2)
+    else:print 'unknown system'
+
 import csv
 import threading
-
-
 class CSVwriter(threading.Thread):
     def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, units, path='./messungen/', debug=False):
         threading.Thread.__init__(self)
@@ -696,7 +709,11 @@ class GSVeventHandler():
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
     def getUnitText(self, slot=0):
-        self.session.writeAntwort(self.gsv_lib.buildGetUnitText(), 'rcvGetUnitText', slot)
+         if self.gsv_lib.isConfigCached('UnitText', slot):
+            self.session.publish(u"de.me_systeme.gsv.onGetUnitText",
+                                 [0x00, 'ERR_OK', slot, self.gsv_lib.getCachedProperty('UnitText', slot)])
+         else:
+            self.session.writeAntwort(self.gsv_lib.buildGetUnitText(slot), 'rcvGetUnitText', slot)
 
     def setUnitText(self, text, slot=0):
         self.session.writeAntwort(self.gsv_lib.buildSetUnitText(text, slot), 'rcvSetUnitText', slot)
