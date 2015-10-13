@@ -851,7 +851,7 @@ class GSVeventHandler():
         else:
             x = os.system("sudo date -u -s \"%s\"" % (dateTimeStr))
             if x == 0:
-                return [0, "ERR_OK", datetime]
+                return [0, "ERR_OK", dateTimeStr]
             else:
                 return [x, "an error occurred"]
 
