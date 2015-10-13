@@ -215,7 +215,7 @@
             setTimeout(function () {
                 var request = $.get('messungen/' + parse('file'));
                 request.success(function (csv) {
-                    console.log(csv);
+                    //console.log(csv);
                     //$('#chartContainer').highcharts({
                     chart = new Highcharts.Chart({
                         chart: {
@@ -306,7 +306,7 @@
             <ul class="nav navbar-nav">
                 <li><a href="index.html">Messung</a></li>
                 <li><a href="config.html">Konfiguration</a></li>
-                <li class="active"><a href="messungen.html">Zur&uuml;ck zu den Messungen</a></li>
+                <li class="active"><a href="archiv.html">Zur&uuml;ck zum Archiv</a></li>
                 <li><a href="#">Log</a></li>
             </ul>
         </div>
