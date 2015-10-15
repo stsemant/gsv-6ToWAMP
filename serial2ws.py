@@ -622,7 +622,7 @@ class AntwortFrameHandler():
 
     def rcvWriteUserOffset(self, frame, channelNo):
         # for cache
-        if frame.getAntwortErrorCode == 0:
+        if frame.getAntwortErrorCode() == 0:
             self.gsv_lib.markChachedConfiAsDirty('UserOffset', channelNo)
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onWriteUserOffset",

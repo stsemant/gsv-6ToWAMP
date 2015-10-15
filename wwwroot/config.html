@@ -217,6 +217,7 @@
         }
         function onWriteUserScale(args) {
             args = args[0];
+            console.log(args);
             if (args[0] != 0) {
                 //alert("cant set Zero");
                 setInputError('ReadUserScale' + args[2], args[1]);
@@ -267,10 +268,10 @@
             args = args[0];
             if (args[0] != 0) {
                 //alert("cant set Zero");
-                setInputError('ReadUserOffset' + args[1]);
-                setInputError('ReadUserOffset' + args[1], args[1]);
+                setInputError('ReadUserOffset' + args[2]);
+                setInputError('ReadUserOffset' + args[2], args[1]);
             } else {
-                session.call("de.me_systeme.gsv.getReadUserOffset", [args[1]]);
+                session.call("de.me_systeme.gsv.getReadUserOffset", [args[2]]);
             }
         }
 
