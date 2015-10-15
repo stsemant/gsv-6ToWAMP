@@ -408,6 +408,7 @@ class MessFrameHandler():
         else:
             units.append('undefined')
 
+        # TODO: no thread is started. It's like a normal function call!!! instance is missing.
         # start csvWriter
         CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock, units,
                   self.session.config.extra['csvpath']).run()
@@ -640,7 +641,7 @@ class AntwortFrameHandler():
         print(msg)
         self.session.addError(msg)
         self.session.sys_ready = True
-        if frame.getAntwortErrorCode() != 0:
+        if frame.getAntwortErrorCode() == 0:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', True)
         else:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', False)

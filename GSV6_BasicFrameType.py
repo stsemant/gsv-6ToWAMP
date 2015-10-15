@@ -62,7 +62,10 @@ class BasicFrame:
         self.frameType = (self.data[0]&0xC0) >> 6
         self.length_or_channel = self.data[0]&0x0F
         self.statusbyte = self.data[1]
-        self.data = self.data[2:]
+        if len(self.data) < 3:
+            self.data = []
+        else:
+            self.data = self.data[2:]
 
     def getFrameType(self):
         return self.frameType
