@@ -2,7 +2,7 @@
 ## GSV-6CPU Modul to WAMP
 This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
 
-## What is an GSV6/GSV6-CPU
+## What is an GSV6/GSV6-CPU Modul
 [GSV6/GSV6-CPU](http://www.me-systeme.de/docs/de/flyer/flyer_gsv6.pdf) is an Measurement Amplifier from [ME-Messsysteme GmbH](http://www.me-systeme.de/)
 
 ## project status
