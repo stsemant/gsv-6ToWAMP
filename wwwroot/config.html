@@ -468,7 +468,7 @@
         var timerForSetDateTime = 0;
         function setDateTimeFromBrowser() {
             clearTimeout(timerForSetDateTime);
-            session.call('de.me_systeme.gsv.setDateTimeFromBrowser',[(new Date()).toUTCString()]).then(function set(res) {
+            session.call('de.me_systeme.gsv.setDateTimeFromBrowser', [(new Date()).toUTCString()]).then(function set(res) {
                 if (res[0] != 0) {
                     showGeError("Datum und Uhrzeit konnten nicht gesetzt werden.", "Fehlercode: " + res[0] + '; ' + res[1]);
                 } else {
@@ -487,6 +487,49 @@
             $('#geError_header').html(title);
             $('#geError_detail').html(detail);
             $('#geErrorModal').modal('show');
+        }
+
+        function waitForSystemReadyAndLoadDetails() {
+            session.call('de.me_systeme.gsv.isSystemReady').then(function isSystemReady(ready_flag) {
+                if (!ready_flag) {
+                    $('#myPleaseWait').modal('show');
+                    setTimeout(function () {
+                        waitForSystemReadyAndLoadDetails();
+                    }, 2000);
+                } else {
+                    session.call("de.me_systeme.gsv.getGetIntetface");
+                    session.call("de.me_systeme.gsv.getReadUserOffset", [1]);
+                    session.call("de.me_systeme.gsv.getReadUserOffset", [2]);
+                    session.call("de.me_systeme.gsv.getReadUserOffset", [3]);
+                    session.call("de.me_systeme.gsv.getReadUserOffset", [4]);
+                    session.call("de.me_systeme.gsv.getReadUserOffset", [5]);
+                    session.call("de.me_systeme.gsv.getReadUserOffset", [6]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [1]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [2]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [3]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [4]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [5]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [6]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [1]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [2]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [3]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [4]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [5]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [6]);
+                    session.call("de.me_systeme.gsv.getSerialNo");
+                    session.call("de.me_systeme.gsv.getDeviceHours");
+                    session.call("de.me_systeme.gsv.getDataRate");
+                    session.call("de.me_systeme.gsv.getFirmwareVersion");
+                    session.call("de.me_systeme.gsv.getReadInputType", [1]);
+                    session.call("de.me_systeme.gsv.getReadInputType", [2]);
+                    session.call("de.me_systeme.gsv.getReadInputType", [3]);
+                    session.call("de.me_systeme.gsv.getReadInputType", [4]);
+                    session.call("de.me_systeme.gsv.getReadInputType", [5]);
+                    session.call("de.me_systeme.gsv.getReadInputType", [6]);
+                    session.call("de.me_systeme.gsv.getUnitText", [0]);
+                    session.call("de.me_systeme.gsv.getUnitText", [1]);
+                }
+            }, session.log);
         }
 
         window.onload = function () {
@@ -543,44 +586,8 @@
                         log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
                     });
                 }, session.log);
-                session.call("de.me_systeme.gsv.getGetIntetface");
-                session.call("de.me_systeme.gsv.getReadUserOffset", [1]);
-                session.call("de.me_systeme.gsv.getReadUserOffset", [2]);
-                session.call("de.me_systeme.gsv.getReadUserOffset", [3]);
-                session.call("de.me_systeme.gsv.getReadUserOffset", [4]);
-                session.call("de.me_systeme.gsv.getReadUserOffset", [5]);
-                session.call("de.me_systeme.gsv.getReadUserOffset", [6]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [1]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [2]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [3]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [4]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [5]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [6]);
-                session.call("de.me_systeme.gsv.getUnitNo", [1]);
-                session.call("de.me_systeme.gsv.getUnitNo", [2]);
-                session.call("de.me_systeme.gsv.getUnitNo", [3]);
-                session.call("de.me_systeme.gsv.getUnitNo", [4]);
-                session.call("de.me_systeme.gsv.getUnitNo", [5]);
-                session.call("de.me_systeme.gsv.getUnitNo", [6]);
-                session.call("de.me_systeme.gsv.getSerialNo");
-                session.call("de.me_systeme.gsv.getDeviceHours");
-                session.call("de.me_systeme.gsv.getDataRate");
-                session.call("de.me_systeme.gsv.getFirmwareVersion");
-                session.call("de.me_systeme.gsv.getReadInputType", [1]);
-                session.call("de.me_systeme.gsv.getReadInputType", [2]);
-                session.call("de.me_systeme.gsv.getReadInputType", [3]);
-                session.call("de.me_systeme.gsv.getReadInputType", [4]);
-                session.call("de.me_systeme.gsv.getReadInputType", [5]);
-                session.call("de.me_systeme.gsv.getReadInputType", [6]);
-                session.call("de.me_systeme.gsv.getUnitText", [0]);
-                session.call("de.me_systeme.gsv.getUnitText", [1]);
 
-                /*
-                 session.call('de.me_systeme.gsv.getCachedConfig').then(function (res) {
-                 console.log("CachedConfig");
-                 console.log(res);
-                 }, session.log);
-                 */
+                waitForSystemReadyAndLoadDetails();
             };
             connection.open();
 

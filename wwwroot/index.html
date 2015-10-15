@@ -287,6 +287,32 @@
             smoothie.options.maxValue = scaleWithTenPercent;
         }
 
+        function waitForSystemReadyAndLoadDetails() {
+            session.call('de.me_systeme.gsv.isSystemReady').then(function isSystemReady(ready_flag) {
+                if (!ready_flag) {
+                    $('#myPleaseWait').modal('show');
+                    setTimeout(function () {
+                        waitForSystemReadyAndLoadDetails();
+                    }, 2000);
+                } else {
+                    session.call("de.me_systeme.gsv.getUnitNo", [1]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [2]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [3]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [4]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [5]);
+                    session.call("de.me_systeme.gsv.getUnitNo", [6]);
+                    session.call("de.me_systeme.gsv.getGetIntetface");
+                    session.call("de.me_systeme.gsv.getReadUserScale", [1]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [2]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [3]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [4]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [5]);
+                    session.call("de.me_systeme.gsv.getReadUserScale", [6]);
+                    $('#myPleaseWait').modal('hide');
+                }
+            }, session.log);
+        }
+
         window.onload = function () {
             smoothie = new SmoothieChart({
                 labels: {fontSize: 13},
@@ -343,13 +369,9 @@
                 // provide caller details
                 session.caller_disclose_me = true;
 
-                //session.subscribe("com.myapp.mcu.on_analog_value", onAnalogValue);
-                //session.subscribe("com.myapp.mcu.on_frame_received", onFrameReceived);
                 session.subscribe("de.me_systeme.gsv.onStartStopTransmission", onStartStopTransmission);
                 session.subscribe("de.me_systeme.gsv.onMesswertReceived", onMesswertReceived);
                 session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
-                //session.subscribe("de.me_systeme.gsv.onGetUnitText", onGetUnitText);
-                //session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
@@ -363,19 +385,8 @@
                         log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
                     });
                 }, session.log);
-                session.call("de.me_systeme.gsv.getUnitNo", [1]);
-                session.call("de.me_systeme.gsv.getUnitNo", [2]);
-                session.call("de.me_systeme.gsv.getUnitNo", [3]);
-                session.call("de.me_systeme.gsv.getUnitNo", [4]);
-                session.call("de.me_systeme.gsv.getUnitNo", [5]);
-                session.call("de.me_systeme.gsv.getUnitNo", [6]);
-                session.call("de.me_systeme.gsv.getGetIntetface");
-                session.call("de.me_systeme.gsv.getReadUserScale", [1]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [2]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [3]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [4]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [5]);
-                session.call("de.me_systeme.gsv.getReadUserScale", [6]);
+
+                waitForSystemReadyAndLoadDetails();
 
                 eventCnt = 0;
 
@@ -455,11 +466,34 @@
     </div>
 </div>
 <!-- TaraAll Modal ends Here -->
-
+<!-- Loading Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="myPleaseWait" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-time">
+                    </span> wird geladen...
+                </h4>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-info
+                    progress-bar-striped active"
+                         style="width: 100%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Loading Modal ends Here -->
 <div class="container">
     <button type="button" class="btn btn-success" onclick="startStopTransmission(true)">Start</button>
     <button type="button" class="btn btn-danger" onclick="startStopTransmission(false)">Stop</button>
-    <button id="btn-setZero0" type="button" class="btn btn-warning" onclick="$('#modalTaraAll').modal('show');">setZero all
+    <button id="btn-setZero0" type="button" class="btn btn-warning" onclick="$('#modalTaraAll').modal('show');">setZero
+        all
     </button>
     <div class="checkbox">
         <label><input id="recordCheckbox" type="checkbox" value="" checked>Messung aufzeichen</label>

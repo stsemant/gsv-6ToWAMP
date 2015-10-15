@@ -1284,7 +1284,6 @@ if __name__ == '__main__':
     runner = ApplicationRunner(router, u"me_gsv6",
                                extra={'port': args.port, 'baudrate': args.baudrate, 'csvpath': args.csvpath,
                                       'debug': True})
-    # extra={'port': args.port, 'baudrate': args.baudrate, 'debug': args.debug})
 
     # start the component and the Twisted reactor ..
     ##
