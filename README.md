@@ -1,7 +1,12 @@
 #gsv-6ToWAMP
 ## GSV-6CPU Modul to WAMP
-
 This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
+
+## What is GSV6/GSV6-CPU
+[GSV6/GSV6-CPU](http://www.me-systeme.de/docs/de/flyer/flyer_gsv6.pdf) is an Measurement Amplifier
+
+## project status
+in progress, NO release yet
 
 ## Dependencies
 All Dependencies are included
@@ -106,3 +111,14 @@ For the update, we have to download the latest pypy-version, extract files and u
 ### run the serial2ws.py script
 	pypy serial2ws.py --baud=115200 --port=/dev/ttyAMA0
 	goto http://<ip>:8000
+
+## start crossbar at systemstart
+copy the crossbar-(start)-script from scripts-folder to /etc/init.d/
+
+	cd ~/gsv-6ToWAMP/scripts
+	sudo cp crossbar /etc/init.d/
+	
+make the script runnable and add crossbar to rc.d
+
+	sudo chmod +x /etc/init.d/crossbar
+	sudo update-rc.d crossbar defaults

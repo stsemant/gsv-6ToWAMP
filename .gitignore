@@ -2,3 +2,4 @@
 .idea
 messungen/
 main.py
+logs/*
