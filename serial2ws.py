@@ -55,6 +55,7 @@ __author__ = 'Dennis Rump'
 #   Highcharts  http://www.highcharts.com/  (Do you want to use Highcharts for a personal or non-profit project? Then you can use Highchcarts for free under the  Creative Commons Attribution-NonCommercial 3.0 License
 #
 ###############################################################################
+from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
 
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.serialport import SerialPort
@@ -637,7 +638,7 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
 
     def rcvSetMEid(self, frame, minor):
-        msg = "cache filled"
+        msg = "cache ready."
         print(msg)
         self.session.addError(msg)
         self.session.sys_ready = True
@@ -839,6 +840,7 @@ class GSVeventHandler():
                 return [0, "ERR_OK", dateTimeStr]
             else:
                 return [x, "an error occurred"]
+
     def isSystemReady(self):
         return self.session.sys_ready
 
@@ -1198,9 +1200,9 @@ class McuComponent(ApplicationSession):
 
 
 if __name__ == '__main__':
-
     import sys
     import argparse
+
     from twisted.web.resource import Resource
     # log.setLevel(logging.DEBUG)
     # parse command line arguments
@@ -1224,11 +1226,18 @@ if __name__ == '__main__':
     parser.add_argument("--web", type=int, default=8000,
                         help='Web port to use for embedded Web server. Use 0 to disable.')
 
-    parser.add_argument("--router", type=str, default=None,
+    parser.add_argument("--router", type=str, default=u'ws://127.0.0.1:8080/ws/',
                         help='If given, connect to this WAMP router. Else run an embedded router on 8080.')
 
     parser.add_argument("--csvpath", type=str, default='./messungen/',
                         help='If given, the CSV-Files will be saved there.')
+
+    config = SafeConfigParser()
+    config.read(['std.conf'])
+
+    # Updateing defaults from config file
+    if config.has_section('Defaults'):
+        parser.set_defaults(**dict(config.items('Defaults')))
 
     args = parser.parse_args()
 
@@ -1279,9 +1288,7 @@ if __name__ == '__main__':
     ##
     from autobahn.twisted.wamp import ApplicationRunner
 
-    router = args.router or u'ws://127.0.0.1:8080/ws/'
-
-    runner = ApplicationRunner(router, u"me_gsv6",
+    runner = ApplicationRunner(args.router.decode("utf8"), u"me_gsv6",
                                extra={'port': args.port, 'baudrate': args.baudrate, 'csvpath': args.csvpath,
                                       'debug': True})
 
