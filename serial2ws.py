@@ -57,6 +57,7 @@ __author__ = 'Dennis Rump'
 ###############################################################################
 from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
 
+from twisted.internet.error import ConnectionRefusedError, TCPTimedOutError, ReactorAlreadyInstalledError, CannotListenError
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.serialport import SerialPort
 from twisted.protocols.basic import LineReceiver
@@ -1199,6 +1200,11 @@ class McuComponent(ApplicationSession):
         self.publish(u"de.me_systeme.gsv.serialConnectionLost")
 
 
+from twisted.web.server import Site
+from twisted.web.static import File
+from twisted.python import log as logTwisted
+from twisted.internet import reactor
+
 if __name__ == '__main__':
     import sys
     import argparse
@@ -1226,14 +1232,14 @@ if __name__ == '__main__':
     parser.add_argument("--web", type=int, default=8000,
                         help='Web port to use for embedded Web server. Use 0 to disable.')
 
-    parser.add_argument("--router", type=str, default=u'ws://192.168.178.42:8080/ws/',#u'ws://127.0.0.1:8080/ws/',
+    parser.add_argument("--router", type=str, default=u'ws://127.0.0.1:8080/ws/',
                         help='If given, connect to this WAMP router. Else run an embedded router on 8080.')
 
     parser.add_argument("--csvpath", type=str, default='./messungen/',
                         help='If given, the CSV-Files will be saved there.')
 
     config = SafeConfigParser()
-    config.read(['std.conf'])
+    config.read(['defaults.conf'])
 
     # Updateing defaults from config file
     if config.has_section('Defaults'):
@@ -1253,8 +1259,6 @@ if __name__ == '__main__':
     except ValueError:
         pass
 
-    from twisted.python import log as logTwisted
-
     logTwisted.startLogging(sys.stdout)
 
     # import Twisted reactor
@@ -1264,25 +1268,24 @@ if __name__ == '__main__':
         # http://twistedmatrix.com/trac/ticket/3802
         ##
         from twisted.internet import win32eventreactor
-
-        win32eventreactor.install()
-
-    from twisted.internet import reactor
+        try:
+            win32eventreactor.install()
+        except ReactorAlreadyInstalledError:
+            pass
 
     print("Using Twisted reactor {0}".format(reactor.__class__))
 
     # create embedded web server for static files
-    ##
-    if args.web:
-        from twisted.web.server import Site
-        from twisted.web.static import File
-
-        # reactor.listenTCP(args.web, Site(File(".")))
-        # wwwroot
-        root = File("./wwwroot/")
-        # messungenroot
-        root.putChild("messungen", File(args.csvpath))
+    # wwwroot
+    root = File("./wwwroot/")
+    # messungenroot
+    root.putChild("messungen", File(args.csvpath))
+    try:
         reactor.listenTCP(args.web, Site(root))
+    except CannotListenError,e:
+        msg = 'Webserver konnte nicht gestrarted werden, port belegt? Fehlermeldung: :' + str(e)
+        print(msg)
+        exit()
 
     # run WAMP application component
     ##
@@ -1294,4 +1297,14 @@ if __name__ == '__main__':
 
     # start the component and the Twisted reactor ..
     ##
-    runner.run(McuComponent)
+    try:
+        runner.run(McuComponent)
+    except ConnectionRefusedError, e:
+        msg = 'WAMP Router konnte nicht erreicht werden, crossbar gestartet? Fehlermeldung: ' + str(e)
+        print(msg)
+    except TCPTimedOutError, e:
+        msg = 'WAMP Router konnte nicht erreicht werden, richtige IP? Fehlermedlung: ' + str(e)
+        print(msg)
+    except Exception, e:
+        msg = '[start] Unexpected error: ' + str(e)
+        print(msg)
