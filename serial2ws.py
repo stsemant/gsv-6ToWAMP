@@ -410,10 +410,10 @@ class MessFrameHandler():
         else:
             units.append('undefined')
 
-        # TODO: no thread is started. It's like a normal function call!!! instance is missing.
         # start csvWriter
-        CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock, units,
-                  self.session.config.extra['csvpath']).run()
+        writer = CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock, units,
+                  self.session.config.extra['csvpath'])
+        writer.start()
 
 
 import collections
@@ -1099,7 +1099,7 @@ class McuComponent(ApplicationSession):
 
     @inlineCallbacks
     def onJoin(self, details):
-        print("MyComponent ready! Configuration: {}".format(self.config.extra))
+        #print("MyComponent ready! Configuration: {}".format(self.config.extra))
         port = self.config.extra['port']
         baudrate = self.config.extra['baudrate']
         debug = self.config.extra['debug']
@@ -1260,6 +1260,9 @@ if __name__ == '__main__':
         pass
 
     logTwisted.startLogging(sys.stdout)
+
+    # print config
+    print 'Start with config: router {}; Port for Web: {}; Serialport: {}; Baudrate: {}; CSVpath: {}; Debug: {}'.format(args.router,args.web, args.port, args.baudrate, args.csvpath, args.debug)
 
     # import Twisted reactor
     ##
