@@ -60,11 +60,9 @@ from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
 from twisted.internet.error import ConnectionRefusedError, TCPTimedOutError, ReactorAlreadyInstalledError, CannotListenError
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.serialport import SerialPort
-from twisted.protocols.basic import LineReceiver
 from twisted.protocols.basic import protocol
 
 from autobahn.twisted.wamp import ApplicationSession
-from autobahn.wamp.types import CallDetails
 from collections import deque
 
 import error_codes
@@ -638,6 +636,14 @@ class AntwortFrameHandler():
         self.session.publish(u"de.me_systeme.gsv.onGetReadInputType",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo, value])
 
+    def rcvWriteInputType(self, frame, channelNo):
+        # for cache
+        if frame.getAntwortErrorCode() == 0:
+            self.gsv_lib.markChachedConfiAsDirty('InputType', channelNo)
+        # answer from GSV-6CPU
+        self.session.publish(u"de.me_systeme.gsv.onWriteInputType",
+                             [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
+
     def rcvSetMEid(self, frame, minor):
         msg = "cache ready."
         print(msg)
@@ -645,8 +651,10 @@ class AntwortFrameHandler():
         self.session.sys_ready = True
         if frame.getAntwortErrorCode() == 0:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', True)
+            print("ME ID has been set successfully.")
         else:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', False)
+            print("ME ID could not be set.")
 
 
 from datetime import datetime
@@ -692,6 +700,7 @@ class GSVeventHandler():
         self.session.register(self.getReadUserOffset, u"de.me_systeme.gsv.getReadUserOffset")
         self.session.register(self.writeUserOffset, u"de.me_systeme.gsv.WriteUserOffset")
         self.session.register(self.getReadInputType, u"de.me_systeme.gsv.getReadInputType")
+        self.session.register(self.writeInputType, u"de.me_systeme.gsv.WriteInputType")
         self.session.register(self.getCachedConfig, u"de.me_systeme.gsv.getCachedConfig")
         self.session.register(self.setDateTimeFromBrowser, u"de.me_systeme.gsv.setDateTimeFromBrowser")
         self.session.register(self.isSystemReady, u"de.me_systeme.gsv.isSystemReady")
@@ -828,6 +837,14 @@ class GSVeventHandler():
                                  [0x00, 'ERR_OK', channelNo, self.gsv_lib.getCachedProperty('InputType', channelNo)])
         else:
             self.session.writeAntwort(self.gsv_lib.buildReadInputType(channelNo), 'rcvGetReadInputType', channelNo)
+
+    def writeInputType(self,channelNo, inputTypeValue):
+        # first convert int to Uint32 and remove leading byte
+        inputType = self.gsv_lib.convertIntToBytes(inputTypeValue)[1:]
+        # SensIndex is always 0x00 (GSV-6)
+        sensIndex = 0x00
+        self.session.writeAntwort(self.gsv_lib.buildWriteInputType(channelNo,sensIndex, inputType), 'rcvWriteInputType',
+                                  channelNo)
 
     def getCachedConfig(self):
         return self.gsv_lib.getCachedConfig()

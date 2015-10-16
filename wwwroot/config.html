@@ -167,14 +167,24 @@
             args = args[0];
             var data = {};
             if (args[0] != 0) {
-                console.log("Error rcv InputType");
-                data['ReadInputType' + args[2]] = args[1];
-                return
-            } else {
-                $('#' + 'ReadInputType' + args[2]).html((parseFloat(args[3]) / 100).toFixed(2) + ' mV/V');
-                data['ReadInputType' + args[2]] = parseFloat(args[3]) / 100;
+                setInputError('InputType' + args[2], args[1])
+                data['InputType' + args[2]] = args[1];
+            }
+            else {
+                var inputID = 'InputType' + args[2];
+                $('#' + inputID + '_value option[value="' + args[3] + '"]').prop('selected', true);
+                setInputSuccess(inputID);
+                data['InputType' + args[2]] = parseInt(args[3]);
             }
             check_isConfig_complete(data);
+        }
+        function onWriteInputType(args) {
+            args = args[0];
+            if (args[0] != 0) {
+                setInputError('InputType' + args[2], args[1]);
+                return
+            }
+            session.call("de.me_systeme.gsv.getReadInputType", [args[2]]);
         }
 
         function onGetReadUserScale(args) {
@@ -573,6 +583,7 @@
                 session.subscribe("de.me_systeme.gsv.onGetReadUserOffset", onGetReadUserOffset);
                 session.subscribe("de.me_systeme.gsv.onWriteUserOffset", onWriteUserOffset);
                 session.subscribe("de.me_systeme.gsv.onGetReadInputType", onGetReadInputType);
+                session.subscribe("de.me_systeme.gsv.onWriteInputType", onWriteInputType);
                 session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
                 session.subscribe("de.me_systeme.gsv.onGetUnitText", onGetUnitText);
 
@@ -595,6 +606,7 @@
             $("input.modul_settings").keyup(onKeyUpConfigInputs);
             $("input.modul_settings").keydown(onKeyDownConfigInputs);
             $('select.unitNo').change(doneSelect);
+            $('select.InputType').change(doneSelectInputType);
         };
 
         function doneLoading() {
@@ -651,6 +663,14 @@
             setInputWarning(inputID, "wird übertragen...");
             session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno, index]);
         }
+
+        function doneSelectInputType(e) {
+            var inputID = $(this).data('id');
+            var index = parseInt($('#' + inputID + '_value').val());
+            var inputIDno = parseInt(inputID.charAt(inputID.length - 1));
+            setInputWarning(inputID, "wird übertragen...");
+            session.call("de.me_systeme.gsv.WriteInputType", [inputIDno, index]);
+        }
     </script>
 
 </head>
@@ -666,7 +686,6 @@
                 <li class="active"><a href="#">Konfiguration</a></li>
                 <li><a href="archiv.html">Archiv</a></li>
                 <li><a href="#">Log</a></li>
-                <!-- <li><a id="worker"><img src="images/ajax-loader_rechteck.gif" alt="loader_gif"></a></li> -->
             </ul>
         </div>
     </div>
@@ -1413,37 +1432,103 @@
                 </div>
                 <div class="col-sm-3">
                     <table class="table">
-                        <caption>InputType</caption>
+                        <caption>Einheiten</caption>
                         <thead>
                         <tr>
                             <th>Kanal</th>
-                            <th>Wert</th>
+                            <th>Einheit</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr>
                             <td>1</td>
-                            <td id="ReadInputType1">-</td>
+                            <td>
+                                <div id="InputType1" class="form-group has-success has-feedback">
+                                    <select id="InputType1_value" data-id="InputType1" class="form-control InputType">
+                                        <option value="100">1 mV/V</option>
+                                        <option value="200">2 mV/V</option>
+                                        <option value="400">4 mV/V</option>
+                                        <option value="800">8 mV/V</option>
+                                    </select>
+                                    <span id="InputType1_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
                         </tr>
                         <tr>
                             <td>2</td>
-                            <td id="ReadInputType2">-</td>
+                            <td>
+                                <div id="InputType2" class="form-group has-success has-feedback">
+                                    <select id="InputType2_value" data-id="InputType2" class="form-control InputType">
+                                        <option value="100">1 mV/V</option>
+                                        <option value="200">2 mV/V</option>
+                                        <option value="400">4 mV/V</option>
+                                        <option value="800">8 mV/V</option>
+                                    </select>
+                                    <span id="InputType2_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
                         </tr>
                         <tr>
                             <td>3</td>
-                            <td id="ReadInputType3">-</td>
+                            <td>
+                                <div id="InputType3" class="form-group has-success has-feedback">
+                                    <select id="InputType3_value" data-id="InputType3" class="form-control InputType">
+                                        <option value="100">1 mV/V</option>
+                                        <option value="200">2 mV/V</option>
+                                        <option value="400">4 mV/V</option>
+                                        <option value="800">8 mV/V</option>
+                                    </select>
+                                    <span id="InputType3_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
                         </tr>
                         <tr>
                             <td>4</td>
-                            <td id="ReadInputType4">-</td>
+                            <td>
+                                <div id="InputType4" class="form-group has-success has-feedback">
+                                    <select id="InputType4_value" data-id="InputType4" class="form-control InputType">
+                                        <option value="100">1 mV/V</option>
+                                        <option value="200">2 mV/V</option>
+                                        <option value="400">4 mV/V</option>
+                                        <option value="800">8 mV/V</option>
+                                    </select>
+                                    <span id="InputType4_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
                         </tr>
                         <tr>
                             <td>5</td>
-                            <td id="ReadInputType5">-</td>
+                            <td>
+                                <div id="InputType5" class="form-group has-success has-feedback">
+                                    <select id="InputType5_value" data-id="InputType5" class="form-control InputType">
+                                        <option value="100">1 mV/V</option>
+                                        <option value="200">2 mV/V</option>
+                                        <option value="400">4 mV/V</option>
+                                        <option value="800">8 mV/V</option>
+                                    </select>
+                                    <span id="InputType5_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
                         </tr>
                         <tr>
                             <td>6</td>
-                            <td id="ReadInputType6">-</td>
+                            <td>
+                                <div id="InputType6" class="form-group has-success has-feedback">
+                                    <select id="InputType6_value" data-id="InputType6" class="form-control InputType">
+                                        <option value="100">1 mV/V</option>
+                                        <option value="200">2 mV/V</option>
+                                        <option value="400">4 mV/V</option>
+                                        <option value="800">8 mV/V</option>
+                                    </select>
+                                    <span id="InputType6_glyphicon"
+                                          class="glyphicon glyphicon-ok form-control-feedback select_gly"></span>
+                                </div>
+                            </td>
                         </tr>
                         </tbody>
                     </table>

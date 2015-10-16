@@ -350,6 +350,10 @@ class GSV6_seriall_lib:
         # > = Big-Endian; f	= float; Python-Type: float, size:4
         return bytearray(pack('>%sf' % len(data), *data))
 
+    def convertIntToBytes(self, data):
+        # > = Big-Endian; f	= float; Python-Type: float, size:4
+        return bytearray(pack('>I', data))
+
     def convertToString(self, data):
         length = len(data)
         if not length >= 1:
@@ -495,6 +499,12 @@ class GSV6_seriall_lib:
 
     def buildReadInputType(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetInputType'), [channelNo, 0x00])
+
+    def buildWriteInputType(self, channelNo, sensIndex, inputType):
+        data = bytearray([channelNo])
+        data.append(sensIndex)
+        data.extend(inputType)
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetInputType'), data)
 
     def buildSetMEid(self, minor):
         magicCode = bytearray([0x4D,0x45,0x69, minor])
