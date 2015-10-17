@@ -89,10 +89,9 @@ class GSV6_seriall_lib:
                 if self.cachedConfig[major].has_key(minor):
                     result = True
         except:
-            print('gsv6-lib cache error, can\'t find ' + major + ' in cache!')
+            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t find ' + major + ' in cache!')
         finally:
             self.cacheLock.release()
-            #print('isCache: ' + major + ' ' + minor)
             return result
 
     def addConfigToCache(self, major, value):
@@ -113,7 +112,7 @@ class GSV6_seriall_lib:
                 self.cachedConfig[major][minor] = value
                 result = True
         except:
-            print('gsv6-lib cache error, can\'t write ' + major)
+            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t write ' + major)
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -133,11 +132,10 @@ class GSV6_seriall_lib:
                 self.cachedConfig[major].pop(minor)
                 result = True
         except:
-            print('gsv6-lib cache error, remove ' + major + ' from cache!')
+            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, remove ' + major + ' from cache!')
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
-            #print('dirtyCache: ' + major + ' ' + minor)
             return result
 
     def getCachedProperty(self, major, minor):
@@ -149,7 +147,7 @@ class GSV6_seriall_lib:
                 self.cacheLock.acquire()
                 result = self.cachedConfig.get(major).get(minor)
         except:
-            print('gsv6-lib cache error, can\'t get cachedConfig!')
+            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -161,7 +159,7 @@ class GSV6_seriall_lib:
         try:
             result = self.cachedConfig
         except:
-            print('gsv6-lib cache error, can\'t get cachedConfig!')
+            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
         finally:
             self.cacheLock.release()
             return result
