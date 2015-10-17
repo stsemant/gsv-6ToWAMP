@@ -6,7 +6,7 @@ This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-tim
 [GSV6/GSV6-CPU](http://www.me-systeme.de/docs/de/flyer/flyer_gsv6.pdf) is an Measurement Amplifier from [ME-Messsysteme GmbH](http://www.me-systeme.de/)
 
 ## project status
-in progress, NO release yet
+in progress, NOT yet an release
 
 ## Dependencies
 All Dependencies are included
