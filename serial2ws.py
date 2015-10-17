@@ -65,7 +65,7 @@ from twisted.protocols.basic import protocol
 
 import logging
 import logging.handlers
-
+from twisted.python import log
 TRACE = 5
 logging.addLevelName(TRACE, 'TRACE')
 
@@ -1228,9 +1228,7 @@ if __name__ == '__main__':
     main_logger.setLevel(logging.DEBUG)
 
     # create Observer for pipe twisted log to python log
-    from twisted.python import log
-
-    observer = log.PythonLoggingObserver(loggerName='logname')
+    observer = log.PythonLoggingObserver(loggerName='serial2ws.twisted')
     observer.start()
 
     # parse command line arguments
