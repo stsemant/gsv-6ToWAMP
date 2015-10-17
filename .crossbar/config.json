@@ -34,9 +34,9 @@
                "paths": {
                   "/": {
                       "type": "static",
-                      "directory": "../..",
+                      "directory": "../logs",
                       "options": {
-                          "enable_directory_listing": true,
+                          "enable_directory_listing": false,
                           "mime_types": {
                               ".md": "text/plain",
                               ".py": "text/plain"
