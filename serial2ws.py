@@ -1018,9 +1018,13 @@ class FrameRouter(threading.Thread):
             if not self.frameQueue.empty():
                 frame = self.frameQueue.get()
                 if frame.getAntwortErrorCode() != 0x00:
-                    msg = "error init modul-communication. re-try"
+                    msg = "error init modul-communication. re-try..."
                     logging.getLogger('serial2ws.MyComp.router').critical(msg)
                     self.session.addError(msg)
+
+                    self.frameQueue.clear()
+                    self.session.write(data)
+                    sleep(1.0)
                 else:
                     msg = "GSV-6CPU found."
                     logging.getLogger('serial2ws.MyComp.router').info(msg)
