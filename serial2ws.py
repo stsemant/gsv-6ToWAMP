@@ -1022,8 +1022,7 @@ class FrameRouter(threading.Thread):
                     logging.getLogger('serial2ws.MyComp.router').critical(msg)
                     self.session.addError(msg)
 
-                    self.frameQueue.clear()
-                    self.session.write(data)
+                    self.frameQueue.queue.clear()
                     sleep(1.0)
                 else:
                     msg = "GSV-6CPU found."
