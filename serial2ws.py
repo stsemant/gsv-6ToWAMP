@@ -1116,6 +1116,7 @@ class McuComponent(ApplicationSession):
 
         # install signal handler
         signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
 
         # first of all, register the getErrors Function
         yield self.register(self.getErrors, u"de.me_systeme.gsv.getErrors")
