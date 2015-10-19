@@ -66,6 +66,7 @@ from twisted.protocols.basic import protocol
 import logging
 import logging.handlers
 from twisted.python import log
+
 TRACE = 5
 logging.addLevelName(TRACE, 'TRACE')
 
@@ -913,7 +914,7 @@ class ThreadingWaitForFirmwareVersion(threading.Thread):
             else:
                 if x > 1:
                     logging.getLogger('serial2ws.MyComp.router.ThreadingWaitForFirmwareVersion').critical(
-                        "wait for cache...; adter 10 retrys, please restart application.")
+                        "wait for cache...; after 10 retrys, please restart application.")
                 else:
                     logging.getLogger('serial2ws.MyComp.router.ThreadingWaitForFirmwareVersion').info(
                         "wait for cache...")
@@ -1065,6 +1066,7 @@ class FrameRouter(threading.Thread):
 
 
 from time import sleep
+import signal
 
 
 class McuComponent(ApplicationSession):
@@ -1100,14 +1102,9 @@ class McuComponent(ApplicationSession):
     # ready falg
     sys_ready = False
 
-    '''
-    def __init__(self):
-        # x =  deque([])
-        pass
-    '''
-
     # cleanup here
-    def leave(self):
+    def onLeave(self, details):
+        self.serialPort.reactor.stop()
         self.router.stop()
         # wait max 1 Sec.
         self.router.join(1.0)
@@ -1116,6 +1113,9 @@ class McuComponent(ApplicationSession):
     def onJoin(self, details):
         port = self.config.extra['port']
         baudrate = self.config.extra['baudrate']
+
+        # install signal handler
+        signal.signal(signal.SIGINT, self.signal_handler)
 
         # first of all, register the getErrors Function
         yield self.register(self.getErrors, u"de.me_systeme.gsv.getErrors")
@@ -1165,7 +1165,7 @@ class McuComponent(ApplicationSession):
         if diffTime.days <= 0 and diffTime.seconds <= 2:
             if (diffTime.seconds == 0 and diffTime.microseconds < 4000):
                 self.sendCounter += 1
-                if self.sendCounter >= 10:
+                if self.sendCounter >= 8:
                     self.sendCounter = 0
                     logging.getLogger('serial2ws.MyComp').debug("serialWait, prevent GSV-6CPU RX Buffer overflow")
                     sleep(0.2)  # Time in seconds
@@ -1208,6 +1208,10 @@ class McuComponent(ApplicationSession):
         self.isSerialConnected = False
         self.publish(u"de.me_systeme.gsv.serialConnectionLost")
 
+    def signal_handler(self, signal, frame):
+        self.disconnect()
+        self.leave()
+
 
 from twisted.web.server import Site
 from twisted.web.static import File
@@ -1217,6 +1221,7 @@ if __name__ == '__main__':
     import sys
     import argparse
 
+    # init logging
     main_logger = logging.getLogger('serial2ws')
     log_file_handler = logging.handlers.RotatingFileHandler('./logs/app.log', maxBytes=1024 * 1024 * 10, backupCount=0)
     formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s')
@@ -1344,3 +1349,5 @@ if __name__ == '__main__':
         main_logger.critical('WAMP Router konnte nicht erreicht werden, richtige IP? Fehlermedlung: ' + str(e))
     except Exception, e:
         main_logger.critical('[start] Unexpected error: ' + str(e))
+
+    main_logger.info('serial2ws closing cleanly / graceful')
