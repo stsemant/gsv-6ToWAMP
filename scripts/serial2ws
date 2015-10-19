@@ -1,0 +1,33 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          serial2ws
+# Required-Start:    $local_fs $remote_fs $network $crossbar
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starts serial2ws
+# Description:       starts serial2ws
+### END INIT INFO
+
+TZ='Europe/Berlin';
+export TZ
+
+pypy_dir=/home/pi/install/pypy-2.6.1-linux-armhf-raspbian/bin
+gsv6ToWamp_dir=/home/pi/gsv-6ToWAMP
+
+# wait max 90 Sec. for crossbar
+for i in {1..690}
+do
+	wget -t 1 http://localhost:8080
+	return_val=$?
+	echo $return_val
+	if [ ${return_val} -eq "0" ] || [ ${return_val} -eq "8" ]
+	then
+		break
+	fi
+	sleep 1
+done
+
+cd ${gsv6ToWamp_dir}
+${pypy_dir}/pypy serial2ws.py

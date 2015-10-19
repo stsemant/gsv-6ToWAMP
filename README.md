@@ -112,13 +112,15 @@ For the update, we have to download the latest pypy-version, extract files and u
 	pypy serial2ws.py --baud=115200 --port=/dev/ttyAMA0
 	goto http://<ip>:8000
 
-## start crossbar at systemstart
-copy the crossbar-(start)-script from scripts-folder to /etc/init.d/
+## start crossbar and serial2ws at systemstart
+copy the crossbar-(start)-script and the serial2ws-(start)-script from scripts-folder to /etc/init.d/
 
 	cd ~/gsv-6ToWAMP/scripts
 	sudo cp crossbar /etc/init.d/
+	sudo cp serial2ws /etc/init.d/
 	
 make the script runnable and add crossbar to rc.d
 
 	sudo chmod +x /etc/init.d/crossbar
+	sudo chmod +x /etc/init.d/serial2ws
 	sudo update-rc.d crossbar defaults
