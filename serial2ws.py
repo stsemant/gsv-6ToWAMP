@@ -1104,10 +1104,15 @@ class McuComponent(ApplicationSession):
 
     # cleanup here
     def onLeave(self, details):
-        self.serialPort.reactor.stop()
-        self.router.stop()
-        # wait max 1 Sec.
-        self.router.join(1.0)
+        try:
+            self.serialPort.reactor.stop()
+        except Exception:
+            pass
+        if self.router.isAlive():
+            self.router.stop()
+            # wait max 1 Sec.
+            self.router.join(1.0)
+
 
     @inlineCallbacks
     def onJoin(self, details):
@@ -1124,7 +1129,7 @@ class McuComponent(ApplicationSession):
 
         # create an router object/thread
         self.router = FrameRouter(self, self.frameInBuffer, self.antwortQueue)
-        self.router.start()
+
 
         serialProtocol = GSV_6Protocol(self, self.frameInBuffer, self.antwortQueue)
 
@@ -1135,12 +1140,13 @@ class McuComponent(ApplicationSession):
             self.isSerialConnected = True
         except Exception as e:
             logging.getLogger('serial2ws.MyComp').critical('Could not open serial port: {0}. exit!'.format(e))
-            self.router.stop()
+            #self.router.stop()
             # wait max 1 Sec.
-            self.router.join(1.0)
+            #self.router.join(1.0)
+            self.disconnect()
             self.leave()
         else:
-            pass
+            self.router.start()
 
     def __exit__(self):
         logging.getLogger('serial2ws.MyComp').trace('Exit.')
@@ -1221,6 +1227,9 @@ from twisted.internet import reactor
 if __name__ == '__main__':
     import sys
     import argparse
+
+    if not os.path.exists("./logs"):
+        os.makedirs("./logs")
 
     # init logging
     main_logger = logging.getLogger('serial2ws')
