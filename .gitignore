@@ -3,3 +3,4 @@
 messungen/
 main.py
 .crossbar/node.pid
+logs/*
