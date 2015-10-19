@@ -86,6 +86,18 @@ For the update, we have to download the latest pypy-version, extract files and u
 #### Autobahn Framework
 	pip install autobahn
 	
+#### install usbmount, for automount usb-store
+	sudo apt-get install usbmount
+change usbmount config
+
+	sudo nano /etc/usbmount/usbmount.conf
+goto FS_MOUNTOPTIONS="" and change it to
+
+	FS_MOUNTOPTIONS="-fstype=vfat,gid=users,dmask=0007,fmask=0117"
+	strg+o
+	strg+x
+	sudo reboot
+	
 #### Crosbar.io (WAMP-Router)
 	sudo apt-get install build-essential libssl-dev libffi-dev python-dev
 	pip install crossbar

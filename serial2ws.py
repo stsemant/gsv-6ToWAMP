@@ -1270,7 +1270,11 @@ if __name__ == '__main__':
     parser.add_argument("--router", type=str, default=u'ws://127.0.0.1:8080/ws/',
                         help='If given, connect to this WAMP router. Else run an embedded router on 8080.')
 
-    parser.add_argument("--csvpath", type=str, default='./messungen/',
+    if sys.platform == 'win32':
+        parser.add_argument("--csvpath", type=str, default='./messungen/',
+                        help='If given, the CSV-Files will be saved there.')
+    else:
+        parser.add_argument("--csvpath", type=str, default='/media/usb0/',
                         help='If given, the CSV-Files will be saved there.')
 
     config = SafeConfigParser()
