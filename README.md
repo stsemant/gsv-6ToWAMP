@@ -124,3 +124,4 @@ make the script runnable and add crossbar to rc.d
 	sudo chmod +x /etc/init.d/crossbar
 	sudo chmod +x /etc/init.d/serial2ws
 	sudo update-rc.d crossbar defaults
+	sudo update-rc.d serial2ws defaults
