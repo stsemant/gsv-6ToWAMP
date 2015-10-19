@@ -698,6 +698,7 @@ class GSVeventHandler():
         self.session.register(self.getCachedConfig, u"de.me_systeme.gsv.getCachedConfig")
         self.session.register(self.setDateTimeFromBrowser, u"de.me_systeme.gsv.setDateTimeFromBrowser")
         self.session.register(self.isSystemReady, u"de.me_systeme.gsv.isSystemReady")
+        self.session.register(self.rebootSystem, u"de.me_systeme.gsv.rebootSystem")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -851,6 +852,16 @@ class GSVeventHandler():
             x = os.system("sudo date -u -s \"%s\"" % (dateTimeStr))
             if x == 0:
                 return [0, "ERR_OK", dateTimeStr]
+            else:
+                return [x, "an error occurred"]
+
+    def rebootSystem(self):
+        if sys.platform == 'win32':
+            return [0x01, "Windows not supported"]
+        else:
+            x = os.system("sudo reboot")
+            if x == 0:
+                return [0, "ERR_OK"]
             else:
                 return [x, "an error occurred"]
 

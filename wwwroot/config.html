@@ -494,6 +494,21 @@
             }, session.log);
         }
 
+        function rebootSystem() {
+            session.call('de.me_systeme.gsv.rebootSystem').then(function set(res) {
+                if (res[0] != 0) {
+                    showGeError("System-Reboot konnte nicht durchgeführt werden", "Fehlercode: " + res[0] + '; ' + res[1]);
+                } else {
+                    $('#btn_rebootSystem').addClass("disabled");
+                    $('#btn_rebootSystem').popover({content: 'system is rebooting', placement: "top"}).popover("show");
+                    timerForSetDateTime = setTimeout(function () {
+                        $('#btn_rebootSystem').removeClass("disabled")
+                        $('#btn_rebootSystem').popover('destroy');
+                    }, 90000);
+                }
+            }, session.log);
+        }
+
         function showGeError(title, detail) {
             $('#geError_header').html(title);
             $('#geError_detail').html(detail);
@@ -1538,34 +1553,34 @@
     </div>
 
     <div class="row">
-        <div class="col-sm-4 box">
+        <div class="col-sm-6 box">
             <div class="panel panel-danger">
                 <div class="panel-heading">Danger-Zone</div>
                 <div class="panel-body">
-                    <div class="col-sm-3 box">
-                        <button id="btn-saveAll" type="button" class="btn btn-warning disabled" onclick="WriteSaveAll()">SaveAll
+                    <div class="btn-toolbar">
+                        <button id="btn-saveAll" type="button" class="btn btn-warning disabled"
+                                onclick="WriteSaveAll()">SaveAll
                         </button>
-                    </div>
-                    <div class="col-sm-3 box">
                         <button id="btn_setDateTime" type="button" class="btn btn-warning"
                                 onclick="setDateTimeFromBrowser()">Browser Zeit
                             setzten
+                        </button>
+                        <button id="btn_rebootSystem" type="button" class="btn btn-danger"
+                                onclick="rebootSystem()">reboot System
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-8 box">
+        <div class="col-sm-6 box">
             <div class="panel panel-default">
                 <div class="panel-heading">User-UnitText</div>
                 <div class="panel-body">
-                    <div class="col-sm-3 box">
+                    <div class="btn-toolbar">
                         <button id="btn-setUnitText0" type="button" class="btn btn-default"
                                 onclick="$('#setUnitTextSlot').html('0');$('#setUnitTextModal').modal('show');">
                             <span class="glyphicon glyphicon-pencil"></span> set UnitText slot 0
                         </button>
-                    </div>
-                    <div class="col-sm-3 box">
                         <button id="btn-setUnitText1" type="button" class="btn btn-default"
                                 onclick="$('#setUnitTextSlot').html('1');$('#setUnitTextModal').modal('show');">
                             <span class="glyphicon glyphicon-pencil"></span> set UnitText slot 1
