@@ -16,42 +16,16 @@
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
     <script src="js/autobahn.min.js"></script>
-    <script src="js/smoothie.js"></script>
     <script>
-
-        // the WAMP session we'll be using
-        //
         var session = null;
 
         var loadTimeOut = 5000;
         var loadFilesTimer = null;
 
-        function onLoadFilesError() {
-            alert("fehler");
-        }
+        var log_div = null;
 
-        function deleteCSVFile(fileStr) {
-            session.call('de.me_systeme.gsv.deleteCSVFile', [fileStr]).then(function deleteFilesResult(res) {
-                if (res) {
-                    $(function () {
-                        $('table>tbody>tr').each(function () {
-                            var tdID = $(this).attr('id');
-                            if (tdID == fileStr) {
-                                $(this).closest('tr').fadeOut();
-                                $(this).closest('tr').remove();
-                                if ($('#filesTable').html() == "") {
-                                    $('#filesRow').hide();
-                                    $('#noFilesText').show();
-                                }
-                            }
-                        })
-                    });
-                }
-            }, session.log);
-        }
-        function askForDeleteCSVfile(fileStr) {
-            $('#modalDeleteFile_filename').html(fileStr);
-            $('#deleteFileDialoge').modal('show');
+        function onReceiveLog(args) {
+            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
         }
 
         function buildFileTable(data) {
@@ -63,11 +37,7 @@
                 r[++j] = '<tr id=\"' + data[0][index] + '\"><td>';
                 r[++j] = data[0][index];
                 r[++j] = '</td><td>';
-                r[++j] = '<button type="button" class="btn btn-default viewCSV" onClick=\"location.href=\'messung_detail.html?file=' + data[0][index] + '\'\">  <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></button>';
-                r[++j] = '</td><td>';
                 r[++j] = '<button type="button" class="btn btn-default downloadCSV" onClick=\"window.location=\'' + data[1][index] + '\'\">  <span class="glyphicon glyphicon-save" aria-hidden="true"></span></button>';
-                r[++j] = '</td><td>';
-                r[++j] = '<button type="button" class="btn btn-default deleteCSV" onClick=\"askForDeleteCSVfile(\'' + data[0][index] + '\')\">  <span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
                 r[++j] = '</td></tr>';
             }
 
@@ -76,7 +46,6 @@
 
         window.onload = function () {
             $('#myPleaseWait').modal('show');
-            loadFilesTimer = setTimeout(onLoadFilesError, loadTimeOut);
 
             // the URL of the WAMP Router (e.g. Crossbar.io)
             //
@@ -99,10 +68,20 @@
 
                 session = new_session;
 
+                session.subscribe("de.me_systeme.gsv.onLog", onReceiveLog);
+
+                debug_div = document.getElementById('log_out');
+
                 // try to get all cached informations and then get missing informations
 
-                session.call('de.me_systeme.gsv.getCSVFileList').then(function listFIles(res) {
-                    doneLoading();
+                session.call('de.me_systeme.gsv.getLog').then(function addLog(res) {
+                    var log_section = document.getElementById('log_out');
+                    res.forEach(function (entry) {
+                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
+                    });
+                }, session.log);
+                session.call('de.me_systeme.gsv.getLogFileList').then(function listFIles(res) {
+                    $('#myPleaseWait').modal('hide');
                     var dir = res[0];
                     var data = new Array();
                     data[0] = new Array();
@@ -134,11 +113,6 @@
             };
             connection.open();
         };
-
-        function doneLoading() {
-            $('#myPleaseWait').modal('hide');
-            clearTimeout(loadFilesTimer);
-        }
     </script>
 
 </head>
@@ -152,8 +126,8 @@
             <ul class="nav navbar-nav">
                 <li><a href="index.html">Messung</a></li>
                 <li><a href="config.html">Konfiguration</a></li>
-                <li class="active"><a href="#">Archiv</a></li>
-                <li><a href="log.html">Log</a></li>
+                <li><a href="archiv.html">Archiv</a></li>
+                <li class="active"><a href="#">Log</a></li>
             </ul>
         </div>
     </div>
@@ -181,49 +155,14 @@
     </div>
 </div>
 <!-- Loading Modal ends Here -->
-<!-- deleteFile Modal Start here-->
-<div class="modal fade bs-example-modal-sm" id="deleteFileDialoge" tabindex="-1"
-     role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">
-                    <span class="glyphicon glyphicon-question-sign">
-                    </span> L&ouml;schen einer CSV-Datei
-                </h4>
-            </div>
-            <div class="modal-body">
-                <dl>
-                    <dt>Wollen Sie wirklich folgende Datei l&ouml;schen?</dt>
-                    <dd id="modalDeleteFile_filename">-</dd>
-                </dl>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger"
-                        onclick="deleteCSVFile($('#modalDeleteFile_filename').html()); $('#deleteFileDialoge').modal('hide');">
-                    Ja, L&ouml;schen
-                </button>
-                <button type="button" class="btn btn-success" onclick="$('#deleteFileDialoge').modal('hide');">Nein,
-                    Abbruch
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- deleteFile Modal ends Here -->
 <div class="container">
-    <div class="well well-sm">Messdaten</div>
-    <h4 id="noFilesText" hidden>keine CSV-Dateien vorhanden.</h4>
-
     <div id="filesRow" class="row">
         <div class="col-sm-5 box">
             <table class="table table-condensed table-hover">
                 <thead>
                 <tr>
-                    <th>Datei</th>
-                    <th>Ansehen</th>
+                    <th>Log-Datei</th>
                     <th>Download</th>
-                    <th>L&ouml;schen</th>
                 </tr>
                 </thead>
                 <tbody id="filesTable">
@@ -231,6 +170,12 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="panel panel-primary">
+        <div class="panel-heading">Log
+            <div id="event-cnt" style="float:right;">-</div>
+        </div>
+        <div id="log_out" class="panel-body" style="max-height: 600px;overflow-y: scroll;"></div>
     </div>
 </div>
 </div>

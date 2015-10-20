@@ -48,8 +48,6 @@
         var loadTimeOut = 5000;
         var loadConfigTimer = null;
 
-        var debug_div = null;
-
         Object.extend = function (destination, source) {
             for (var property in source) {
                 if (source.hasOwnProperty(property)) {
@@ -109,11 +107,6 @@
 
             $('#' + inputName).addClass("has-error");
             $('#' + inputName + '_glyphicon').addClass("glyphicon-remove");
-        }
-
-        function onReceiveError(args) {
-            //eventCnt += 1;
-            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
         }
 
         function onGetInterface(args) {
@@ -583,7 +576,6 @@
 
                 session = new_session;
 
-                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
                 session.subscribe("de.me_systeme.gsv.onWriteUserScale", onWriteUserScale);
@@ -601,18 +593,6 @@
                 session.subscribe("de.me_systeme.gsv.onWriteInputType", onWriteInputType);
                 session.subscribe("de.me_systeme.gsv.onSetUnitText", onSetUnitText);
                 session.subscribe("de.me_systeme.gsv.onGetUnitText", onGetUnitText);
-
-                debug_div = document.getElementById('debug_out');
-
-                // try to get all cached informations and then get missing informations
-
-                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
-                    var log_section = document.getElementById('debug_out');
-                    res.forEach(function (entry) {
-                        //console.log(entry);
-                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
-                    });
-                }, session.log);
 
                 waitForSystemReadyAndLoadDetails();
             };
@@ -700,7 +680,7 @@
                 <li><a href="index.html">Messung</a></li>
                 <li class="active"><a href="#">Konfiguration</a></li>
                 <li><a href="archiv.html">Archiv</a></li>
-                <li><a href="#">Log</a></li>
+                <li><a href="log.html">Log</a></li>
             </ul>
         </div>
     </div>
@@ -1589,13 +1569,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="panel panel-primary">
-        <div class="panel-heading">Debug
-            <div id="event-cnt" style="float:right;">-</div>
-        </div>
-        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
     </div>
 </div>
 </div>

@@ -124,11 +124,6 @@
             console.log(args[1]);
         }
 
-        function onReceiveError(args) {
-            eventCnt += 1;
-            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
-        }
-
         function updateEventCnt() {
             document.getElementById("event-cnt").innerHTML = Math.round(eventCnt / eventCntUpdateInterval) + " events/s";
             eventCnt = 0;
@@ -193,8 +188,6 @@
                 }
                 channel_unit.innerHTML = ' ' + args[4];
             }
-            //alert(args);
-            //console.log('onGetUnitNo');
             eventCnt += 1;
         }
 
@@ -371,20 +364,10 @@
 
                 session.subscribe("de.me_systeme.gsv.onStartStopTransmission", onStartStopTransmission);
                 session.subscribe("de.me_systeme.gsv.onMesswertReceived", onMesswertReceived);
-                session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
                 session.subscribe("de.me_systeme.gsv.onGetUnitNo", onGetUnitNo);
                 session.subscribe("de.me_systeme.gsv.onGetInterface", onGetInterface);
                 session.subscribe("de.me_systeme.gsv.onGetReadUserScale", onGetReadUserScale);
                 session.subscribe("de.me_systeme.gsv.onWriteSetZero", onWriteSetZero);
-
-                debug_div = document.getElementById('debug_out');
-
-                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
-                    var log_section = document.getElementById('debug_out');
-                    res.forEach(function (entry) {
-                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
-                    });
-                }, session.log);
 
                 waitForSystemReadyAndLoadDetails();
 
@@ -434,7 +417,7 @@
                 <li class="active"><a href="#">Messung</a></li>
                 <li><a href="config.html">Konfiguration</a></li>
                 <li><a href="archiv.html">Archiv</a></li>
-                <li><a href="#">Log</a></li>
+                <li><a href="log.html">Log</a></li>
             </ul>
         </div>
     </div>
@@ -569,7 +552,6 @@
         <div class="panel-heading">Debug
             <div id="event-cnt" style="float:right;...;">-</div>
         </div>
-        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
     </div>
 </div>
 </div>

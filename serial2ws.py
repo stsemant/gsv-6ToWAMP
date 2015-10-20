@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from LoggingWAMP_Handler import WAMP_Handler
+
 __author__ = 'Dennis Rump'
 ###############################################################################
 #
@@ -77,6 +79,8 @@ def trace(self, message, *args, **kws):
 
 logging.Logger.trace = trace
 logging.basicConfig()
+# FileSize in MB
+maxLogFileSize=1
 
 from autobahn.twisted.wamp import ApplicationSession
 from collections import deque
@@ -251,7 +255,6 @@ class GSV_6Protocol(protocol.Protocol):
                         # self.frameQueue.put(frame)
                         self.frameQueue.put_nowait(frame)
                     except Queue.Full:
-                        self.session.addError('a complete Frame was droped, because Queue was full')
                         logging.getLogger('serial2ws.MyComp.GSV_6Protocol').warning(
                             'a complete Frame was droped, because Queue was full')
                     # self.session.publish(u"com.myapp.mcu.on_frame_received",
@@ -435,7 +438,6 @@ class AntwortFrameHandler():
         except Exception, e:
             msg = 'Unexpected error[antwort][' + func_name_for_error + ']:' + str(e)
             logging.getLogger('serial2ws.MyComp.router.AntwortFrameHandler').critical(msg)
-            self.session.addError(msg)
 
     def rcvStartStopTransmission(self, frame, start):
         self.session.publish(u"de.me_systeme.gsv.onStartStopTransmission",
@@ -639,9 +641,7 @@ class AntwortFrameHandler():
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), channelNo])
 
     def rcvSetMEid(self, frame, minor):
-        msg = "cache ready."
-        logging.getLogger('serial2ws.MyComp.router.AntwortFrameHandler').info(msg)
-        self.session.addError(msg)
+        logging.getLogger('serial2ws.MyComp.router.AntwortFrameHandler').info('cache ready.')
         self.session.sys_ready = True
         if frame.getAntwortErrorCode() == 0:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', True)
@@ -699,18 +699,17 @@ class GSVeventHandler():
         self.session.register(self.setDateTimeFromBrowser, u"de.me_systeme.gsv.setDateTimeFromBrowser")
         self.session.register(self.isSystemReady, u"de.me_systeme.gsv.isSystemReady")
         self.session.register(self.rebootSystem, u"de.me_systeme.gsv.rebootSystem")
+        self.session.register(self.getLogFileList, u"de.me_systeme.gsv.getLogFileList")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
             msg = 'Start Transmission. Call from ' + str(kwargs['details'].caller)
             logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').info(msg)
-            self.session.addError(msg)
             data = self.gsv_lib.buildStartTransmission()
             self.eventHandler.setStartTimeStampStr(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
         else:
             msg = 'Stop Transmission. Call from ' + str(kwargs['details'].caller)
             logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').info(msg)
-            self.session.addError(msg)
             data = self.gsv_lib.buildStopTransmission()
             self.eventHandler.writeCSVdata()
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
@@ -876,6 +875,13 @@ class GSVeventHandler():
         files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
         return [search_dir, files]
 
+    def getLogFileList(self):
+        # in this function, we write nothing to the GSV-modul
+        search_dir = "./logs/"
+        files = filter(os.path.isfile, glob.glob(search_dir + "*.*"))
+        files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        return [search_dir, files]
+
     def deleteCSVFile(self, fileName):
         filepath = self.session.config.extra['csvpath'] + fileName
         if (os.path.isfile(filepath)):
@@ -883,15 +889,13 @@ class GSVeventHandler():
                 os.remove(filepath)
             except Exception, e:
                 msg = '[File I/O error] ' + fileName + ': ' + str(e)
-                self.session.addError(msg)
                 logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').critical(msg)
                 return False
             else:
                 return True
         else:
-            msg = fileName + ' konnte nicht gefunden werden (gelöscht werden'
+            msg = fileName + ' konnte nicht gefunden werden (gelöscht werden)'
             logging.getLogger('serial2ws.MyComp.GSV_6Protocol').warning(msg)
-            self.session.addError(fileName + " konnte nicht gefunden werden (gelöscht werden")
             return False
 
     # this fuction didnt write to the modul, its resets the antwort Queue
@@ -903,7 +907,6 @@ class GSVeventHandler():
             return True
         except Exception, e:
             msg = 'resetAntwortQueue Unexpected error: ' + str(e)
-            self.session.addError(msg)
             logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').critical(msg)
             return False
 
@@ -964,9 +967,7 @@ class FrameRouter(threading.Thread):
         FrameRouter.lock.acquire()
         self.running = True
         FrameRouter.lock.release()
-        msg = "started"
-        logging.getLogger('serial2ws.MyComp.router').info(msg)
-        self.session.addError(msg)
+        logging.getLogger('serial2ws.MyComp.router').info('started')
 
         # now wait for GSV-6CPU
         while not self.session.isSerialConnected and self.running:
@@ -994,11 +995,8 @@ class FrameRouter(threading.Thread):
                     # error
                     logging.getLogger('serial2ws.MyComp.router').debug(
                         'nothing to do with an FrameType != Messwert/Antwort')
-                    self.session.addError('nothing to do with an FrameType != Messwert/Antwort')
 
-        msg = "exit"
-        logging.getLogger('serial2ws.MyComp.router').info(msg)
-        self.session.addError(msg)
+        logging.getLogger('serial2ws.MyComp.router').info('exit')
 
     def stop(self):
         FrameRouter.lock.acquire()
@@ -1020,25 +1018,19 @@ class FrameRouter(threading.Thread):
     def checkForGSVavailableAndFillCache(self):
         data = self.gsv6.buildStopTransmission()
         while True:
-            msg = "try to reach GSV-6CPU ..."
-            logging.getLogger('serial2ws.MyComp.router').info(msg)
-            self.session.addError(msg)
+            logging.getLogger('serial2ws.MyComp.router').info('try to reach GSV-6CPU ...')
 
             self.session.write(data)
             sleep(1.0)
             if not self.frameQueue.empty():
                 frame = self.frameQueue.get()
                 if frame.getAntwortErrorCode() != 0x00:
-                    msg = "error init modul-communication. re-try..."
-                    logging.getLogger('serial2ws.MyComp.router').critical(msg)
-                    self.session.addError(msg)
+                    logging.getLogger('serial2ws.MyComp.router').critical('error init modul-communication. re-try...')
 
                     self.frameQueue.queue.clear()
                     sleep(1.0)
                 else:
-                    msg = "GSV-6CPU found."
-                    logging.getLogger('serial2ws.MyComp.router').info(msg)
-                    self.session.addError(msg)
+                    logging.getLogger('serial2ws.MyComp.router').info('GSV-6CPU found.')
                     # fill cache
                     self.eventHandler.getDataRate()
                     self.eventHandler.getReadInputType(1)
@@ -1075,7 +1067,6 @@ class FrameRouter(threading.Thread):
             else:
                 msg = "GSV-6CPU didn't answer, will wait 5 sec. and try again..."
                 logging.getLogger('serial2ws.MyComp.router').info(msg)
-                self.session.addError(msg)
                 sleep(5.0)
 
 
@@ -1098,7 +1089,7 @@ class McuComponent(ApplicationSession):
 
     # what ist deque? = double-ended queue. it's a thread-safe ringbuffer
     # this deque holds the errors as string
-    errorQueue = deque([], 20)
+    logQueue = deque([], 200)
 
     # hier werden die messungen gespeichert
     messCSVDictList = []
@@ -1126,6 +1117,7 @@ class McuComponent(ApplicationSession):
             self.router.stop()
             # wait max 1 Sec.
             self.router.join(1.0)
+        logging._removeHandlerRef(self.toWAMP_logger)
 
 
     @inlineCallbacks
@@ -1137,8 +1129,11 @@ class McuComponent(ApplicationSession):
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
+        self.toWAMP_logger  = WAMP_Handler(self, self.logQueue)
+        logging.getLogger('serial2ws.MyComp').addHandler(self.toWAMP_logger)
+
         # first of all, register the getErrors Function
-        yield self.register(self.getErrors, u"de.me_systeme.gsv.getErrors")
+        yield self.register(self.getLog, u"de.me_systeme.gsv.getLog")
         yield self.register(self.getIsSerialConnected, u"de.me_systeme.gsv.getIsSerialConnected")
 
         # create an router object/thread
@@ -1154,11 +1149,7 @@ class McuComponent(ApplicationSession):
             self.isSerialConnected = True
         except Exception as e:
             logging.getLogger('serial2ws.MyComp').critical('Could not open serial port: {0}. exit!'.format(e))
-            #self.router.stop()
-            # wait max 1 Sec.
-            #self.router.join(1.0)
-            self.disconnect()
-            self.leave()
+            os.kill(os.getpid(), signal.SIGTERM)
         else:
             self.router.start()
 
@@ -1168,12 +1159,8 @@ class McuComponent(ApplicationSession):
     def __del__(self):
         logging.getLogger('serial2ws.MyComp').trace('del.')
 
-    def getErrors(self):
-        return list(self.errorQueue)
-
-    def addError(self, errorString):
-        self.errorQueue.append(errorString)
-        self.publish(u"de.me_systeme.gsv.onError", errorString)
+    def getLog(self):
+        return list(self.logQueue)
 
     sendCounter = 0
 
@@ -1224,7 +1211,6 @@ class McuComponent(ApplicationSession):
 
     def lostSerialConnection(self, errorMessage):
         logging.getLogger('serial2ws.MyComp').critical("Lost SerialConnection: " + errorMessage)
-        self.addError("[serialConnection:LOST] " + errorMessage)
         # TODO: reconnect?
         self.isSerialConnected = False
         self.publish(u"de.me_systeme.gsv.serialConnectionLost")
@@ -1247,9 +1233,9 @@ if __name__ == '__main__':
 
     # init logging
     main_logger = logging.getLogger('serial2ws')
-    log_file_handler = logging.handlers.RotatingFileHandler('./logs/app.log', maxBytes=1024 * 1024 * 10, backupCount=0)
+    log_file_handler = logging.handlers.RotatingFileHandler('./logs/app.log', maxBytes=1024 * 1024 * maxLogFileSize, backupCount=4)
     formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s')
-    log_file_handler.setFormatter(formatter)
+    log_file_handler.setFormatter(logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s'))
     main_logger.addHandler(log_file_handler)
     stdout_log = logging.StreamHandler()
     # stdout_log.setLevel(logging.DEBUG)
@@ -1354,6 +1340,8 @@ if __name__ == '__main__':
     root = File("./wwwroot/")
     # messungenroot
     root.putChild("messungen", File(args.csvpath))
+    # logroot
+    root.putChild("logs", File("./logs/"))
     try:
         reactor.listenTCP(args.web, Site(root))
     except CannotListenError, e:
@@ -1377,5 +1365,6 @@ if __name__ == '__main__':
         main_logger.critical('WAMP Router konnte nicht erreicht werden, richtige IP? Fehlermedlung: ' + str(e))
     except Exception, e:
         main_logger.critical('[start] Unexpected error: ' + str(e))
-
-    main_logger.info('serial2ws closing cleanly / graceful')
+    finally:
+        main_logger.info('serial2ws closing cleanly / graceful')
+        os.kill(os.getpid(), signal.SIGTERM)

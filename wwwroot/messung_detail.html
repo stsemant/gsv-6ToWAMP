@@ -30,17 +30,9 @@
 
         var chart = null;
 
-        var debug_div = null;
-
         function onLoadFilesError() {
             alert("fehler");
         }
-
-        function onReceiveError(args) {
-            //eventCnt += 1;
-            debug_div.innerHTML = '<p>' + args[0] + '</p>' + debug_div.innerHTML;
-        }
-
 
         function parse(val) {
             /*  this function is from:
@@ -72,14 +64,6 @@
 
         window.onload = function () {
             $('#myPleaseWait').modal('show');
-            /*
-             $(document).ajaxStart(function () {
-             $('#myPleaseWait').modal('show');
-             })
-             $(document).ajaxComplete(function () {
-             $('#myPleaseWait').modal('hide');
-             })
-             */
 
             // the URL of the WAMP Router (e.g. Crossbar.io)
             //
@@ -104,17 +88,6 @@
 
                 session.subscribe("de.me_systeme.gsv.onError", onReceiveError);
 
-                debug_div = document.getElementById('debug_out');
-
-                // try to get all cached informations and then get missing informations
-
-                session.call('de.me_systeme.gsv.getErrors').then(function addErrors(res) {
-                    var log_section = document.getElementById('debug_out');
-                    res.forEach(function (entry) {
-                        //console.log(entry);
-                        log_section.innerHTML = '<p>' + entry + '</p>' + log_section.innerHTML;
-                    });
-                }, session.log);
             };
             connection.open();
             try {
@@ -168,11 +141,11 @@
                                         var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1);
                                         d.update({name: 'Kanal ' + channleNo}, false);
                                         if (nameAndUnit.length <= 1) {
-                                            d.update({tooltip:{valueSuffix: ''}});
+                                            d.update({tooltip: {valueSuffix: ''}});
                                             d.id = "undefined";
                                         } else {
                                             var unitName = nameAndUnit[1].substring(0, nameAndUnit[1].length - 1);
-                                            d.update({tooltip:{valueSuffix: ' '+ unitName}});
+                                            d.update({tooltip: {valueSuffix: ' ' + unitName}});
                                             d.id = unitName;
                                         }
                                     })
@@ -208,7 +181,7 @@
                                     enabled: false
                                 },
                                 tooltip: {
-                                    valueSuffix: "test"
+                                    valueSuffix: "?"
                                 },
                                 events: {
                                     show: function (e) {
@@ -247,7 +220,6 @@
                     });
                     chart.series[0].show();
                     $('#myPleaseWait').modal('hide');
-                    console.log(chart.options.plotOptions.series.tooltip.valueSuffix);
                 });
                 request.error(function (jqXHR, textStatus, errorThrown) {
                     if (textStatus == 'timeout')
@@ -273,7 +245,7 @@
                 <li><a href="index.html">Messung</a></li>
                 <li><a href="config.html">Konfiguration</a></li>
                 <li class="active"><a href="archiv.html">Zur&uuml;ck zum Archiv</a></li>
-                <li><a href="#">Log</a></li>
+                <li><a href="log.html">Log</a></li>
             </ul>
         </div>
     </div>
@@ -333,12 +305,6 @@
 
     <div id="chartContainer" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
 
-    <div class="panel panel-primary">
-        <div class="panel-heading">Debug
-            <div id="event-cnt" style="float:right;">-</div>
-        </div>
-        <div id="debug_out" class="panel-body" style="max-height: 200px;overflow-y: scroll;"></div>
-    </div>
 </div>
 </div>
 </div>
