@@ -1281,8 +1281,8 @@ if __name__ == '__main__':
     parser.add_argument("--web", type=int, default=8000,
                         help='Web port to use for embedded Web server. Use 0 to disable.')
 
-    parser.add_argument("--router", type=str, default=u'ws://127.0.0.1:8080/ws/',
-                        help='If given, connect to this WAMP router. Else run an embedded router on 8080.')
+    parser.add_argument("--router", type=str, default=u'ws://127.0.0.1:8001/ws/',
+                        help='If given, connect to this WAMP router.')
 
     if sys.platform == 'win32':
         parser.add_argument("--csvpath", type=str, default='./messungen/',
