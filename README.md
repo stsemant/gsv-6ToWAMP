@@ -1,4 +1,5 @@
 #gsv-6ToWAMP
+[[_TOC_]]
 ## GSV-6CPU Modul to WAMP
 This shows how to hook up an Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as configure the GSV-6CPU from the browser.
 
