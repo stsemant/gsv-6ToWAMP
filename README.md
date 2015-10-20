@@ -193,7 +193,7 @@ Configure DHCP. Edit the file /etc/udhcpd.conf and configure it like this
 	end 192.168.9.20
 	interface wlan0 		# The device uDHCP listens on.
 	remaining yes
-	!!!    opt dns 8.8.8.8 4.2.2.2 # The DNS servers client devices will use. !!!
+	#opt dns 8.8.8.8 4.2.2.2 # The DNS servers client devices will use.
 	opt subnet 255.255.255.0
 	opt router 192.168.42.1	# The Pi's IP address on wlan0 which we will set up shortly.
 	opt lease 864000 		# 10 day DHCP lease time in seconds
