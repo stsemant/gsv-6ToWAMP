@@ -1335,6 +1335,24 @@ if __name__ == '__main__':
 
     main_logger.info("Using Twisted reactor {0}".format(reactor.__class__))
 
+
+    import urllib2
+    import time
+    retrys = 0
+    while retrys < 180:
+        try:
+                urllib2.urlopen('http://localhost:8001', timeout=1)
+        except urllib2.HTTPError, e:
+            main_logger.info("crossbar instance gefunden.")
+            break
+        except Exception, e:
+            main_logger.info("warte auf crossbar, verusche es in 1 Sec. wieder.")
+        else:
+            main_logger.info("crossbar instance gefunden.")
+            break
+        time.sleep(1.0)
+        retrys +=1
+
     # create embedded web server for static files
     # wwwroot
     root = File("./wwwroot/")
