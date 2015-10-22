@@ -27,9 +27,9 @@ __author__ = 'Dennis Rump'
 # THE SOFTWARE.
 #
 # Hiermit wird unentgeltlich, jeder Person, die eine Kopie der Software
-# und der zugehörigen Dokumentationen (die "Software") erhält, die
-# Erlaubnis erteilt, uneingeschränkt zu benutzen, inklusive und ohne
-# Ausnahme, dem Recht, sie zu verwenden, kopieren, ändern, fusionieren,
+# und der zugehÃ¶rigen Dokumentationen (die "Software") erhÃ¤lt, die
+# Erlaubnis erteilt, uneingeschrÃ¤nkt zu benutzen, inklusive und ohne
+# Ausnahme, dem Recht, sie zu verwenden, kopieren, Ã¤ndern, fusionieren,
 # verlegen, verbreiten, unter-lizenzieren und/oder zu verkaufen, und
 # Personen, die diese Software erhalten, diese Rechte zu geben, unter
 # den folgenden Bedingungen:
@@ -37,12 +37,12 @@ __author__ = 'Dennis Rump'
 # Der obige Urheberrechtsvermerk und dieser Erlaubnisvermerk sind in
 # alle Kopien oder Teilkopien der Software beizulegen.
 #
-# DIE SOFTWARE WIRD OHNE JEDE AUSDRÜCKLICHE ODER IMPLIZIERTE GARANTIE
-# BEREITGESTELLT, EINSCHLIESSLICH DER GARANTIE ZUR BENUTZUNG FÜR DEN
+# DIE SOFTWARE WIRD OHNE JEDE AUSDRÃœCKLICHE ODER IMPLIZIERTE GARANTIE
+# BEREITGESTELLT, EINSCHLIESSLICH DER GARANTIE ZUR BENUTZUNG FÃœR DEN
 # VORGESEHENEN ODER EINEM BESTIMMTEN ZWECK SOWIE JEGLICHER
-# RECHTSVERLETZUNG, JEDOCH NICHT DARAUF BESCHRÄNKT. IN KEINEM FALL SIND
-# DIE AUTOREN ODER COPYRIGHTINHABER FÜR JEGLICHEN SCHADEN ODER SONSTIGE
-# ANSPRUCH HAFTBAR ZU MACHEN, OB INFOLGE DER ERFÜLLUNG VON EINEM
+# RECHTSVERLETZUNG, JEDOCH NICHT DARAUF BESCHRÃ„NKT. IN KEINEM FALL SIND
+# DIE AUTOREN ODER COPYRIGHTINHABER FÃœR JEGLICHEN SCHADEN ODER SONSTIGE
+# ANSPRUCH HAFTBAR ZU MACHEN, OB INFOLGE DER ERFÃœLLUNG VON EINEM
 # VERTRAG, EINEM DELIKT ODER ANDERS IM ZUSAMMENHANG MIT DER BENUTZUNG
 # ODER SONSTIGE VERWENDUNG DER SOFTWARE ENTSTANDEN.
 #
@@ -894,7 +894,7 @@ class GSVeventHandler():
             else:
                 return True
         else:
-            msg = fileName + ' konnte nicht gefunden werden (gelöscht werden)'
+            msg = fileName + ' konnte nicht gefunden werden (gelÃ¶scht werden)'
             logging.getLogger('serial2ws.MyComp.GSV_6Protocol').warning(msg)
             return False
 
@@ -939,7 +939,7 @@ from gsv6_seriall_lib import GSV6_seriall_lib
 
 
 class FrameRouter(threading.Thread):
-    # lock for running variale, nötig?
+    # lock for running variale, nÃ¶tig?
     lock = threading.Lock()
     startTimeStampStr = ''
     hasToWriteCSVdata = False
@@ -1003,7 +1003,7 @@ class FrameRouter(threading.Thread):
         self.running = False
         FrameRouter.lock.release()
 
-        # TODO: evtl reduanter aufruf! überprüfen!
+        # TODO: evtl reduanter aufruf! Ã¼berprÃ¼fen!
         self.writeCSVdata()
 
     def setStartTimeStampStr(self, str, hasToWriteCSV):
@@ -1031,6 +1031,7 @@ class FrameRouter(threading.Thread):
                     sleep(1.0)
                 else:
                     logging.getLogger('serial2ws.MyComp.router').info('GSV-6CPU found.')
+		    self.frameQueue.queue.clear()
                     # fill cache
                     self.eventHandler.getDataRate()
                     self.eventHandler.getReadInputType(1)
@@ -1346,7 +1347,7 @@ if __name__ == '__main__':
             main_logger.info("crossbar instance gefunden.")
             break
         except Exception, e:
-            main_logger.info("warte auf crossbar, verusche es in 1 Sec. wieder.")
+            main_logger.info("warte auf crossbar instance, versuche es in 1 Sec. wieder.")
         else:
             main_logger.info("crossbar instance gefunden.")
             break
