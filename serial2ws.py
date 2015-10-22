@@ -1283,7 +1283,11 @@ if __name__ == '__main__':
         parser.add_argument("--csvpath", type=str, default='/media/usb0/',
                         help='If given, the CSV-Files will be saved there.')
 
-    parser.add_argument("-b", "--boot_wait", type=int, default=0,
+    if sys.platform == 'win32':
+        parser.add_argument("-b", "--boot_wait", type=int, default=0,
+                        help='add some waiting period, befor starting up [in Sec.].')
+    else:
+        parser.add_argument("-b", "--boot_wait", type=int, default=10,
                         help='add some waiting period, befor starting up [in Sec.].')
 
     config = SafeConfigParser()
