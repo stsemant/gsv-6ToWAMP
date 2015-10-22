@@ -846,12 +846,15 @@ class GSVeventHandler():
 
     def setDateTimeFromBrowser(self, dateTimeStr):
         if sys.platform == 'win32':
+            logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').error("setDateTime; Windows not supported")
             return [0x01, "Windows not supported"]
         else:
             x = os.system("sudo date -u -s \"%s\"" % (dateTimeStr))
             if x == 0:
+                logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').debug("setDateTime; wurde gesetzt")
                 return [0, "ERR_OK", dateTimeStr]
             else:
+                logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').error("setDateTime; an error occurred: "+str(x))
                 return [x, "an error occurred"]
 
     def rebootSystem(self):
