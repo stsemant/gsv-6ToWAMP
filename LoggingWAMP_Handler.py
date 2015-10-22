@@ -64,3 +64,8 @@ class WAMP_Handler(logging.Handler):
             self.flush()
         except:
             self.handleError(record)
+
+class NoHTTP_GetFilter(logging.Filter):
+    def filter(self, record):
+        if record.getMessage().find(' \"GET') == -1:
+            return record.getMessage()

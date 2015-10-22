@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from LoggingWAMP_Handler import WAMP_Handler
+from LoggingWAMP_Handler import WAMP_Handler, NoHTTP_GetFilter
 
 __author__ = 'Dennis Rump'
 ###############################################################################
@@ -1139,7 +1139,9 @@ class McuComponent(ApplicationSession):
         signal.signal(signal.SIGTERM, self.signal_handler)
 
         self.toWAMP_logger  = WAMP_Handler(self, self.logQueue)
-        logging.getLogger('serial2ws.MyComp').addHandler(self.toWAMP_logger)
+        self.toWAMP_logger.addFilter(NoHTTP_GetFilter())
+        logging.getLogger('serial2ws').addHandler(self.toWAMP_logger)
+
 
         # first of all, register the getErrors Function
         yield self.register(self.getLog, u"de.me_systeme.gsv.getLog")
