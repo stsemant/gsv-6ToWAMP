@@ -1111,6 +1111,11 @@ class McuComponent(ApplicationSession):
     # cleanup here
     def onLeave(self, details):
         try:
+            self.serialPort.stopReading()
+        except Exception:
+            pass
+        try:
+            self.serialPort.stopReading()
             self.serialPort.reactor.stop()
         except Exception:
             pass
@@ -1278,6 +1283,9 @@ if __name__ == '__main__':
         parser.add_argument("--csvpath", type=str, default='/media/usb0/',
                         help='If given, the CSV-Files will be saved there.')
 
+    parser.add_argument("-b", "--boot_wait", type=int, default=0,
+                        help='add some waiting period, befor starting up [in Sec.].')
+
     config = SafeConfigParser()
     config.read(['defaults.conf'])
 
@@ -1353,6 +1361,10 @@ if __name__ == '__main__':
             break
         time.sleep(1.0)
         retrys +=1
+
+    if args.boot_wait > 0:
+        main_logger.info("waiting {0} sec to start...".format(args.boot_wait))
+        sleep(args.boot_wait)
 
     # create embedded web server for static files
     # wwwroot
