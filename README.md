@@ -136,6 +136,18 @@ Make the script runnable and add crossbar to rc.d
 	sudo update-rc.d crossbar defaults
 	sudo update-rc.d serial2ws defaults
 	
+## Ehternet configuration
+if you have no connection (cabel) at eth0, it is better to disable dhcp on eth0. It will be speedup your systemstart und avoid some network glitches.
+set up your desired network options in  /etc/network/interfaces
+	
+	iface eth0 inet static
+      address 192.168.2.10
+      netmask 255.255.255.0
+      gateway 192.168.2.1
+or disable eth0 at all with follwing line in /etc/network/interfaces
+
+	iface eth0 inet manual
+	
 ## Establish the RPi as a Wifi Accespoint with hostapd [Source](http://elinux.org/RPI-Wireless-Hotspot)
 Verify that your wifi-adapter is on the [compatible list](http://elinux.org/RPI-Wireless-Hotspot)
 and make sure, that you are connected via eth0 (by cable)
