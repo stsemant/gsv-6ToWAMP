@@ -1,7 +1,4 @@
 #!/bin/sh
-#
-# init script for ship-it
-#
 
 ### BEGIN INIT INFO
 # Provides:          serial2ws
@@ -22,18 +19,24 @@ gsv6ToWamp_dir=/home/pi/gsv-6ToWAMP
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 NAME=serial2ws
-DAEMON=${gsv6ToWamp_dir}/serial2ws.py
-DAEMONARGS=""
+DAEMON=${pypy}
+DAEMONARGS="serial2ws.py"
+USER=pi
 PIDFILE=/var/run/$NAME.pid
 LOGFILE=/var/log/$NAME.log
 
 . /lib/lsb/init-functions
 
-test -f $DAEMON || exit 0
+#test -f $DAEMON || exit 0
 
 case "$1" in
     start)
-        start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --chdir $gsv6ToWamp_dir --startas /bin/bash -- -c "exec $pypy $DAEMON $DAEMONARGS > $LOGFILE 2>&1"
+	start-stop-daemon --start --background --pidfile $PIDFILE \
+        --user $USER --group $USER \
+        -b --make-pidfile \
+        --chuid $USER \
+	    --chdir $gsv6ToWamp_dir \
+        --exec $DAEMON $DAEMONARGS
         log_end_msg $?
         ;;
     stop)
