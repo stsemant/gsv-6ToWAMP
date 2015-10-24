@@ -80,7 +80,7 @@ def trace(self, message, *args, **kws):
 logging.Logger.trace = trace
 logging.basicConfig()
 # FileSize in MB
-maxLogFileSize=1
+maxLogFileSize = 1
 
 from autobahn.twisted.wamp import ApplicationSession
 from collections import deque
@@ -88,7 +88,7 @@ from collections import deque
 import error_codes
 import GSV6_BasicFrameType
 # import Queue
-from Queue import Queue, Empty
+from Queue import Queue, Empty, Full
 import unit_codes
 from autobahn.wamp.types import RegisterOptions
 
@@ -254,7 +254,7 @@ class GSV_6Protocol(protocol.Protocol):
                         # put() is blocking, put_nowait() ist non-blocking
                         # self.frameQueue.put(frame)
                         self.frameQueue.put_nowait(frame)
-                    except Queue.Full:
+                    except Full:
                         logging.getLogger('serial2ws.MyComp.GSV_6Protocol').warning(
                             'a complete Frame was droped, because Queue was full')
                     # self.session.publish(u"com.myapp.mcu.on_frame_received",
@@ -308,30 +308,41 @@ class CSVwriter(threading.Thread):
         with open(self.filenName, 'ab') as csvfile:
             fieldnames = ['timestamp', 'channel0', 'channel1', 'channel2', 'channel3', 'channel4', 'channel5']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
-            if self.writeHeader:
-                headernames = {'timestamp': 'timestamp', 'channel0': 'channel0[' + self.units[0] + ']',
-                               'channel1': 'channel1[' + self.units[1] + ']',
-                               'channel2': 'channel2[' + self.units[2] + ']',
-                               'channel3': 'channel3[' + self.units[3] + ']',
-                               'channel4': 'channel4[' + self.units[4] + ']',
-                               'channel5': 'channel5[' + self.units[5] + ']'}
-                writer.writerow(headernames)
-
             self.csvList_lock.acquire()
-            writer.writerows(self.dictListOfMessungen)
+            try:
+                if self.writeHeader:
+                    headernames = {'timestamp': 'timestamp', 'channel0': 'channel0[' + self.units[0] + ']',
+                                   'channel1': 'channel1[' + self.units[1] + ']',
+                                   'channel2': 'channel2[' + self.units[2] + ']',
+                                   'channel3': 'channel3[' + self.units[3] + ']',
+                                   'channel4': 'channel4[' + self.units[4] + ']',
+                                   'channel5': 'channel5[' + self.units[5] + ']'}
+                    writer.writerow(headernames)
+                writer.writerows(self.dictListOfMessungen)
+            except Exception, e:
+                logging.getLogger('serial2ws.MyComp.router.MessFrameHandler.CSVwriter').critical(
+                    'stopping measurement, can\'t write data! Error: ' + str(e))
+                # TODO: Stop Meassure!
+                pass
             del self.dictListOfMessungen[:]
             self.csvList_lock.release()
             logging.getLogger('serial2ws.MyComp.router.MessFrameHandler.CSVwriter').trace('CSV-File written')
 
 
+import numpy as np
+from collections import deque
+
+
 class MessFrameHandler():
-    def __init__(self, session, gsv_lib, eventHandler):
+    def __init__(self, session, gsv_lib):
         self.session = session
         self.gsv_lib = gsv_lib
-        self.eventHandler = eventHandler
         self.messCounter = 0
         self.startTimeStampStr = ''
         self.hasTOWriteCSV = False
+        self.messData = [deque([], 10),deque([], 10),deque([], 10),deque([], 10),deque([], 10),deque([], 10)]
+        self.reduceCounter = 0
+        self.dataRateReduceFactor = 1
 
     def computeFrame(self, frame):
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
@@ -368,9 +379,39 @@ class MessFrameHandler():
                 # semaphore lock?
                 self.writeCSVdataNow()
 
-        # publish WAMP event to all subscribers on topic
-        self.session.publish(u"de.me_systeme.gsv.onMesswertReceived", [payload, inputOverload, sixAchisError])
-        logging.getLogger('serial2ws.MyComp.router.MessFrameHandler').trace('Received MessFrame: published.')
+        # reducce data-set
+        hasToReduceDataSet = False
+        try:
+            if float(self.gsv_lib.getCachedProperty('DataRate', 'DataRate')) > 25.0:
+                hasToReduceDataSet = True
+        except Exception, e:
+            logging.getLogger('serial2ws.MyComp.router.MessFrameHandler').debug('can\'t detect DataRate: ' + str(e))
+        if not hasToReduceDataSet:
+            # publish WAMP event to all subscribers on topic
+            self.session.publish(u"de.me_systeme.gsv.onMesswertReceived", [payload, inputOverload, sixAchisError])
+            logging.getLogger('serial2ws.MyComp.router.MessFrameHandler').trace('Received MessFrame: published.')
+        else:
+            try:
+                for i in range(0, len(values)):
+                    self.messData[i].append(values[i])
+                self.reduceCounter += 1
+                if self.reduceCounter >= self.dataRateReduceFactor:
+                    self.reduceCounter = 0
+
+                    for i in range(0,len(values)):
+                        # there is no append/add function for Python Dictionaries
+                        var = np.var(self.messData[i])
+                        x = 0
+                        if var > self.gsv_lib.getCachedProperty('Varianz', 1):
+                            x = np.mean([np.mean(self.messData[i]), np.amax(self.messData[i]), np.amin(self.messData[i])])
+                        else:
+                            x = np.median(self.messData[i])
+
+                        payload[u'channel' + str(counter) + '_value'] = x
+                    self.session.publish(u"de.me_systeme.gsv.onMesswertReceived", [payload, inputOverload, sixAchisError])
+                    logging.getLogger('serial2ws.MyComp.router.MessFrameHandler').trace('Received MessFrame: published. was reduced!')
+            except Exception, e:
+                logging.getLogger('serial2ws.MyComp.router.MessFrameHandler').critical('can\'t compute reduced messFrame')
 
     def setStartTimeStamp(self, startTimeStampStr, hasToWriteCSV):
         self.startTimeStampStr = startTimeStampStr
@@ -410,6 +451,19 @@ class MessFrameHandler():
                            self.session.config.extra['csvpath'])
         writer.start()
 
+    def resize_deque(self, d, newSize):
+        if d.maxlen > newSize:
+            return deque(list(d)[-newSize:], newSize)
+        else:
+            return deque(d, newSize)
+
+    def dataRateChanged(self, newDataRateFactor):
+        logging.getLogger('serial2ws.MyComp.router.MessFrameHandler').info('new data-set-reduce-factor is '+str(newDataRateFactor))
+        self.dataRateReduceFactor = newDataRateFactor
+        for i in range(0, len(self.messData)):
+            self.messData[i] = self.resize_deque(self.messData[i], newDataRateFactor)
+
+
 
 import collections
 
@@ -417,10 +471,11 @@ import collections
 class AntwortFrameHandler():
     # thread-safe? nothing to do here -> queue-Object is an thread-safe
 
-    def __init__(self, session, gsv_lib, eventHandler, queue):
+    def __init__(self, session, gsv_lib, eventHandler, queue, messFrameHandler):
         self.session = session
         self.gsv_lib = gsv_lib
         self.eventHandler = eventHandler
+        self.messFrameHandler = messFrameHandler
         self.queue = queue
 
     def computeFrame(self, frame):
@@ -509,6 +564,7 @@ class AntwortFrameHandler():
         value = self.gsv_lib.convertToFloat(frame.getPayload())[0]
         # for cache
         self.gsv_lib.addConfigToCache('UserScale', channelNo, value)
+        self.gsv_lib.addConfigToCache('Varianz', channelNo, np.var([-(value * 1.05), value * 1.05]))
         # answer from GSV-6CPU
         values = self.gsv_lib.convertToFloat(frame.getPayload())
         self.session.publish(u"de.me_systeme.gsv.onGetReadUserScale",
@@ -572,6 +628,8 @@ class AntwortFrameHandler():
         dataRate = self.gsv_lib.convertToFloat(frame.getPayload())[0]
         # for cache
         self.gsv_lib.addConfigToCache('DataRate', 'DataRate', dataRate)
+        # notify messFrameHandler
+        self.messFrameHandler.dataRateChanged(int(float(dataRate)/25.0))
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetDataRate",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRate])
@@ -658,11 +716,11 @@ import os
 
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
-    def __init__(self, session, gsv_lib, antwortQueue, eventHandler):
+    def __init__(self, session, gsv_lib, antwortQueue, frameRouter):
         self.session = session
         self.gsv_lib = gsv_lib
         self.antwortQueue = antwortQueue
-        self.eventHandler = eventHandler
+        self.frameRouter = frameRouter
         # start register
         self.regCalls()
 
@@ -706,12 +764,12 @@ class GSVeventHandler():
             msg = 'Start Transmission. Call from ' + str(kwargs['details'].caller)
             logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').info(msg)
             data = self.gsv_lib.buildStartTransmission()
-            self.eventHandler.setStartTimeStampStr(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
+            self.frameRouter.setStartTimeStampStr(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), hasToWriteCSVdata)
         else:
             msg = 'Stop Transmission. Call from ' + str(kwargs['details'].caller)
             logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').info(msg)
             data = self.gsv_lib.buildStopTransmission()
-            self.eventHandler.writeCSVdata()
+            self.frameRouter.writeCSVdata()
         self.session.writeAntwort(data, 'rcvStartStopTransmission', start)
 
     def getUnitText(self, slot=0):
@@ -854,7 +912,8 @@ class GSVeventHandler():
                 logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').debug("setDateTime; wurde gesetzt")
                 return [0, "ERR_OK", dateTimeStr]
             else:
-                logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').error("setDateTime; an error occurred: "+str(x))
+                logging.getLogger('serial2ws.MyComp.router.GSVeventHandler').error(
+                    "setDateTime; an error occurred: " + str(x))
                 return [x, "an error occurred"]
 
     def rebootSystem(self):
@@ -957,9 +1016,9 @@ class FrameRouter(threading.Thread):
         # GSV-6CPU Lib
         self.gsv6 = GSV6_seriall_lib()
         self.eventHandler = GSVeventHandler(self.session, self.gsv6, antwortQueue, self)
-        self.messFrameEventHandler = MessFrameHandler(self.session, self.gsv6, self.eventHandler)
+        self.messFrameEventHandler = MessFrameHandler(self.session, self.gsv6)
         self.antwortFrameEventHandler = AntwortFrameHandler(self.session, self.gsv6, self.eventHandler,
-                                                            self.antwortQueue, )
+                                                            self.antwortQueue, self.messFrameEventHandler)
 
         self.waitFirmwareVersionThread = ThreadingWaitForFirmwareVersion(self.session, self.gsv6)
         # fallback, this flag kills this thread if main thread killed
@@ -1034,7 +1093,7 @@ class FrameRouter(threading.Thread):
                     sleep(1.0)
                 else:
                     logging.getLogger('serial2ws.MyComp.router').info('GSV-6CPU found.')
-		    self.frameQueue.queue.clear()
+                    self.frameQueue.queue.clear()
                     # fill cache
                     self.eventHandler.getDataRate()
                     self.eventHandler.getReadInputType(1)
@@ -1128,7 +1187,6 @@ class McuComponent(ApplicationSession):
             self.router.join(1.0)
         logging._removeHandlerRef(self.toWAMP_logger)
 
-
     @inlineCallbacks
     def onJoin(self, details):
         port = self.config.extra['port']
@@ -1138,7 +1196,7 @@ class McuComponent(ApplicationSession):
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
-        self.toWAMP_logger  = WAMP_Handler(self, self.logQueue)
+        self.toWAMP_logger = WAMP_Handler(self, self.logQueue)
         self.toWAMP_logger.addFilter(NoHTTP_GetFilter())
         logging.getLogger('serial2ws').addHandler(self.toWAMP_logger)
 
@@ -1149,7 +1207,6 @@ class McuComponent(ApplicationSession):
 
         # create an router object/thread
         self.router = FrameRouter(self, self.frameInBuffer, self.antwortQueue)
-
 
         serialProtocol = GSV_6Protocol(self, self.frameInBuffer, self.antwortQueue)
 
@@ -1244,7 +1301,8 @@ if __name__ == '__main__':
 
     # init logging
     main_logger = logging.getLogger('serial2ws')
-    log_file_handler = logging.handlers.RotatingFileHandler('./logs/app.log', maxBytes=1024 * 1024 * maxLogFileSize, backupCount=4)
+    log_file_handler = logging.handlers.RotatingFileHandler('./logs/app.log', maxBytes=1024 * 1024 * maxLogFileSize,
+                                                            backupCount=4)
     formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s')
     log_file_handler.setFormatter(logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s'))
     main_logger.addHandler(log_file_handler)
@@ -1283,17 +1341,17 @@ if __name__ == '__main__':
 
     if sys.platform == 'win32':
         parser.add_argument("--csvpath", type=str, default='./messungen/',
-                        help='If given, the CSV-Files will be saved there.')
+                            help='If given, the CSV-Files will be saved there.')
     else:
         parser.add_argument("--csvpath", type=str, default='/media/usb0/',
-                        help='If given, the CSV-Files will be saved there.')
+                            help='If given, the CSV-Files will be saved there.')
 
     if sys.platform == 'win32':
         parser.add_argument("-b", "--boot_wait", type=int, default=0,
-                        help='add some waiting period, befor starting up [in Sec.].')
+                            help='add some waiting period, befor starting up [in Sec.].')
     else:
         parser.add_argument("-b", "--boot_wait", type=int, default=10,
-                        help='add some waiting period, befor starting up [in Sec.].')
+                            help='add some waiting period, befor starting up [in Sec.].')
 
     config = SafeConfigParser()
     config.read(['defaults.conf'])
@@ -1353,13 +1411,13 @@ if __name__ == '__main__':
 
     main_logger.info("Using Twisted reactor {0}".format(reactor.__class__))
 
-
     import urllib2
     import time
+
     retrys = 0
     while retrys < 180:
         try:
-                urllib2.urlopen('http://localhost:8001', timeout=1)
+            urllib2.urlopen('http://localhost:8001', timeout=1)
         except urllib2.HTTPError, e:
             main_logger.info("crossbar instance gefunden.")
             break
@@ -1369,7 +1427,7 @@ if __name__ == '__main__':
             main_logger.info("crossbar instance gefunden.")
             break
         time.sleep(1.0)
-        retrys +=1
+        retrys += 1
 
     if args.boot_wait > 0:
         main_logger.info("waiting {0} sec to start...".format(args.boot_wait))
