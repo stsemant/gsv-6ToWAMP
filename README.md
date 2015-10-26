@@ -161,7 +161,11 @@ set up your desired network options in  /etc/network/interfaces
 	iface eth0 inet static
       address 192.168.2.10
       netmask 255.255.255.0
+      
+optinal and a gateway
+
       gateway 192.168.2.1
+      
 or disable eth0 at all with follwing line in /etc/network/interfaces
 
 	iface eth0 inet manual
