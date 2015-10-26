@@ -85,8 +85,15 @@ For the update we have to download the latest version of PyPy, extract files and
 	pip install autobahn
 	
 #### numpy
+for normal python use
+
 	pip install numpy
-	
+
+we use pypy and under pypy we can't use the normal install method. [Source](http://pypy.org/download.html#installing-numpy)
+use the follwing line to isntall numpy with pypy
+
+	pypy -m pip install git+https://bitbucket.org/pypy/numpy.git
+
 #### Install usbmount, for automount usb-store
 	sudo apt-get install usbmount
 Change usbmount config
