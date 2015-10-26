@@ -84,6 +84,9 @@ For the update we have to download the latest version of PyPy, extract files and
 #### Autobahn Framework
 	pip install autobahn
 	
+#### numpy
+	pip install numpy
+	
 #### Install usbmount, for automount usb-store
 	sudo apt-get install usbmount
 Change usbmount config
