@@ -21,10 +21,10 @@ echo -e "\n \n About to start crossbar \n " >> ${crossbar_init_log}
 case "$1" in
         start)
 				#cd ${gsv6ToWamp_dir}
-                ${pypy_dir}/crossbar ${1} --cbdir ${gsv6ToWamp_dir}/.crossbar >> ${crossbar_init_log}
+                ${pypy_dir}/crossbar ${1} --cbdir ${gsv6ToWamp_dir}/.crossbar >> ${crossbar_init_log} &
         ;;
         restart)
-                ${pypy_dir}/crossbar ${1} --cbdir ${gsv6ToWamp_dir}/.crossbar >> ${crossbar_init_log}
+                ${pypy_dir}/crossbar ${1} --cbdir ${gsv6ToWamp_dir}/.crossbar >> ${crossbar_init_log} &
         ;;
         stop)
                 ${pypy_dir}/crossbar ${1} --cbdir ${gsv6ToWamp_dir}/.crossbar >> ${crossbar_init_log}

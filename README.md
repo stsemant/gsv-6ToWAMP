@@ -139,6 +139,14 @@ Make the script runnable and add crossbar to rc.d
 	sudo update-rc.d crossbar defaults
 	sudo update-rc.d serial2ws defaults
 	
+from now on, you can start and stop crossbar and serial2ws via the deamon
+
+	sudo /etc/init.d/crossbar start
+	sudo /etc/init.d/crossbar stop
+	
+	sudo /etc/init.d/serial2ws start
+	sudo /etc/init.d/serail2ws stop
+	
 ## Ehternet configuration
 if you have no connection (cabel) at eth0, it is better to disable dhcp on eth0. It will be speedup your systemstart und avoid some network glitches.
 set up your desired network options in  /etc/network/interfaces
