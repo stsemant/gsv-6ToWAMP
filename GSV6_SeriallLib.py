@@ -47,12 +47,12 @@ __author__ = 'Dennis Rump'
 ###############################################################################
 # Interpret the GSV6 Seriell Kommunikation
 
-from gsv6_serial_lib_errors import *
+from GSV6_SerialLib_errors import *
 import logging
-import error_codes
+import GSV6_ErrorCodes
 import GSV6_BasicFrameType
 from struct import *
-from anfrage_codes import anfrage_code_to_shortcut
+from GSV6_AnfrageCodes import anfrage_code_to_shortcut
 import threading
 
 
@@ -89,7 +89,7 @@ class GSV6_seriall_lib:
                 if self.cachedConfig[major].has_key(minor):
                     result = True
         except:
-            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t find ' + major + ' in cache!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t find ' + major + ' in cache!')
         finally:
             self.cacheLock.release()
             return result
@@ -112,7 +112,7 @@ class GSV6_seriall_lib:
                 self.cachedConfig[major][minor] = value
                 result = True
         except:
-            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t write ' + major)
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t write ' + major)
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -132,7 +132,7 @@ class GSV6_seriall_lib:
                 self.cachedConfig[major].pop(minor)
                 result = True
         except:
-            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, remove ' + major + ' from cache!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, remove ' + major + ' from cache!')
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -147,7 +147,7 @@ class GSV6_seriall_lib:
                 self.cacheLock.acquire()
                 result = self.cachedConfig.get(major).get(minor)
         except:
-            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -159,7 +159,7 @@ class GSV6_seriall_lib:
         try:
             result = self.cachedConfig
         except:
-            logging.getLogger('serial2ws.MyComp.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
         finally:
             self.cacheLock.release()
             return result
@@ -227,8 +227,8 @@ class GSV6_seriall_lib:
         logging.debug('AntwortFrame Length: ' + str(data_length))
 
         if inData[1] != 0x00:
-            err_code = error_codes.error_code_to_error_shortcut.get(inData[1], 'Error Code not found!.')
-            err_msg = error_codes.error_codes_to_messages_DE.get(inData[1], 'Error Code not found!.')
+            err_code = GSV6_ErrorCodes.error_code_to_error_shortcut.get(inData[1], 'Error Code not found!.')
+            err_msg = GSV6_ErrorCodes.error_codes_to_messages_DE.get(inData[1], 'Error Code not found!.')
             raise GSV6_ReturnError_Exception(err_code, err_msg)
 
         # Bis heri keine Fehler aufgetreten, also daten in BasicFrame einbringen für die weitere verarbeitung

@@ -47,25 +47,45 @@ __author__ = 'Dennis Rump'
 ###############################################################################
 
 import logging
+import threading
+import os
+import csv
 
+class CSVwriter(threading.Thread):
+    def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, units, path='./messungen/'):
+        threading.Thread.__init__(self)
+        self.startTimeStampStr = startTimeStampStr
+        self.path = path
+        self.filenName = self.path + self.startTimeStampStr + '.csv'
+        self.dictListOfMessungen = dictListOfMessungen
+        self.csvList_lock = csvList_lock
+        self.units = units
 
-class WAMP_LoggingHandler(logging.Handler):
-    def __init__(self, session, log_deque):
-        logging.Handler.__init__(self)
-        self.session = session
-        self.log_deque = log_deque
-        self.setFormatter(logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s'))
+    def run(self):
+        if not os.path.exists(self.filenName):
+            self.writeHeader = True
+        else:
+            self.writeHeader = False
 
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            self.log_deque.append(msg)
-            self.session.publish(u"de.me_systeme.gsv.onLog", msg)
-            self.flush()
-        except:
-            self.handleError(record)
-
-class NoHTTP_GetFilter(logging.Filter):
-    def filter(self, record):
-        if record.getMessage().find(' \"GET') == -1:
-            return record.getMessage()
+        with open(self.filenName, 'ab') as csvfile:
+            fieldnames = ['timestamp', 'channel0', 'channel1', 'channel2', 'channel3', 'channel4', 'channel5']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
+            self.csvList_lock.acquire()
+            try:
+                if self.writeHeader:
+                    headernames = {'timestamp': 'timestamp', 'channel0': 'channel0[' + self.units[0] + ']',
+                                   'channel1': 'channel1[' + self.units[1] + ']',
+                                   'channel2': 'channel2[' + self.units[2] + ']',
+                                   'channel3': 'channel3[' + self.units[3] + ']',
+                                   'channel4': 'channel4[' + self.units[4] + ']',
+                                   'channel5': 'channel5[' + self.units[5] + ']'}
+                    writer.writerow(headernames)
+                writer.writerows(self.dictListOfMessungen)
+            except Exception, e:
+                logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler.CSVwriter').critical(
+                    'stopping measurement, can\'t write data! Error: ' + str(e))
+                # TODO: Stop Meassure!
+                pass
+            del self.dictListOfMessungen[:]
+            self.csvList_lock.release()
+            logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler.CSVwriter').trace('CSV-File written')

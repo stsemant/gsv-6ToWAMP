@@ -46,8 +46,8 @@ __author__ = 'Dennis Rump'
 #
 ###############################################################################
 
-import gsv6_serial_lib_errors
-from error_codes import error_code_to_error_shortcut
+import GSV6_SerialLib_errors
+from GSV6_ErrorCodes import error_code_to_error_shortcut
 
 class BasicFrame:
     frameType = {}
@@ -58,7 +58,7 @@ class BasicFrame:
     def __init__(self,data):
         self.data = bytearray(data)
         if len(self.data) < 2:
-            raise gsv6_serial_lib_errors.GSV6_DataType_Error('BasicFrameType: need more data to construct.')
+            raise GSV6_SerialLib_errors.GSV6_DataType_Error('BasicFrameType: need more data to construct.')
         self.frameType = (self.data[0]&0xC0) >> 6
         self.length_or_channel = self.data[0]&0x0F
         self.statusbyte = self.data[1]
