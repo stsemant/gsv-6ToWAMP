@@ -53,7 +53,7 @@ import csv
 
 
 class CSVwriter(threading.Thread):
-    def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, units, path='./messungen/'):
+    def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, units, session, path='./messungen/'):
         threading.Thread.__init__(self)
         self.startTimeStampStr = startTimeStampStr
         self.path = path
@@ -61,6 +61,7 @@ class CSVwriter(threading.Thread):
         self.dictListOfMessungen = dictListOfMessungen
         self.csvList_lock = csvList_lock
         self.units = units
+        self.session = session
 
     def run(self):
         if not os.path.exists(self.filenName):
@@ -85,8 +86,8 @@ class CSVwriter(threading.Thread):
             except Exception, e:
                 logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler.CSVwriter').critical(
                     'stopping measurement, can\'t write data! Error: ' + str(e))
-                # TODO: Stop Meassure!
-                pass
+                self.session.stopMeasurement()
+                
             del self.dictListOfMessungen[:]
             self.csvList_lock.release()
             logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler.CSVwriter').trace('CSV-File written')

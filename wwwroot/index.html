@@ -140,7 +140,6 @@
         function onGetReadUserScale(args) {
             args = args[0];
             if (args[0] != 0) {
-                // TODO: fehler text einbinden
                 console.log(args[0]);
                 console.log(args[1])
             } else {
@@ -194,7 +193,6 @@
         function onGetInterface(args) {
             args = args[0];
             if (args[0] != 0) {
-                // TODO: Fehler meldung
                 console.log(args[0]);
                 console.log(args[1]);
             } else {
@@ -243,7 +241,6 @@
             $('#btn-setZero' + channelNo).addClass("disabled");
             $('#btn-setZero' + channelNo).popover("destroy");
             $('#btn-setZero' + channelNo).popover({content: 'wird übertragen...', placement: "top"}).popover("show");
-            // TODO: aktuellen channel übernhemen
             session.call("de.me_systeme.gsv.WriteSetZero", [channelNo]);
         }
         function onWriteSetZero(args) {

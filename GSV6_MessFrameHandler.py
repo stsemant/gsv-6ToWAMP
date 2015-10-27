@@ -187,7 +187,7 @@ class MessFrameHandler():
 
         # start csvWriter
         writer = CSVwriter(self.startTimeStampStr, self.session.messCSVDictList, self.session.messCSVDictList_lock,
-                           units,
+                           units, self.session,
                            self.session.config.extra['csvpath'])
         writer.start()
 

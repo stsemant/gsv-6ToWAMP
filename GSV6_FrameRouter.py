@@ -145,8 +145,6 @@ class FrameRouter(threading.Thread):
         FrameRouter.lock.acquire()
         self.running = False
         FrameRouter.lock.release()
-
-        # TODO: evtl reduanter aufruf! Ã¼berprÃ¼fen!
         self.writeCSVdata()
 
     def setStartTimeStampStr(self, str, hasToWriteCSV):

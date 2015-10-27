@@ -96,7 +96,6 @@ class AntwortFrameHandler():
     def rcvSetUnitText(self, frame, slot):
         # for cache
         if frame.getAntwortErrorCode() == 0:
-            # TODO: Slot 0 und 1 beachten! -> nicht impl.
             self.gsv_lib.markChachedConfiAsDirty('UnitText', slot)
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onSetUnitText",

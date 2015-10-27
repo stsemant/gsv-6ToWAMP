@@ -215,6 +215,15 @@ class WAMP_Component(ApplicationSession):
         os.kill(os.getpid(), signal.SIGTERM)
 
     def signal_handler(self, signal, frame):
+        if signal == 15:
+            self.stopMeasurement()
         logger = logging.getLogger('serial2ws')
         logger.removeHandler(self.toWAMP_logger)
+        logger.info('received SIGNAL, going down.')
         self.disconnect()
+
+    def stopMeasurement(self):
+        data = self.router.gsv6.buildStopTransmission()
+        logging.getLogger('serial2ws.WAMP_Component').warning('Sending to Message to GSV-Modul')
+        self.write(data)
+        self.router.writeCSVdata()
