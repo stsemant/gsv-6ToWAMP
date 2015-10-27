@@ -89,7 +89,8 @@ class GSV6_seriall_lib:
                 if self.cachedConfig[major].has_key(minor):
                     result = True
         except:
-            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t find ' + major + ' in cache!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning(
+                'cache error, can\'t find ' + major + ' in cache!')
         finally:
             self.cacheLock.release()
             return result
@@ -104,19 +105,16 @@ class GSV6_seriall_lib:
 
         try:
             if self.cachedConfig.has_key(major):
-                '''
-                if isinstance(value, (list, tuple)):
-                    print("is list")
-                '''
                 self.cacheLock.acquire()
                 self.cachedConfig[major][minor] = value
                 result = True
         except:
-            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t write ' + major)
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning(
+                'cache error, can\'t write ' + major)
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
-            #print('addCache: ' + major + ' ' + minor)
+            # print('addCache: ' + major + ' ' + minor)
             return result
 
     def markChachedConfiAsDirty(self, major):
@@ -132,7 +130,8 @@ class GSV6_seriall_lib:
                 self.cachedConfig[major].pop(minor)
                 result = True
         except:
-            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, remove ' + major + ' from cache!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning(
+                'cache error, remove ' + major + ' from cache!')
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -147,7 +146,8 @@ class GSV6_seriall_lib:
                 self.cacheLock.acquire()
                 result = self.cachedConfig.get(major).get(minor)
         except:
-            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning(
+                'cache error, can\'t get cachedConfig!')
         finally:
             if self.cacheLock.locked():
                 self.cacheLock.release()
@@ -159,7 +159,8 @@ class GSV6_seriall_lib:
         try:
             result = self.cachedConfig
         except:
-            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning('cache error, can\'t get cachedConfig!')
+            logging.getLogger('serial2ws.WAMP_Component.router.GSV6_seriall_lib').warning(
+                'cache error, can\'t get cachedConfig!')
         finally:
             self.cacheLock.release()
             return result
@@ -251,14 +252,7 @@ class GSV6_seriall_lib:
             raise GSV6_Communication_Error('Diffrent Interface detected, it has to be seriall.')
 
         transmitted_cahnnels = int(inData[0] & 0x0F)
-        logging.debug('MesswertFrame transmitted_cahnnels: ' + str(transmitted_cahnnels))
-        '''
-        if inData[1] != 0x00:
-            err_code = error_codes.error_code_to_error_shortcut.get(inData[1],'Error Code not found!.')
-            err_msg = error_codes.error_codes_to_messages_DE.get(inData[1],'Error Code not found!.')
-            raise gsv6_serial_lib_errors.GSV6_ReturnError_Exception(err_code, err_msg)
 
-        '''
         # Bis heri keine Fehler aufgetreten, also daten in BasicFrame einbringen für die weitere verarbeitung
         return GSV6_BasicFrameType.BasicFrame(inData)
 
@@ -364,8 +358,6 @@ class GSV6_seriall_lib:
     def decodeGetInterface(self, data):
         if len(data) < 3:
             raise GSV6_DecodeError_Exception(sys._getframe().f_code.co_name, 'Payload to short.')
-
-        # Protokoll-Type ???
 
         result = {}
 
@@ -505,5 +497,5 @@ class GSV6_seriall_lib:
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetInputType'), data)
 
     def buildSetMEid(self, minor):
-        magicCode = bytearray([0x4D,0x45,0x69, minor])
+        magicCode = bytearray([0x4D, 0x45, 0x69, minor])
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('MEsetID'), magicCode)

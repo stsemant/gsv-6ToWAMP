@@ -64,6 +64,7 @@ from GSV6_FrameRouter import FrameRouter
 
 from time import sleep
 
+
 class WAMP_Component(ApplicationSession):
     """
     RPi WAMP application component.
@@ -134,10 +135,13 @@ class WAMP_Component(ApplicationSession):
         # create an router object/thread
         self.router = FrameRouter(self, self.frameInBuffer, self.antwortQueue)
 
+        # create GSV6 Serial-Protocol-Object
         serialProtocol = GSV_6Protocol(self, self.frameInBuffer, self.antwortQueue)
 
         logging.getLogger('serial2ws.WAMP_Component').debug(
             'About to open serial port {0} [{1} baud] ..'.format(port, baudrate))
+
+        # try to init Serial-Connection
         try:
             self.serialPort = SerialPort(serialProtocol, port, reactor, baudrate=baudrate)
             self.isSerialConnected = True
@@ -145,6 +149,7 @@ class WAMP_Component(ApplicationSession):
             logging.getLogger('serial2ws.WAMP_Component').critical('Could not open serial port: {0}. exit!'.format(e))
             os.kill(os.getpid(), signal.SIGTERM)
         else:
+            # when erial-init okay -> start FrameRouter
             self.router.start()
 
     def __exit__(self):
@@ -169,7 +174,8 @@ class WAMP_Component(ApplicationSession):
                 self.sendCounter += 1
                 if self.sendCounter >= 8:
                     self.sendCounter = 0
-                    logging.getLogger('serial2ws.WAMP_Component').debug("serialWait, prevent GSV-6CPU RX Buffer overflow")
+                    logging.getLogger('serial2ws.WAMP_Component').debug(
+                        "serialWait, prevent GSV-6CPU RX Buffer overflow")
                     sleep(0.2)  # Time in seconds
             else:
                 self.sendCounter = 0
@@ -197,17 +203,16 @@ class WAMP_Component(ApplicationSession):
         finally:
             self.serialWrite_lock.release()
 
-    def publish_test(self, topic, args):
-        self.publish(topic, args)
-
     def getIsSerialConnected(self):
         return self.isSerialConnected
 
     def lostSerialConnection(self, errorMessage):
         logging.getLogger('serial2ws.WAMP_Component').critical("Lost SerialConnection: " + errorMessage)
-        # TODO: reconnect?
         self.isSerialConnected = False
-        self.publish(u"de.me_systeme.gsv.serialConnectionLost")
+        # not implemented at web-frontend
+        self.publish(u"de.me_systeme.gsv.onSystemGoingDown")
+        # shut down app
+        os.kill(os.getpid(), signal.SIGTERM)
 
     def signal_handler(self, signal, frame):
         logger = logging.getLogger('serial2ws')

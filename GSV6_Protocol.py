@@ -52,6 +52,7 @@ from Queue import Full
 import GSV6_BasicFrameType
 import GSV6_ErrorCodes
 
+
 class GSV_6Protocol(protocol.Protocol):
     inDataBuffer = {}
 
@@ -68,9 +69,7 @@ class GSV_6Protocol(protocol.Protocol):
         self.inDataBuffer.extend(data)
         logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace(
             'data received: ' + ' '.join(format(x, '02x') for x in bytearray(data)))
-
         self.checkForCompleteFrame()
-        # print("get DATA")
 
     def checkForCompleteFrame(self, recursion=-1):
         state = 0
@@ -144,7 +143,8 @@ class GSV_6Protocol(protocol.Protocol):
                     # start count at 0-> +1
                     payloadLength += 1
                     payloadLength *= multiplier
-                    logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace('payloadLength: ' + str(payloadLength))
+                    logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace(
+                        'payloadLength: ' + str(payloadLength))
                     state = 3
                 elif frametype == 1:
                     logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace('detected Antwort Frame')
@@ -166,12 +166,14 @@ class GSV_6Protocol(protocol.Protocol):
                     # any other frametype is not allow: drop
                     # in this scope we can't pop (del) first byte -> idea: blank the 0xAA
                     self.inDataBuffer[0] = 0x00
-                    logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace('[break] other FrameType detected.')
+                    logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace(
+                        '[break] other FrameType detected.')
                     break
                     # if not -> drop: state=0;counter=0;drop incommingDataBuffer.pop(0), tempArray=[]
                     # if payload>6*4Byte, drop also
             elif state == 3:
-                logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace('counter-state: ' + str((counter - state)))
+                logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace(
+                    'counter-state: ' + str((counter - state)))
                 if payloadLength == (counter - state):
                     state = 4
                     # so we got the whole payload goto state=4
@@ -196,14 +198,10 @@ class GSV_6Protocol(protocol.Protocol):
                     frame = GSV6_BasicFrameType.BasicFrame(tempArray)
                     # self.frameQueue.append(frame)
                     try:
-                        # put() is blocking, put_nowait() ist non-blocking
-                        # self.frameQueue.put(frame)
                         self.frameQueue.put_nowait(frame)
                     except Full:
                         logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').warning(
                             'a complete Frame was droped, because Queue was full')
-                    # self.session.publish(u"com.myapp.mcu.on_frame_received",
-                    #                     str(''.join(format(x, '02x') for x in bytearray(tempArray))))
                     logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').trace(
                         '[serial] Received compelte Frame: ' + ' '.join(format(x, '02x') for x in bytearray(tempArray)))
 

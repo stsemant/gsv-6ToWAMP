@@ -56,6 +56,7 @@ from time import sleep
 from Queue import Queue, Empty, Full
 from GSV6_SeriallLib import GSV6_seriall_lib
 
+
 class ThreadingWaitForFirmwareVersion(threading.Thread):
     def __init__(self, session, gsv_lib):
         threading.Thread.__init__(self)
@@ -78,6 +79,7 @@ class ThreadingWaitForFirmwareVersion(threading.Thread):
                     logging.getLogger('serial2ws.WAMP_Component.router.ThreadingWaitForFirmwareVersion').info(
                         "wait for cache...")
                 sleep(0.5)
+
 
 class FrameRouter(threading.Thread):
     # lock for running variale, nÃ¶tig?
@@ -166,7 +168,8 @@ class FrameRouter(threading.Thread):
             if not self.frameQueue.empty():
                 frame = self.frameQueue.get()
                 if frame.getAntwortErrorCode() != 0x00:
-                    logging.getLogger('serial2ws.WAMP_Component.router').critical('error init modul-communication. re-try...')
+                    logging.getLogger('serial2ws.WAMP_Component.router').critical(
+                        'error init modul-communication. re-try...')
 
                     self.frameQueue.queue.clear()
                     sleep(1.0)

@@ -51,6 +51,7 @@ import collections
 import GSV6_UnitCodes
 import numpy as np
 
+
 class AntwortFrameHandler():
     # thread-safe? nothing to do here -> queue-Object is an thread-safe
 
@@ -212,7 +213,7 @@ class AntwortFrameHandler():
         # for cache
         self.gsv_lib.addConfigToCache('DataRate', 'DataRate', dataRate)
         # notify messFrameHandler
-        self.messFrameHandler.dataRateChanged(int(float(dataRate)/25.0))
+        self.messFrameHandler.dataRateChanged(int(float(dataRate) / 25.0))
         # answer from GSV-6CPU
         self.session.publish(u"de.me_systeme.gsv.onGetDataRate",
                              [frame.getAntwortErrorCode(), frame.getAntwortErrorText(), dataRate])
@@ -286,7 +287,8 @@ class AntwortFrameHandler():
         self.session.sys_ready = True
         if frame.getAntwortErrorCode() == 0:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', True)
-            logging.getLogger('serial2ws.WAMP_Component.router.AntwortFrameHandler').info('ME ID has been set successfully.')
+            logging.getLogger('serial2ws.WAMP_Component.router.AntwortFrameHandler').info(
+                'ME ID has been set successfully.')
         else:
             self.gsv_lib.addConfigToCache('ME_ID', 'ME_ID', False)
             logging.getLogger('serial2ws.WAMP_Component.router.AntwortFrameHandler').info("ME ID could not be set.")

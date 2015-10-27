@@ -55,7 +55,9 @@ import GSV6_UnitCodes
 from Queue import Empty
 
 from autobahn.wamp.types import RegisterOptions
+
 spezialOptions = RegisterOptions(details_arg="details")
+
 
 class GSVeventHandler():
     # here we register all "wamp" functions and all "wamp" listners around GSV-6CPU-Modul
@@ -247,7 +249,8 @@ class GSVeventHandler():
 
     def setDateTimeFromBrowser(self, dateTimeStr):
         if sys.platform == 'win32':
-            logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler').error("setDateTime; Windows not supported")
+            logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler').error(
+                "setDateTime; Windows not supported")
             return [0x01, "Windows not supported"]
         else:
             x = os.system("sudo date -u -s \"%s\"" % (dateTimeStr))

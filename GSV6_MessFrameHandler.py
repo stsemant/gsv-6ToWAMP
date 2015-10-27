@@ -56,6 +56,7 @@ import GSV6_UnitCodes
 
 maxCacheMessCount = 1000
 
+
 class MessFrameHandler():
     def __init__(self, session, gsv_lib):
         self.session = session
@@ -63,7 +64,7 @@ class MessFrameHandler():
         self.messCounter = 0
         self.startTimeStampStr = ''
         self.hasTOWriteCSV = False
-        self.messData = [deque([], 10),deque([], 10),deque([], 10),deque([], 10),deque([], 10),deque([], 10)]
+        self.messData = [deque([], 10), deque([], 10), deque([], 10), deque([], 10), deque([], 10), deque([], 10)]
         self.reduceCounter = 0
         self.dataRateReduceFactor = 1
 
@@ -108,11 +109,13 @@ class MessFrameHandler():
             if float(self.gsv_lib.getCachedProperty('DataRate', 'DataRate')) > 25.0:
                 hasToReduceDataSet = True
         except Exception, e:
-            logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').debug('can\'t detect DataRate: ' + str(e))
+            logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').debug(
+                'can\'t detect DataRate: ' + str(e))
         if not hasToReduceDataSet:
             # publish WAMP event to all subscribers on topic
             self.session.publish(u"de.me_systeme.gsv.onMesswertReceived", [payload, inputOverload, sixAchisError])
-            logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').trace('Received MessFrame: published.')
+            logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').trace(
+                'Received MessFrame: published.')
         else:
             try:
                 for i in range(0, len(values)):
@@ -121,20 +124,24 @@ class MessFrameHandler():
                 if self.reduceCounter >= self.dataRateReduceFactor:
                     self.reduceCounter = 0
 
-                    for i in range(0,len(values)):
+                    for i in range(0, len(values)):
                         # there is no append/add function for Python Dictionaries
                         var = np.var(self.messData[i])
                         x = 0
                         if var > self.gsv_lib.getCachedProperty('Varianz', 1):
-                            x = np.mean([np.mean(self.messData[i]), np.amax(self.messData[i]), np.amin(self.messData[i])])
+                            x = np.mean(
+                                [np.mean(self.messData[i]), np.amax(self.messData[i]), np.amin(self.messData[i])])
                         else:
                             x = np.median(self.messData[i])
 
                         payload[u'channel' + str(counter) + '_value'] = x
-                    self.session.publish(u"de.me_systeme.gsv.onMesswertReceived", [payload, inputOverload, sixAchisError])
-                    logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').trace('Received MessFrame: published. was reduced!')
+                    self.session.publish(u"de.me_systeme.gsv.onMesswertReceived",
+                                         [payload, inputOverload, sixAchisError])
+                    logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').trace(
+                        'Received MessFrame: published. was reduced!')
             except Exception, e:
-                logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').critical('can\'t compute reduced messFrame')
+                logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').critical(
+                    'can\'t compute reduced messFrame')
 
     def setStartTimeStamp(self, startTimeStampStr, hasToWriteCSV):
         self.startTimeStampStr = startTimeStampStr
@@ -181,7 +188,8 @@ class MessFrameHandler():
             return deque(d, newSize)
 
     def dataRateChanged(self, newDataRateFactor):
-        logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').info('new data-set-reduce-factor is '+str(newDataRateFactor))
+        logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').info(
+            'new data-set-reduce-factor is ' + str(newDataRateFactor))
         self.dataRateReduceFactor = newDataRateFactor
         for i in range(0, len(self.messData)):
             self.messData[i] = self.resize_deque(self.messData[i], newDataRateFactor)

@@ -49,18 +49,19 @@ __author__ = 'Dennis Rump'
 import GSV6_SerialLib_errors
 from GSV6_ErrorCodes import error_code_to_error_shortcut
 
+
 class BasicFrame:
     frameType = {}
     length_or_channel = {}
     statusbyte = {}
     data = {}
 
-    def __init__(self,data):
+    def __init__(self, data):
         self.data = bytearray(data)
         if len(self.data) < 2:
             raise GSV6_SerialLib_errors.GSV6_DataType_Error('BasicFrameType: need more data to construct.')
-        self.frameType = (self.data[0]&0xC0) >> 6
-        self.length_or_channel = self.data[0]&0x0F
+        self.frameType = (self.data[0] & 0xC0) >> 6
+        self.length_or_channel = self.data[0] & 0x0F
         self.statusbyte = self.data[1]
         if len(self.data) < 3:
             self.data = []
@@ -83,19 +84,19 @@ class BasicFrame:
         return self.data
 
     def isMesswertSixAchsisError(self):
-        if ((self.statusbyte&0x02) >> 1) == 1:
+        if ((self.statusbyte & 0x02) >> 1) == 1:
             return True
         else:
             return False
 
     def isMesswertInputOverload(self):
-        if (self.statusbyte&0x01) == 1:
+        if (self.statusbyte & 0x01) == 1:
             return True
         else:
             return False
 
     def getMesswertDataTypeAsString(self):
-        type = ((self.statusbyte&0x70)>>4)
+        type = ((self.statusbyte & 0x70) >> 4)
         if type == 1:
             return 'int16'
         elif type == 2:
@@ -114,7 +115,8 @@ class BasicFrame:
     def toString(self):
         if self.frameType == 0:
             # Messwert Frame
-            str = 'MesswertFrame: Kanäle: {} Payload: {} Datentype: {}'.format(self.getChannelCount(), ' '.join(format(z, '02x') for z in self.data), self.getMesswertDataTypeAsString())
+            str = 'MesswertFrame: Kanäle: {} Payload: {} Datentype: {}'.format(self.getChannelCount(), ' '.join(
+                format(z, '02x') for z in self.data), self.getMesswertDataTypeAsString())
             if self.isMesswertSixAchsisError():
                 str += ' !6-Achsen-Fehler!'
             if self.isMesswertInputOverload():
@@ -122,7 +124,9 @@ class BasicFrame:
             return str
         elif self.frameType == 1:
             # Antwort Frame
-            str = 'AntwortFrame: Länge des Payloads: {} Fehler: {}'.format(self.getLength(), error_code_to_error_shortcut.get(self.statusbyte))
+            str = 'AntwortFrame: Länge des Payloads: {} Fehler: {}'.format(self.getLength(),
+                                                                           error_code_to_error_shortcut.get(
+                                                                               self.statusbyte))
             if self.length_or_channel > 0:
                 str += ' Payload: {}'.format(' '.join(format(z, '02x') for z in self.data))
             return str

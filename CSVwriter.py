@@ -51,6 +51,7 @@ import threading
 import os
 import csv
 
+
 class CSVwriter(threading.Thread):
     def __init__(self, startTimeStampStr, dictListOfMessungen, csvList_lock, units, path='./messungen/'):
         threading.Thread.__init__(self)

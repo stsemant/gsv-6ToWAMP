@@ -56,45 +56,47 @@ __author__ = 'Dennis Rump'
 #
 ###############################################################################
 
-from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
-
-from twisted.internet.error import ConnectionRefusedError, TCPTimedOutError, ReactorAlreadyInstalledError, \
-    CannotListenError
-
 import logging
 import logging.handlers
 from twisted.python import log
-from GSV6_WAMP_Handler import WAMP_Component
+
 import os
+import sys
+import argparse
 from time import sleep
 import signal
+import time
+import urllib2
+from ConfigParser import SafeConfigParser
 
+from twisted.internet.error import ConnectionRefusedError, TCPTimedOutError, ReactorAlreadyInstalledError, \
+    CannotListenError
+from twisted.web.server import Site
+from twisted.web.static import File
+from twisted.internet import reactor
+
+from GSV6_WAMP_Handler import WAMP_Component
+
+
+# adding new log-level below debug
 TRACE = 5
 logging.addLevelName(TRACE, 'TRACE')
 
-
 def trace(self, message, *args, **kws):
     self.log(TRACE, message, *args, **kws)
-
 
 logging.Logger.trace = trace
 logging.basicConfig()
 
 
 # config
+# after this amount, the data will be written to the CSV-File
 maxCacheMessCount = 1000
 # FileSize in MB for Logging
 maxLogFileSize = 1
 
 
-
-from twisted.web.server import Site
-from twisted.web.static import File
-from twisted.internet import reactor
-
 if __name__ == '__main__':
-    import sys
-    import argparse
 
     if not os.path.exists("./logs"):
         os.makedirs("./logs")
@@ -210,9 +212,6 @@ if __name__ == '__main__':
             pass
 
     main_logger.info("Using Twisted reactor {0}".format(reactor.__class__))
-
-    import urllib2
-    import time
 
     retrys = 0
     while retrys < 180:
