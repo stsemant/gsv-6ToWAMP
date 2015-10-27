@@ -106,7 +106,7 @@ class MessFrameHandler():
         # reducce data-set
         hasToReduceDataSet = False
         try:
-            if float(self.gsv_lib.getCachedProperty('DataRate', 'DataRate')) > 25.0:
+            if float(self.gsv_lib.getCachedProperty('DataRate', 'DataRate')) > 50.0:
                 hasToReduceDataSet = True
         except Exception, e:
             logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').debug(
@@ -118,6 +118,7 @@ class MessFrameHandler():
                 'Received MessFrame: published.')
         else:
             try:
+                payload2 = payload.copy()
                 for i in range(0, len(values)):
                     self.messData[i].append(values[i])
                 self.reduceCounter += 1
@@ -126,22 +127,31 @@ class MessFrameHandler():
 
                     for i in range(0, len(values)):
                         # there is no append/add function for Python Dictionaries
-                        var = np.var(self.messData[i])
-                        x = 0
-                        if var > self.gsv_lib.getCachedProperty('Varianz', 1):
-                            x = np.mean(
-                                [np.mean(self.messData[i]), np.amax(self.messData[i]), np.amin(self.messData[i])])
-                        else:
-                            x = np.median(self.messData[i])
-
-                        payload[u'channel' + str(counter) + '_value'] = x
+                        x1 = np.amax(list(self.messData[i]))[0]
+                        x2 = np.amin(list(self.messData[i]))[0]
+                        f = -1
+                        for k in range(0, len(self.messData[i])):
+                            if x1 == list(self.messData[i])[k]:
+                                f = 1
+                                break
+                            elif x2 == list(self.messData[i])[k]:
+                                f = 2
+                                break
+                        if f == 2:
+                            x3 = x1
+                            x1 = x2
+                            x2 = x3
+                        payload[u'channel' + str(counter) + '_value'] = x1
+                        payload2[u'channel' + str(counter) + '_value'] = x2
                     self.session.publish(u"de.me_systeme.gsv.onMesswertReceived",
                                          [payload, inputOverload, sixAchisError])
+                    self.session.publish(u"de.me_systeme.gsv.onMesswertReceived",
+                                         [payload2, inputOverload, sixAchisError])
                     logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').trace(
                         'Received MessFrame: published. was reduced!')
             except Exception, e:
                 logging.getLogger('serial2ws.WAMP_Component.router.MessFrameHandler').critical(
-                    'can\'t compute reduced messFrame')
+                    'can\'t compute reduced messFrame: ' + str(e))
 
     def setStartTimeStamp(self, startTimeStampStr, hasToWriteCSV):
         self.startTimeStampStr = startTimeStampStr
