@@ -1185,7 +1185,6 @@ class McuComponent(ApplicationSession):
             self.router.stop()
             # wait max 1 Sec.
             self.router.join(1.0)
-        logging._removeHandlerRef(self.toWAMP_logger)
 
     @inlineCallbacks
     def onJoin(self, details):
@@ -1284,8 +1283,9 @@ class McuComponent(ApplicationSession):
         self.publish(u"de.me_systeme.gsv.serialConnectionLost")
 
     def signal_handler(self, signal, frame):
+        logger = logging.getLogger('serial2ws')
+        logger.removeHandler(self.toWAMP_logger)
         self.disconnect()
-        self.leave()
 
 
 from twisted.web.server import Site
