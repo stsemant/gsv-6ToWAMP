@@ -49,7 +49,7 @@ __author__ = 'Dennis Rump'
 import logging
 
 
-class WAMP_LoggingHandler(logging.Handler):
+class WAMP_Handler(logging.Handler):
     def __init__(self, session, log_deque):
         logging.Handler.__init__(self)
         self.session = session
@@ -59,12 +59,12 @@ class WAMP_LoggingHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
+            msg = msg.replace('ä','ae').replace('ü','ue').replace('ö','oe').replace('ß','ss').decode('ascii',errors='replace')
             self.log_deque.append(msg)
             self.session.publish(u"de.me_systeme.gsv.onLog", msg)
             self.flush()
         except:
             self.handleError(record)
-
 
 class NoHTTP_GetFilter(logging.Filter):
     def filter(self, record):
