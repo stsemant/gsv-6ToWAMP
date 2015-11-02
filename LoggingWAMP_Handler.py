@@ -49,7 +49,7 @@ __author__ = 'Dennis Rump'
 import logging
 
 
-class WAMP_Handler(logging.Handler):
+class Log_WAMP_Handler(logging.Handler):
     def __init__(self, session, log_deque):
         logging.Handler.__init__(self)
         self.session = session

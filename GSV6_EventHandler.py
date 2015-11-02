@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from CSVreducer import CSVreducer
+
 __author__ = 'Dennis Rump'
 ###############################################################################
 #
@@ -103,6 +105,7 @@ class GSVeventHandler():
         self.session.register(self.isSystemReady, u"de.me_systeme.gsv.isSystemReady")
         self.session.register(self.rebootSystem, u"de.me_systeme.gsv.rebootSystem")
         self.session.register(self.getLogFileList, u"de.me_systeme.gsv.getLogFileList")
+        self.session.register(self.reduceCSVFile, u"de.me_systeme.gsv.reduceCSVFile")
 
     def startStopTransmisson(self, start, hasToWriteCSVdata=False, **kwargs):
         if start:
@@ -304,6 +307,15 @@ class GSVeventHandler():
         else:
             msg = fileName + ' konnte nicht gefunden werden (gelÃ¶scht werden)'
             logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').warning(msg)
+            return False
+
+    def reduceCSVFile(self, fileName):
+        filepath = self.session.config.extra['csvpath'] + fileName
+        if (os.path.isfile(filepath)):
+            reducer = CSVreducer(fileName, self.session.config.extra['csvpath'])
+            reducer.start()
+            return True
+        else:
             return False
 
     # this fuction didnt write to the modul, its resets the antwort Queue

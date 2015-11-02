@@ -59,3 +59,7 @@ button.downloadCSV{
 button.deleteCSV{
     margin-left: 10px;
 }
+
+button.reduceCSV{
+    margin-left: 80px;
+}

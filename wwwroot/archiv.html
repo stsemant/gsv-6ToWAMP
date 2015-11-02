@@ -54,18 +54,25 @@
             $('#deleteFileDialoge').modal('show');
         }
 
+        function reduce_file(filename){
+            session.call('de.me_systeme.gsv.reduceCSVFile', [filename]).then(function reduceFileResult(res) {
+            $('#reduceFileDialoge').modal('show');
+            }, session.log);
+        }
+
         function buildFileTable(data) {
             var fileTable = $('#filesTable');
 
             var r = new Array(), j = -1;
             for (var index = 0, size = data[0].length; index < size; index++) {
-                //r[++j] = '<tr id=\"' + data[0][index] + '\"><td>';
                 r[++j] = '<tr id=\"' + data[0][index] + '\"><td>';
                 r[++j] = data[0][index];
                 r[++j] = '</td><td>';
                 r[++j] = '<button type="button" class="btn btn-default viewCSV" onClick=\"location.href=\'messung_detail.html?file=' + data[0][index] + '\'\">  <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></button>';
                 r[++j] = '</td><td>';
                 r[++j] = '<button type="button" class="btn btn-default downloadCSV" onClick=\"window.location=\'' + data[1][index] + '\'\">  <span class="glyphicon glyphicon-save" aria-hidden="true"></span></button>';
+                r[++j] = '</td><td>';
+                r[++j] = '<button type="button" class="btn btn-default reduceCSV" onClick=reduce_file(\'' + data[0][index] + '\')>  <span class="glyphicon glyphicon-scale" aria-hidden="true"></span></button>';
                 r[++j] = '</td><td>';
                 r[++j] = '<button type="button" class="btn btn-default deleteCSV" onClick=\"askForDeleteCSVfile(\'' + data[0][index] + '\')\">  <span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
                 r[++j] = '</td></tr>';
@@ -211,18 +218,45 @@
     </div>
 </div>
 <!-- deleteFile Modal ends Here -->
+<!-- reduceFile Modal Start here-->
+<div class="modal fade bs-example-modal-sm" id="reduceFileDialoge" tabindex="-1"
+     role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span class="glyphicon glyphicon-question-sign">
+                    </span> Reduzierte Version wird erstellt
+                </h4>
+            </div>
+            <div class="modal-body">
+                <p>Die reduzierte Datei wird auf dieser Seite erscheinen, wenn sie erstellt wurde.</p>
+                <p>Dies kann einige Zeit in anspruch nehmen. Aktualisieren Sie mit zeitlichen abstand diese Seite.</p>
+                <p>Diese Datei wird ein das prefix "red_" erhalten.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary"
+                        onclick="$('#reduceFileDialoge').modal('hide');">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- reduceFile Modal ends Here -->
 <div class="container">
     <div class="well well-sm">Messdaten</div>
     <h4 id="noFilesText" hidden>keine CSV-Dateien vorhanden.</h4>
 
     <div id="filesRow" class="row">
-        <div class="col-sm-5 box">
+        <div class="col-sm-8 box">
             <table class="table table-condensed table-hover">
                 <thead>
                 <tr>
                     <th>Datei</th>
                     <th>Ansehen</th>
                     <th>Download</th>
+                    <th>Reduzierte-Version-erstellen</th>
                     <th>L&ouml;schen</th>
                 </tr>
                 </thead>

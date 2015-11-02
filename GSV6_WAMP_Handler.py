@@ -52,7 +52,7 @@ from autobahn.twisted.wamp import ApplicationSession
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.serialport import SerialPort
-from LoggingWAMP_Handler import WAMP_LoggingHandler, NoHTTP_GetFilter
+from LoggingWAMP_Handler import Log_WAMP_Handler, NoHTTP_GetFilter
 from datetime import datetime
 from collections import deque
 from Queue import Queue
@@ -123,7 +123,7 @@ class WAMP_Component(ApplicationSession):
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
-        self.toWAMP_logger = WAMP_LoggingHandler(self, self.logQueue)
+        self.toWAMP_logger = Log_WAMP_Handler(self, self.logQueue)
         self.toWAMP_logger.addFilter(NoHTTP_GetFilter())
         logging.getLogger('serial2ws').addHandler(self.toWAMP_logger)
 
