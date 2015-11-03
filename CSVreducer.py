@@ -49,6 +49,7 @@ __author__ = 'Dennis Rump'
 import logging
 import threading
 import csv
+import os
 from itertools import takewhile, repeat
 from datetime import datetime
 
@@ -59,6 +60,7 @@ class CSVreducer(threading.Thread):
         self.path = path
         self.inputFilename = path + filename
         self.outfilename = self.path + 'red_' + filename
+        self.tmpFilename = path + 'tmp_' + filename
 
     # source http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python from Michael Bacon and Quentin Pradet
     def rawincount(self, filename):
@@ -74,7 +76,7 @@ class CSVreducer(threading.Thread):
                     'it is NOT necessary to reduce the CSV-File.')
                 return
             logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler.CSVreducer').debug(
-                'CSVreducer started on a File with {} lines.'.format(c))
+                'started on a File with {} lines.'.format(c))
             steps = int(c / 4000)
             window = int(c / steps)
             steps += 1
@@ -87,7 +89,7 @@ class CSVreducer(threading.Thread):
             firstRow = True
             counter = 0
 
-            with open(self.outfilename, 'wb') as rcsvfile:
+            with open(self.tmpFilename, 'wb') as rcsvfile:
                 fieldnamesForWrite = ['timestamp']
                 writer = csv.DictWriter(rcsvfile, fieldnames=fieldnamesForWrite, extrasaction='ignore')
 
@@ -104,25 +106,19 @@ class CSVreducer(threading.Thread):
                                 if firstRow:
                                     channel_max[key] = None
                                     channel_min[key] = None
-                                    # channel_timestamps[key + '_max'] = None
-                                    # channel_timestamps[key + '_min'] = None
                                 x = float(row.get(key))
                                 if firstRound:
-                                    channel_timestamps[key + '_max'] = datetime.strptime(row.get('timestamp'),
-                                                                                         '%Y-%m-%d %H:%M:%S.%f')
-                                    channel_timestamps[key + '_min'] = datetime.strptime(row.get('timestamp'),
-                                                                                         '%Y-%m-%d %H:%M:%S.%f')
+                                    channel_timestamps[key + '_max'] = row.get('timestamp')
+                                    channel_timestamps[key + '_min'] = row.get('timestamp')
                                     channel_max[key] = x
                                     channel_min[key] = x
                                 else:
                                     if x > channel_max[key]:
                                         channel_max[key] = x
-                                        channel_timestamps[key + '_max'] = datetime.strptime(row.get('timestamp'),
-                                                                                             '%Y-%m-%d %H:%M:%S.%f')
+                                        channel_timestamps[key + '_max'] = row.get('timestamp')
                                     if x < channel_min[key]:
                                         channel_min[key] = x
-                                        channel_timestamps[key + '_min'] = datetime.strptime(row.get('timestamp'),
-                                                                                             '%Y-%m-%d %H:%M:%S.%f')
+                                        channel_timestamps[key + '_min'] = row.get('timestamp')
                         if firstRound:
                             firstRound = False
                             pass
@@ -134,24 +130,32 @@ class CSVreducer(threading.Thread):
 
                             # now write data
                             for channel in channel_names:
-                                if channel_timestamps[channel + '_max'] < channel_timestamps[channel + '_min']:
-                                    tmp = {}
-                                    tmp['timestamp'] = channel_timestamps[channel + '_max']
-                                    tmp[channel] = channel_max[channel]
-                                    writer.writerow(tmp)
-                                    tmp['timestamp'] = channel_timestamps[channel + '_min']
-                                    tmp[channel] = channel_min[channel]
-                                    writer.writerow(tmp)
-                                else:
-                                    tmp = {}
-                                    tmp['timestamp'] = channel_timestamps[channel + '_min']
-                                    tmp[channel] = channel_min[channel]
-                                    writer.writerow(tmp)
-                                    tmp['timestamp'] = channel_timestamps[channel + '_max']
-                                    tmp[channel] = channel_max[channel]
-                                    writer.writerow(tmp)
-                logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler.CSVreducer').debug(
-                    'CSV-File written')
+                                tmp = {}
+                                tmp['timestamp'] = channel_timestamps[channel + '_max']
+                                tmp[channel] = channel_max[channel]
+                                writer.writerow(tmp)
+                                tmp['timestamp'] = channel_timestamps[channel + '_min']
+                                tmp[channel] = channel_min[channel]
+                                writer.writerow(tmp)
+                rcsvfile.flush()
+                rcsvfile.close()
+
+            # sort data for highcharts
+            with open(self.tmpFilename, 'rb') as tmpCSVfile:
+                reduced_data_reader = csv.reader(tmpCSVfile)
+                reduced_data_writer_sorted = csv.writer(open(self.outfilename, 'wb'))
+                reduced_data_writer_sorted.writerow(reduced_data_reader.next())
+                sorted_data = sorted(reduced_data_reader, key=lambda row: datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S.%f'))
+                reduced_data_writer_sorted.writerows(sorted_data)
+                tmpCSVfile.close()
+            try:
+                os.remove(self.tmpFilename)
+            except Exception, e:
+                logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler.CSVreducer').warning(
+                'delete tmp CSV-File failed.' + str(e))
+
+            logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler.CSVreducer').debug(
+                'CSV-File written')
         except Exception, e:
             logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler.CSVreducer').warning(
                 'Exception: ' + str(e))
