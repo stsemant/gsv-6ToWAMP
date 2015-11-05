@@ -18,7 +18,7 @@
     <script src="js/autobahn.min.js"></script>
     <script src="js/highstock.js"></script>
     <script src="js/highcharts_data.js"></script>
-    <!--<script src="http://code.highcharts.com/modules/exporting.js"></script>-->
+    <script src="js/moment.js"></script>
     <script>
 
         // the WAMP session we'll be using
@@ -29,6 +29,11 @@
         var loadFilesTimer = null;
 
         var chart = null;
+        var start = parse('file');
+        start = start.split("_");
+        start [1] = start[1].replace('-', ':').replace('-', ':').replace('.csv', '');
+        start = start[0] + ' ' + start[1];
+        start = Date.parse(start);
 
         function onLoadFilesError() {
             alert("fehler");
@@ -139,6 +144,7 @@
                                             d.hide();
                                             var nameAndUnit = d.name.split('[');
                                             var channleNo = (parseInt(nameAndUnit[0].substring(nameAndUnit[0].length - 1)) + 1);
+                                            //d.update({pointStart: start});
                                             d.update({name: 'Kanal ' + channleNo}, false);
                                             if (nameAndUnit.length <= 1) {
                                                 d.update({tooltip: {valueSuffix: ''}});
@@ -154,7 +160,10 @@
                             }
                         },
                         data: {
-                            csv: csv
+                            csv: csv,
+                            parseDate: function (dateString) {
+                                return moment(dateString, 'YYYY-MM-DD hh:mm:ss.SSS').valueOf();
+                            }
                         },
                         navigator: {
                             enabled: true,
@@ -169,6 +178,13 @@
                                 align: 'right'
                             }
                         },
+                        xAxis: {
+                            title: {
+                                text: 'Date/time',
+                                type: "datetime"
+                            },
+                            startOnTick: true
+                        },
                         rangeSelector: {
                             enabled: false
                         },
@@ -182,6 +198,7 @@
                         },
                         plotOptions: {
                             series: {
+                                // pointStart: start,
                                 connectNulls: true,
                                 marker: {
                                     enabled: false
@@ -197,7 +214,7 @@
                                                     d.hide();
                                                 } else {
                                                 }
-                                            }else{
+                                            } else {
                                                 chart.get('highcharts-navigator-series').setData([].concat(chart.series[e.currentTarget.index].options.data))
                                             }
                                         })
