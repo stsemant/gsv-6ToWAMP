@@ -240,7 +240,7 @@ class GSVeventHandler():
 
     def writeInputType(self, channelNo, inputTypeValue):
         # first convert int to Uint32 and remove leading byte
-        inputType = self.gsv_lib.convertIntToBytes(inputTypeValue)[1:]
+        inputType = self.gsv_lib.convertIntToBytes(inputTypeValue)
         # SensIndex is always 0x00 (GSV-6)
         sensIndex = 0x00
         self.session.writeAntwort(self.gsv_lib.buildWriteInputType(channelNo, sensIndex, inputType),

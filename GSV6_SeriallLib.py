@@ -490,11 +490,13 @@ class GSV6_seriall_lib:
     def buildReadInputType(self, channelNo):
         return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('GetInputType'), [channelNo, 0x00])
 
-    def buildWriteInputType(self, channelNo, sensIndex, inputType):
+    def buildWriteInputType(self, channelNo, sensIndex, inputType, isGSV_6=True):
+        if isGSV_6:
+            channelNo=0
         data = bytearray([channelNo])
         data.append(sensIndex)
         data.extend(inputType)
-        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('SetInputType'), data)
+        return self.encode_anfrage_frame(anfrage_code_to_shortcut.get('MEwriteInputRange'), data)
 
     def buildSetMEid(self, minor):
         magicCode = bytearray([0x4D, 0x45, 0x69, minor])

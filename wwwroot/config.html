@@ -27,7 +27,7 @@
         var modul_config = new Array();
 
         // die nummer soll spaeter durch eine aufzaehlung im array ersetzt werden, aber erst wenn das config caching des gsv programmiert ist
-        var modul_config_element_count_for_complete_load = 34;
+        var modul_config_element_count_for_complete_load = 29;
         var setFunctionsByID = {
             'ReadUserScale1': 'WriteUserScale1',
             'ReadUserScale2': 'WriteUserScale2',
@@ -539,11 +539,13 @@
                     session.call("de.me_systeme.gsv.getDataRate");
                     session.call("de.me_systeme.gsv.getFirmwareVersion");
                     session.call("de.me_systeme.gsv.getReadInputType", [1]);
+                    /*
                     session.call("de.me_systeme.gsv.getReadInputType", [2]);
                     session.call("de.me_systeme.gsv.getReadInputType", [3]);
                     session.call("de.me_systeme.gsv.getReadInputType", [4]);
                     session.call("de.me_systeme.gsv.getReadInputType", [5]);
                     session.call("de.me_systeme.gsv.getReadInputType", [6]);
+                    */
                     session.call("de.me_systeme.gsv.getUnitText", [0]);
                     session.call("de.me_systeme.gsv.getUnitText", [1]);
                 }
@@ -661,6 +663,7 @@
         function doneSelectInputType(e) {
             var inputID = $(this).data('id');
             var index = parseInt($('#' + inputID + '_value').val());
+            // GSV-6CPU only supports one inputType for all channels
             var inputIDno = parseInt(inputID.charAt(inputID.length - 1));
             setInputWarning(inputID, "wird übertragen...");
             session.call("de.me_systeme.gsv.WriteInputType", [inputIDno, index]);
@@ -1435,7 +1438,7 @@
                         </thead>
                         <tbody>
                         <tr>
-                            <td>1</td>
+                            <td>Alle</td>
                             <td>
                                 <div id="InputType1" class="form-group has-success has-feedback">
                                     <select id="InputType1_value" data-id="InputType1" class="form-control InputType">
@@ -1449,6 +1452,7 @@
                                 </div>
                             </td>
                         </tr>
+                        <!--
                         <tr>
                             <td>2</td>
                             <td>
@@ -1524,6 +1528,7 @@
                                 </div>
                             </td>
                         </tr>
+                        -->
                         </tbody>
                     </table>
                 </div>

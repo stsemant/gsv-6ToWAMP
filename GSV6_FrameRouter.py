@@ -177,11 +177,14 @@ class FrameRouter(threading.Thread):
                     # fill cache
                     self.eventHandler.getDataRate()
                     self.eventHandler.getReadInputType(1)
+                    # because GSV-6 only supports one InputType for all channels
+                    '''
                     self.eventHandler.getReadInputType(2)
                     self.eventHandler.getReadInputType(3)
                     self.eventHandler.getReadInputType(4)
                     self.eventHandler.getReadInputType(5)
                     self.eventHandler.getReadInputType(6)
+                    '''
                     self.eventHandler.getReadUserOffset(1)
                     self.eventHandler.getReadUserOffset(2)
                     self.eventHandler.getReadUserOffset(3)

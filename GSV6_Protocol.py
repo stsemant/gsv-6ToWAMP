@@ -192,6 +192,7 @@ class GSV_6Protocol(protocol.Protocol):
                     # strip 0x85 in state 4
                     del tempArray[-1]
 
+                    logging.getLogger('serial2ws.WAMP_Component.SerialProtocol').debug('[serialRcv] Data: ' + ' '.join(format(z, '02x') for z in tempArray))
                     # pushback data here!
                     # publish WAMP event to all subscribers on topic
                     ##
