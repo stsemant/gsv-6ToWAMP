@@ -224,6 +224,6 @@ class WAMP_Component(ApplicationSession):
 
     def stopMeasurement(self):
         data = self.router.gsv6.buildStopTransmission()
-        logging.getLogger('serial2ws.WAMP_Component').warning('Sending to Message to GSV-Modul')
+        logging.getLogger('serial2ws.WAMP_Component').warning('Sending stop Message to GSV-Modul')
         self.write(data)
         self.router.writeCSVdata()
