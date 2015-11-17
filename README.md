@@ -143,8 +143,6 @@ Make the script runnable and add crossbar to rc.d
 
 	sudo chmod +x /etc/init.d/crossbar
 	sudo chmod +x /etc/init.d/serial2ws
-	sudo update-rc.d crossbar defaults
-	sudo update-rc.d serial2ws defaults
 	
 from now on, you can start and stop crossbar and serial2ws via the deamon
 
@@ -154,7 +152,25 @@ from now on, you can start and stop crossbar and serial2ws via the deamon
 	sudo /etc/init.d/serial2ws start
 	sudo /etc/init.d/serail2ws stop
 	
-## Ehternet configuration
+autostart for crossbar and serial2ws
+I use the rc.local for them. open /etc/rc.local
+
+	sudo nano /etc/rc.local
+	
+edit like this
+
+	service networking restart
+
+	# Print the IP address
+	_IP=$(hostname -I) || true
+	if [ "$_IP" ]; then
+	  printf "My IP address is %s\n" "$_IP"
+	fi
+
+	/etc/init.d/crossbar start
+	/etc/init.d/serial2ws start
+	
+## Ehternet configuration (OPTIONAL)
 if you have no connection (cabel) at eth0, it is better to disable dhcp on eth0. It will be speedup your systemstart und avoid some network glitches.
 set up your desired network options in  /etc/network/interfaces
 	
@@ -251,6 +267,7 @@ and replace the line "iface wlan0 inet dhcp" to
 	iface wlan0 inet static
 	  address 192.168.9.1
 	  netmask 255.255.255.0
+	  broadcast 192.168.9.255
 
 Change the lines (they probably will not all be next to each other)
 
