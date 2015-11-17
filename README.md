@@ -174,10 +174,11 @@ or disable eth0 at all with follwing line in /etc/network/interfaces
 Verify that your wifi-adapter is on the [compatible list](http://elinux.org/RPI-Wireless-Hotspot)
 and make sure, that you are connected via eth0 (by cable)
 
-	sudo apt-get install hostapd udhcpd
+	sudo apt-get install firmware-ralink hostapd wireless-tools dnsmasq iw
 
-But be careful that your adapter is compatible with hostapd. I use an EW-7811Un with Realtek RTL8188CUS Chipset and this one will not work out of the box with hostapd.
+But be careful that your adapter is compatible with hostapd. Previously I use an EW-7811Un with Realtek RTL8188CUS Chipset and this one will not work out of the box with hostapd.
 For the Raspberry Pi you can use a pachted binary from the binary folder or build a [patched Version](https://github.com/lostincynicism/hostapd-rtl8188)
+Now I using an Adapter with Ralink RT5370 chipset. This Adapter is compatible to hostapd and works with the default hostapd driver (nl80211). If you have also an compatible adapter too, you can skip the next steps and go further to the dns configuration.
 
 ### Use pre-compiled patched hostapd from Binary-Folder
 
@@ -215,40 +216,22 @@ copy hostapd-binary
 
 ### Configuration of the Accespoint
 #### Configure DHCP-Server for wireless-interface
-Open uDHCP-config-File with the following command
+create a backup from the orginal dnsmasq-config-file
+
+	mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
 	
-	sudo nano /etc/udhcpd.conf
+Open dnsmasq-config-File with the following command
 	
-Configure DHCP. Edit the file /etc/udhcpd.conf and configure it like this
+	sudo nano /etc/dnsmasq.conf
+	
+Configure DHCP. Edit the file /etc/dnsmasq.conf and configure it like this
 	
 
-	start 192.168.9.2 		# range of IPs that the hostspot will give to client devices.
-	end 192.168.9.20
-	interface wlan0 		# The device uDHCP listens on.
-	remaining yes
-	#opt dns 8.8.8.8 4.2.2.2 # The DNS servers client devices will use.
-	opt subnet 255.255.255.0
-	opt router 192.168.42.1	# The Pi's IP address on wlan0 which we will set up shortly.
-	opt lease 864000 		# 10 day DHCP lease time in seconds
-	
-disable all other active options (opt) with an #
-	
-save udhcpd.conf changes and exit nano with
-	
-	Ctrl + O
-	Ctrl + X
-
-open uDHCP-default-File with the following command
-
-	sudo nano /etc/default/udhcpd
-
-Edit the file /etc/default/udhcpd and change the line
-
-	DHCPD_ENABLED="no"
-to
-
-	#DHCPD_ENABLED="no"
-and save and exit with
+	interface=wlan0
+	no-dhcp-interface=eth0
+	dhcp-range=interface:wlan0,192.168.9.2,192.168.9.30,infinite
+		
+save dnsmasq.conf changes and exit nano with
 	
 	Ctrl + O
 	Ctrl + X
@@ -281,6 +264,12 @@ to
 	#wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
 	#iface wlan0 inet manual
 
+and add one the file end follwing lines:
+
+	# restart hostapd and dnsmasq
+		up service hostapd restart
+		up service dnsmasq restart
+		
 #### Configure hostapd
 Configure HostAPD. Create a WPA-secured network. To create a WPA-secured network, open the file hostapd.conf
 
@@ -305,7 +294,7 @@ It seems to be necessary that the passphrase starts with a capital letter.
 
 open  /etc/default/hostapd
 
-	sudo nano  /etc/default/hostapd
+	sudo nano /etc/default/hostapd
 
 and change
 
@@ -322,53 +311,21 @@ exit with
 
 Now run the following commands to start the access point
 
-	sudo service hostapd start
-	sudo service udhcpd start
+	service networking restart
 	
 Your Pi should now be hosting a wireless hotspot. Test it.
-To get the hotspot to start on boot, run these additional commands
-
-	sudo update-rc.d hostapd enable
-	sudo update-rc.d udhcpd enable
 
 last step reboot
 
 	sudo reboot
 
-## OPTIONAL: forward wlan-traffic to eth0
-if you are connected to a normal router with an internet connection on eth0, you can forward wlan-traffic
+sometimes after reboot (and hostapd start) the pi doesnt assigne a IP  address to wlan0. You can solve it by chage file /etc/default/ifplugd and change it like this [Source](http://rpi.vypni.net/wifi-ap-rt5370-on-raspberry-pi/):
 
-open /etc/udhcpd.conf
+	sudo nano /etc/defaults/ifplugd
 	
-	sudo nano /etc/udhcpd.conf
-
-add dns server (google-dns-server)
+and change to
 	
-	opt dns 8.8.8.8 4.2.2.2
-you can change it to your own dns-server
-
-Configure NAT, Linux supports NAT using iptables. First, enable IP forwarding in the kernel:
-
-	sudo sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
-	
-To automatically set this up on boot, edit the file /etc/sysctl.conf and add the following line to the bottom of the file:
-
-	net.ipv4.ip_forward=1
-
-Second, to enable NAT in the kernel, run the following commands:
-
-	sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-	sudo iptables -A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-	sudo iptables -A FORWARD -i wlan0 -o eth0 -j ACCEPT
-
-These instructions don't give a good solution for rerouting https and for URLs referring to a page inside a domain, like www.nu.nl/38274.htm. The user will see a 404 error. Your Pi is now NAT-ing. To make this permanent so you don't have to run the commands after each reboot, run the following command:
-
-	sudo sh -c "iptables-save > /etc/iptables.ipv4.nat"
-
-Now edit the file /etc/network/interfaces and add the following line to the bottom of the file:
-	
-	up iptables-restore < /etc/iptables.ipv4.nat
-	
-reboot
-	
-	sudo reboot
+	INTERFACES="eth0"
+	HOTPLUG_INTERFACES="eth0"
+	ARGS="-q -f -u0 -d10 -w -I"
+	SUSPEND_ACTION="stop"
