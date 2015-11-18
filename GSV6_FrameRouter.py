@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-from GSV6_AntwortFrameHandler import AntwortFrameHandler
-from GSV6_EventHandler import GSVeventHandler
-from GSV6_MessFrameHandler import MessFrameHandler
-
 __author__ = 'Dennis Rump'
 ###############################################################################
 #
@@ -52,9 +48,14 @@ __author__ = 'Dennis Rump'
 
 import logging
 import threading
+import subprocess
+import os.path
 from time import sleep
 from Queue import Queue, Empty, Full
 from GSV6_SeriallLib import GSV6_seriall_lib
+from GSV6_AntwortFrameHandler import AntwortFrameHandler
+from GSV6_EventHandler import GSVeventHandler
+from GSV6_MessFrameHandler import MessFrameHandler
 
 
 class ThreadingWaitForFirmwareVersion(threading.Thread):
@@ -72,13 +73,19 @@ class ThreadingWaitForFirmwareVersion(threading.Thread):
                 self.session.writeAntwort(self.gsv_lib.buildSetMEid(minor), 'rcvSetMEid', minor)
                 break
             else:
-                if x > 1:
-                    logging.getLogger('serial2ws.WAMP_Component.router.ThreadingWaitForFirmwareVersion').critical(
-                        "wait for cache...; after 10 retrys, please restart application.")
-                else:
-                    logging.getLogger('serial2ws.WAMP_Component.router.ThreadingWaitForFirmwareVersion').info(
-                        "wait for cache...")
+                logging.getLogger('serial2ws.WAMP_Component.router.ThreadingWaitForFirmwareVersion').info(
+                    "wait for cache...")
                 sleep(0.5)
+
+        # check if init failed, works only if user gets sudo rights without a password (e.g. raspbian)
+        if not self.gsv_lib.isConfigCached('FirmwareVersion', 'minor'):
+            if os.path.exists('/etc/init.d/serial2ws'):
+                logging.getLogger('serial2ws.WAMP_Component.router.ThreadingWaitForFirmwareVersion').critical(
+                    "restarting application...")
+                subprocess.check_call(["sudo", "/etc/init.d/serial2ws", "restart"])
+            else:
+                logging.getLogger('serial2ws.WAMP_Component.router.ThreadingWaitForFirmwareVersion').critical(
+                    "restarting application manually. can't find /etc/init.d/serial2ws")
 
 
 class FrameRouter(threading.Thread):
