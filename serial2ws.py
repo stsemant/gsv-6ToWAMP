@@ -216,6 +216,7 @@ if __name__ == '__main__':
     retrys = 0
     while retrys < 180:
         try:
+            # TODO die Url stimmt nicht mehr, wenn die crossbarinstanz auf einen andenrem Port und/oder unter einer anderen URL erreichbar ist.
             urllib2.urlopen('http://localhost:8001', timeout=1)
         except urllib2.HTTPError, e:
             main_logger.info("crossbar instance gefunden.")

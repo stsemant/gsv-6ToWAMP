@@ -234,7 +234,7 @@ copy hostapd-binary
 #### Configure DHCP-Server for wireless-interface
 create a backup from the orginal dnsmasq-config-file
 
-	mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
+	sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
 	
 Open dnsmasq-config-File with the following command
 	
@@ -338,7 +338,7 @@ last step reboot
 
 sometimes after reboot (and hostapd start) the pi doesnt assigne a IP  address to wlan0. You can solve it by chage file /etc/default/ifplugd and change it like this [Source](http://rpi.vypni.net/wifi-ap-rt5370-on-raspberry-pi/):
 
-	sudo nano /etc/defaults/ifplugd
+	sudo nano /etc/default/ifplugd
 	
 and change to
 	
