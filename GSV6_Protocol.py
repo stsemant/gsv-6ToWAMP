@@ -47,7 +47,7 @@ __author__ = 'Dennis Rump'
 ###############################################################################
 
 import logging
-from twisted.protocols.basic import protocol
+from twisted.internet import protocol
 from Queue import Full
 import GSV6_BasicFrameType
 import GSV6_ErrorCodes

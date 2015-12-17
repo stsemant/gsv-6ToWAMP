@@ -53,7 +53,7 @@ import numpy as np
 
 
 class AntwortFrameHandler():
-    # thread-safe? nothing to do here -> queue-Object is an thread-safe
+    # thread-safe? nothing to do here -> queue-Object is thread-safe
 
     def __init__(self, session, gsv_lib, eventHandler, queue, messFrameHandler):
         self.session = session

@@ -295,6 +295,14 @@ class GSVeventHandler():
 
     def deleteCSVFile(self, fileName):
         filepath = self.session.config.extra['csvpath'] + fileName
+
+        # for more security, check absolute path
+        abs_path, fname = os.path.split(os.path.abspath(filepath))
+        if abs_path != os.path.abspath(self.session.config.extra['csvpath']):
+            logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler').warning(
+                "deleteCSVFile try to delete files outside of the csvpath. aborted.")
+            return False
+
         if (os.path.isfile(filepath)):
             try:
                 os.remove(filepath)
@@ -305,7 +313,7 @@ class GSVeventHandler():
             else:
                 return True
         else:
-            msg = fileName + ' konnte nicht gefunden werden (gelÃ¶scht werden)'
+            msg = fileName + ' konnte nicht gefunden werden (geloescht werden)'
             logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').warning(msg)
             return False
 

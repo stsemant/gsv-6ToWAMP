@@ -127,8 +127,8 @@ class MessFrameHandler():
 
                     for i in range(0, len(values)):
                         # there is no append/add function for Python Dictionaries
-                        x1 = np.amax(list(self.messData[i]))[0]
-                        x2 = np.amin(list(self.messData[i]))[0]
+                        x1 = np.amax(list(self.messData[i]))
+                        x2 = np.amin(list(self.messData[i]))
                         f = -1
                         for k in range(0, len(self.messData[i])):
                             if x1 == list(self.messData[i])[k]:
@@ -159,6 +159,7 @@ class MessFrameHandler():
 
     def writeCSVdataNow(self, startTimeStampStr=''):
         # build unit index
+        # TODO build unit index can be moved to setStartTimeStamp -> more efficiency
         units = []
         if self.gsv_lib.isConfigCached('UnitNo', 1):
             units.append(GSV6_UnitCodes.unit_code_to_shortcut.get(self.gsv_lib.getCachedProperty('UnitNo', 1)))

@@ -6,7 +6,7 @@ This shows how to hook up a Raspberry Pi2 to a WAMP router and display real-time
 [GSV6/GSV6-CPU](http://www.me-systeme.de/docs/de/flyer/flyer_gsv6.pdf) is a measurement amplifier from [ME-Messsysteme GmbH](http://www.me-systeme.de/)
 
 ## project status
-In progress, NOT yet a release
+released
 
 ## Dependencies
 All Dependencies are included.
@@ -53,10 +53,10 @@ PyPy comes pre-installed on a Raspberry Pi with the raspian-image 2015-05-05. It
 For the update we have to download the latest version of PyPy, extract files and update paths.
 	
 	cd ~/downloads
-	wget https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.0-linux-armhf-raspbian.tar.bz2
+	wget https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.1-linux-armhf-raspbian.tar.bz2
 	cd ~/install
-	tar xvjf ../downloads/pypy-4.0.0-linux-armhf-raspbian.tar.bz2
-	echo "export PATH=\${HOME}/install/pypy-4.0.0-linux-armhf-raspbian/bin:\${PATH}" >> ~/.profile
+	tar xvjf ../downloads/pypy-4.0.1-linux-armhf-raspbian.tar.bz2
+	echo "export PATH=\${HOME}/install/pypy-4.0.1-linux-armhf-raspbian/bin:\${PATH}" >> ~/.profile
 	source ~/.profile
 
 #### pip

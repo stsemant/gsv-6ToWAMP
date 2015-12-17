@@ -108,9 +108,7 @@ if __name__ == '__main__':
     formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s')
     log_file_handler.setFormatter(logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)s'))
     main_logger.addHandler(log_file_handler)
-    stdout_log = logging.StreamHandler()
-    # stdout_log.setLevel(logging.DEBUG)
-    stdout_log.setFormatter(formatter)
+
     main_logger.setLevel(logging.DEBUG)
 
     # create Observer for pipe twisted log to python log

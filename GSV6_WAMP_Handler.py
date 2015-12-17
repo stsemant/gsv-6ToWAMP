@@ -105,7 +105,6 @@ class WAMP_Component(ApplicationSession):
         except Exception:
             pass
         try:
-            self.serialPort.stopReading()
             self.serialPort.reactor.stop()
         except Exception:
             pass

@@ -193,9 +193,11 @@ class GSV6_seriall_lib:
             return 0  # eigentlich nicht nötig, da ja die Exception ausgewertet wird, falls Sie kommt
         else:
             raise GSV6_Communication_Error('Serial Input from formart (Prefix und suffix).')
-
+    '''
+    !deprecated!
     def decode_status(self, data):
         inData = bytes(data)
+    '''
 
     def encode_anfrage_frame(self, kommando, kommando_para=[]):
         # 0xAA=SyncByte; 0x50=Anfrage,Seriell,Length=0
