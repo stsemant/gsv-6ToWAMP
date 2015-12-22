@@ -163,8 +163,13 @@ class GSVeventHandler():
 
     def writeUserScale(self, channelNo, userScaleValue):
         # first convert float to bytes
-        userScale = self.gsv_lib.convertFloatsToBytes([userScaleValue])
-        self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale',
+        try:
+            userScale = self.gsv_lib.convertFloatsToBytes([userScaleValue])
+        except:
+            self.session.publish(u"de.me_systeme.gsv.onWriteUserScale",
+                             [0x50, 'ERR_PAR', channelNo])
+        else:
+            self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale',
                                   channelNo)
 
     def getUnitNoAsText(self, channelNo):

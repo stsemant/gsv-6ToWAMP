@@ -270,7 +270,7 @@ class GSV6_seriall_lib:
 
     def convertToUint16_t(self, data):
         length = len(data)
-        if not (length >= 2) and ((length % 2) == 0):
+        if not ((length >= 2) and (length % 2) == 0):
             raise GSV6_ConversionError_Exception('uint16_t')
             return
 
@@ -280,7 +280,7 @@ class GSV6_seriall_lib:
     def convertToU24(self, data):
         raise GSV6_ConversionError_Exception('U24 not yet supported')
         length = len(data)
-        if not (length >= 3) and ((length % 3) == 0):
+        if not ((length >= 3) and (length % 3) == 0):
             raise GSV6_ConversionError_Exception('U24')
             return
 
@@ -290,7 +290,7 @@ class GSV6_seriall_lib:
     def convertToS24(self, data):
         raise GSV6_ConversionError_Exception('S24 not yet supported')
         length = len(data)
-        if not (length >= 3) and ((length % 3) == 0):
+        if not ((length >= 3) and (length % 3) == 0):
             raise GSV6_ConversionError_Exception('S24')
             return
 
@@ -299,7 +299,7 @@ class GSV6_seriall_lib:
 
     def convertToUint32_t(self, data):
         length = len(data)
-        if not (length >= 4) and ((length % 4) == 0):
+        if not ((length >= 4) and (length % 4) == 0):
             raise GSV6_ConversionError_Exception('uint32_t')
             return
 
@@ -308,7 +308,7 @@ class GSV6_seriall_lib:
 
     def convertToSint32_t(self, data):
         length = len(data)
-        if not (length >= 4) and ((length % 4) == 0):
+        if not ((length >= 4) and (length % 4) == 0):
             raise GSV6_ConversionError_Exception('int32_t')
             return
 
@@ -319,7 +319,7 @@ class GSV6_seriall_lib:
     def convertToS7_24(self, data):
         raise GSV6_ConversionError_Exception('S7.24 not yet supported')
         length = len(data)
-        if not (length >= 4) and ((length % 4) == 0):
+        if not ((length >= 4) and (length % 4) == 0):
             raise GSV6_ConversionError_Exception('S7.24')
             return
 
@@ -328,7 +328,7 @@ class GSV6_seriall_lib:
 
     def convertToFloat(self, data):
         length = len(data)
-        if not (length >= 4) and ((length % 4) == 0):
+        if not ((length >= 4) and (length % 4) == 0):
             raise GSV6_ConversionError_Exception('float')
             return
 
