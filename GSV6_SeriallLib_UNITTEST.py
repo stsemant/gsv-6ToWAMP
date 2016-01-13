@@ -132,7 +132,9 @@ class TestGSV6_SeriellLib(unittest.TestCase):
 
     def test_convertByteToFloat_ok(self):
         float_data = bytearray([0x3f, 0x80, 0x00, 0x00])
-        self.gsv6.convertToFloat(float_data)
+
+        value = self.gsv6.convertToFloat(float_data)
+        self.assertEqual(1.0, value[0])
 
     def test_convertFloatToByte_fail(self):
         # less tha four bytes
