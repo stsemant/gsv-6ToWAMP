@@ -357,7 +357,7 @@
             args = args[0];
             var data = {};
             if (args[0] != 0) {
-                setInputError('DataRate', args[1])
+                setInputError('DataRate', args[1]);
                 data['DataRate'] = -1;
             }
             else {
@@ -655,9 +655,9 @@
         function doneSelect(e) {
             var inputID = $(this).data('id');
             var index = parseInt($('#' + inputID + '_value').val());
-            var inputIDno = parseInt(inputID.charAt(inputID.length - 1));
+            var channel = parseInt(inputID.charAt(inputID.length - 1));
             setInputWarning(inputID, "wird übertragen...");
-            session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno, index]);
+            session.call("de.me_systeme.gsv.WriteUnitNo", [channel, index]);
         }
 
         function doneSelectInputType(e) {
