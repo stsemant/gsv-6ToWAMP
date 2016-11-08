@@ -13,8 +13,8 @@
 TZ='Europe/Berlin';
 export TZ
 
-pypy_dir=/home/pi/install/pypy-4.0.0-linux-armhf-raspbian/bin
-pypy=/home/pi/install/pypy-4.0.0-linux-armhf-raspbian/bin/pypy
+pypy_dir=/home/pi/install/pypy2-v5.4.1-linux-armhf-raspbian/bin
+pypy=/home/pi/install/pypy2-v5.4.1-linux-armhf-raspbian/bin/pypy
 gsv6ToWamp_dir=/home/pi/gsv-6ToWAMP
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
