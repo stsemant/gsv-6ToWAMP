@@ -1,6 +1,6 @@
 #gsv-6ToWAMP
 ## GSV-6CPU Modul to WAMP
-This shows how to hook up a Raspberry Pi2 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as the configuration of the GSV-6CPU from the browser.
+This shows how to hook up a Raspberry Pi3 to a WAMP router and display real-time GSV-6CPU readings in a browser, as well as the configuration of the GSV-6CPU from the browser.
 
 ## What is an GSV6/GSV6-CPU Modul
 [GSV6/GSV6-CPU](http://www.me-systeme.de/docs/de/flyer/flyer_gsv6.pdf) is a measurement amplifier from [ME-Messsysteme GmbH](http://www.me-systeme.de/)
@@ -44,18 +44,21 @@ You will need to have the following installed on the RPi to run the project:
 * PySerial
 
 ### Install
+
+        sudo apt-get update
+	
 All downloads a dropped to ~/downloads and all installs dropped to ~/install
 
 	mkdir ~/downloads
 	mkdir ~/install
 #### PyPy
-PyPy comes pre-installed on a Raspberry Pi with the raspian-image 2015-05-05. It comes with version 2.2.1 but we have to use version 4.0.0.
-For the update we have to download the latest version of PyPy, extract files and update paths.
+PyPy comes pre-installed on a Raspberry Pi. But we  use version 5.4.1 here.
+For the update we have to download this version of PyPy, extract files and update paths.
 	
 	cd ~/downloads
-	wget https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.1-linux-armhf-raspbian.tar.bz2
+	wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.4.1-linux-armhf-raspbian.tar.bz2
 	cd ~/install
-	tar xvjf ../downloads/pypy-4.0.1-linux-armhf-raspbian.tar.bz2
+	tar xvjf ../downloads/pypy2-v5.4.1-linux-armhf-raspbian.tar.bz2
 	echo "export PATH=\${HOME}/install/pypy-4.0.1-linux-armhf-raspbian/bin:\${PATH}" >> ~/.profile
 	source ~/.profile
 
@@ -73,7 +76,7 @@ For the update we have to download the latest version of PyPy, extract files and
 ##### Now we have to comment one line in the twisted-source-code
 	cd Twisted-15.4.0
 	nano setup.py
-	line 63 comment with a # -> -> #conditionalExtensions=getExtensions(),
+	line 53 comment with a # -> -> #conditionalExtensions=getExtensions(),
 	Ctrl + O
 	Ctrl + X
 	pypy setup.py install
@@ -109,10 +112,45 @@ Goto FS_MOUNTOPTIONS="" and change it to
 #### Crosbar.io (WAMP-Router)
 	sudo apt-get install build-essential libssl-dev libffi-dev python-dev
 	pip install crossbar
+	crossbar upgrade
+	
 	
 ### Checkout from github
 	cd ~/
-	git clone https://github.com/flashbac/gsv-6ToWAMP.git
+	git clone https://github.com/me-systeme/gsv-6ToWAMP.git
+	
+### since Raspberry 3 sharing the serial port and the bluetooth modul one physical clock. It is important for the communication between GSV 6 Module and Raspberry to change the clock frequency
+
+        sudo systemctl stop serial-getty@ttyS0.service
+	sudo systemctl disable serial-getty@ttyS0.service
+Change cmdline.txt
+
+         sudo nano /boot/cmdline.txt
+remove  => console=serial0,115200b
+add behind console=tty1 =>
+
+        core_freq=250
+	Ctrl + O
+	Ctrl + X
+Change	config.txt
+
+	sudo nano /boot/config.txt
+add at the bottom =>
+
+	dtoverlay=pi3-miniuart-bt
+	enable_uart=1
+	force_turbo=1
+	Ctrl + O
+	Ctrl + X
+        sudo reboot  
+
+### some updates could be helpful (optional)
+
+	sudo apt-get update
+	sudo apt-get upgrade
+	sudo apt-get install rpi-update
+	sudo rpi-update 
+	sudo reboot	
 	
 ### Set timezone
 	cd ~/
@@ -121,6 +159,7 @@ Goto FS_MOUNTOPTIONS="" and change it to
 	source ~/.profile
 	
 ### Create folder for csv-files
+	cd ~/gsv-6ToWAMP/
 	mkdir messungen
 	
 ### Run crossbar server
@@ -152,49 +191,11 @@ from now on, you can start and stop crossbar and serial2ws via the deamon
 	sudo /etc/init.d/serial2ws start
 	sudo /etc/init.d/serail2ws stop
 	
-autostart for crossbar and serial2ws
-I use the rc.local for them. open /etc/rc.local
-
-	sudo nano /etc/rc.local
 	
-edit like this
-
-	service networking restart
-
-	# Print the IP address
-	_IP=$(hostname -I) || true
-	if [ "$_IP" ]; then
-	  printf "My IP address is %s\n" "$_IP"
-	fi
-
-	/etc/init.d/crossbar start
-	/etc/init.d/serial2ws start
-	
-## Ehternet configuration (OPTIONAL)
-if you have no connection (cabel) at eth0, it is better to disable dhcp on eth0. It will be speedup your systemstart und avoid some network glitches.
-set up your desired network options in  /etc/network/interfaces
-	
-	iface eth0 inet static
-      address 192.168.2.10
-      netmask 255.255.255.0
-      
-optinal and a gateway
-
-      gateway 192.168.2.1
-      
-or disable eth0 at all with follwing line in /etc/network/interfaces
-
-	iface eth0 inet manual
-	
-## Establish the RPi as a Wifi Accespoint with hostapd [Source](http://elinux.org/RPI-Wireless-Hotspot)
-Verify that your wifi-adapter is on the [compatible list](http://elinux.org/RPI-Wireless-Hotspot)
-and make sure, that you are connected via eth0 (by cable)
+## Establish the RPi3as a Wifi Accespoint with hostapd 
 
 	sudo apt-get install firmware-ralink hostapd wireless-tools dnsmasq iw
 
-But be careful that your adapter is compatible with hostapd. Previously I use an EW-7811Un with Realtek RTL8188CUS Chipset and this one will not work out of the box with hostapd.
-For the Raspberry Pi you can use a pachted binary from the binary folder or build a [patched Version](https://github.com/lostincynicism/hostapd-rtl8188)
-Now I using an Adapter with Ralink RT5370 chipset. This Adapter is compatible to hostapd and works with the default hostapd driver (nl80211). If you have also an compatible adapter too, you can skip the next steps and go further to the dns configuration.
 
 ### Use pre-compiled patched hostapd from Binary-Folder
 
@@ -205,31 +206,53 @@ Copy hostapd-binary from git-binary Folder
 	sudo cp gsv-6ToWAMP/binary/hostapd hostapd
 	sudo chown root:root hostapd
 	sudo chmod 755 hostapd
-
-
-### Build hostapd-rtl8188 (patched Version)
-First of all you have to clone the repo
-
-	cd ~
-	git clone https://github.com/lostincynicism/hostapd-rtl8188
-then install dependencies
-
-	sudo apt-get install libnl-3-dev libnl-genl-3-dev
-
-build hostapd-rtl8188
 	
-	cd hostapd-rtl8188/hostapd
-	make
+### Edit dhcpcd.conf
+
+	sudo nano /etc/dhcpcd.conf
+following line to the bottom but must be ABOVE any interface lines
+
+	denyinterfaces wlan0
+		
+## Ehternet configuration and wireless-interface
+
+set up your desired network options in  /etc/network/interfaces
+
+	sudo nano /etc/network/interfaces
+
+Edit eth0 section like this =>
+
+	auto lo
+	iface lo inet loopback
 	
-copy hostapd-binary
+	iface eth0 inet manual	
 
-	cd /usr/sbin
-	sudo mv /usr/sbin/hostapd /usr/sbin/hostapd.bak
-	sudo cp hostapd-rtl8188/hostapd/hostapd hostapd
-	sudo chown root:root hostapd
-	sudo chmod 755 hostapd
+wlan0 section so that it looks like this =>
+	
+	# allow-hotplug wlan0
+	iface wlan0 inet static
+    		wireless-power off
+    		address 192.168.9.1
+    		netmask 255.255.255.0
+    		broadcast 192.168.9.255
+    		# wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+    		# iface wlan0 inet dhcp
+		
+replace the line "iface wlan0 inet dhcp" to iface wlan1 inet static
+(If the line "iface wlan0 inet static" is not present, add the above lines to the bottom of the file.)
+	
+and add one the file end follwing lines:
 
+	# restart hostapd and dnsmasq
+		up service hostapd restart
+		up service dnsmasq restart
+	
+save interfaces changes and exit nano with
 
+	Ctrl + O
+	Ctrl + X
+	
+	
 ### Configuration of the Accespoint
 #### Configure DHCP-Server for wireless-interface
 create a backup from the orginal dnsmasq-config-file
@@ -242,7 +265,6 @@ Open dnsmasq-config-File with the following command
 	
 Configure DHCP. Edit the file /etc/dnsmasq.conf and configure it like this
 	
-
 	interface=wlan0
 	no-dhcp-interface=eth0
 	dhcp-range=interface:wlan0,192.168.9.2,192.168.9.30,infinite
@@ -252,40 +274,6 @@ save dnsmasq.conf changes and exit nano with
 	Ctrl + O
 	Ctrl + X
 	
-#### Configure wireless-interface
-You will need to give the Pi a static IP address on the wireless interface with the following command
-
-	sudo ifconfig wlan0 192.168.9.1
-	
-To automatically set this up on boot, edit the file /etc/network/interfaces, open it by typing the following command
-
-	sudo nano /etc/network/interfaces
-	
-and replace the line "iface wlan0 inet dhcp" to
-(If the line "iface wlan0 inet dhcp" is not present, add the above lines to the bottom of the file.)
-
-	iface wlan0 inet static
-	  address 192.168.9.1
-	  netmask 255.255.255.0
-	  broadcast 192.168.9.255
-
-Change the lines (they probably will not all be next to each other)
-
-	allow-hotplug wlan0
-	wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
-	iface wlan0 inet dhcp
-
-to
-
-	#allow-hotplug wlan0
-	#wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
-	#iface wlan0 inet manual
-
-and add one the file end follwing lines:
-
-	# restart hostapd and dnsmasq
-		up service hostapd restart
-		up service dnsmasq restart
 		
 #### Configure hostapd
 Configure HostAPD. Create a WPA-secured network. To create a WPA-secured network, open the file hostapd.conf
@@ -306,7 +294,6 @@ It seems to be necessary that the passphrase starts with a capital letter.
 	wpa=2
 	wpa_passphrase=My_Passphrase
 	wpa_key_mgmt=WPA-PSK
-	wpa_pairwise=TKIP
 	rsn_pairwise=CCMP
 
 open  /etc/default/hostapd
@@ -338,6 +325,8 @@ last step reboot
 
 sometimes after reboot (and hostapd start) the pi doesnt assigne a IP  address to wlan0. You can solve it by chage file /etc/default/ifplugd and change it like this [Source](http://rpi.vypni.net/wifi-ap-rt5370-on-raspberry-pi/):
 
+        sudo apt-get install ifplugd
+
 	sudo nano /etc/default/ifplugd
 	
 and change to
@@ -346,3 +335,65 @@ and change to
 	HOTPLUG_INTERFACES="eth0"
 	ARGS="-q -f -u0 -d10 -w -I"
 	SUSPEND_ACTION="stop"
+
+
+### autostart for crossbar and serial2ws
+I use the rc.local for them. open /etc/rc.local
+
+	sudo nano /etc/rc.local
+	
+edit like this
+
+	service networking restart
+	sudo ifconfig wlan0 192.168.9.1
+        sudo iw wlan0 set power_save off
+        sudo /bin/systemctl daemon-reload
+
+	# Print the IP address
+	_IP=$(hostname -I) || true
+	if [ "$_IP" ]; then
+	  printf "My IP address is %s\n" "$_IP"
+	fi
+
+	/etc/init.d/crossbar start
+	/etc/init.d/serial2ws start
+	
+	sudo echo ds1307 0x68 > sudo /sys/class/i2c-adapter/i2c-1/new_device
+        sudo hwclock -s
+        date
+	exit 0
+	
+make sure that rc.local are executable
+
+	sudo chmod +x /etc/rc.local
+	sudo chmod 755 /etc/rc.local
+	sudo update-rc.d rc.local defaults
+	
+### integration from client software for S.USV PI Advanced [Source](http://www.s-usv.de/)
+ 
+firstly download the actually firmware
+
+	cd ~/downloads
+	wget http://www.s-usv.de/files/firmware/susv_fw_132.tar.gz
+	sudo tar -xvzf susv_fw_132.tar.gz 
+	
+now download and install the software package
+	
+	wget http://www.s-usv.de/files/software/susvd-en-1.32-all.tar.gz
+	sudo tar -xvzf susvd-en-1.32-all.tar.gz
+	sudo dpkg -i susvd-en-1.32-all.deb
+
+flashing the firmware
+
+	/opt/susvd/./susv -flash susv_fw_132.tar.gz
+
+and starting the usv
+
+        sudo /opt/susvd/./susvd -start
+	
+	
+now is it possible for shutdown to use the key from the usv panel for more information please read and follow the instruction. [Source](http://www.s-usv.de/files/pdf/SUSVpi_Manual_Rev1_4_EN.pdf)
+       
+	
+	
+	
