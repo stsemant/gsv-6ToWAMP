@@ -357,7 +357,7 @@
             args = args[0];
             var data = {};
             if (args[0] != 0) {
-                setInputError('DataRate', args[1]);
+                setInputError('DataRate', args[1])
                 data['DataRate'] = -1;
             }
             else {
@@ -496,6 +496,22 @@
                     timerForSetDateTime = setTimeout(function () {
                         $('#btn_rebootSystem').removeClass("disabled")
                         $('#btn_rebootSystem').popover('destroy');
+                    }, 90000);
+                }
+            }, session.log);
+        }
+
+
+        function shutdownSystem() {
+            session.call('de.me_systeme.gsv.shutdownSystem').then(function set(res) {
+                if (res[0] != 0) {
+                    showGeError("System-Shutdown konnte nicht durchgeführt werden", "Fehlercode: " + res[0] + '; ' + res[1]);
+                } else {
+                    $('#btn_shutdownSystem').addClass("disabled");
+                    $('#btn_shutdownSystem').popover({content: 'system is shutdown', placement: "top"}).popover("show");
+                    timerForSetDateTime = setTimeout(function () {
+                        $('#btn_shutdownSystem').removeClass("disabled")
+                        $('#btn_shutdownSystem').popover('destroy');
                     }, 90000);
                 }
             }, session.log);
@@ -655,9 +671,9 @@
         function doneSelect(e) {
             var inputID = $(this).data('id');
             var index = parseInt($('#' + inputID + '_value').val());
-            var channel = parseInt(inputID.charAt(inputID.length - 1));
+            var inputIDno = parseInt(inputID.charAt(inputID.length - 1));
             setInputWarning(inputID, "wird übertragen...");
-            session.call("de.me_systeme.gsv.WriteUnitNo", [channel, index]);
+            session.call("de.me_systeme.gsv.WriteUnitNo", [inputIDno, index]);
         }
 
         function doneSelectInputType(e) {
@@ -1547,10 +1563,14 @@
                         </button>
                         <button id="btn_setDateTime" type="button" class="btn btn-warning"
                                 onclick="setDateTimeFromBrowser()">Browser Zeit
-                            setzten
+                            setzen
                         </button>
                         <button id="btn_rebootSystem" type="button" class="btn btn-danger"
-                                onclick="rebootSystem()">reboot System
+                                onclick="rebootSystem()">Reboot System
+                        </button>
+
+                        <button id="btn_shutdownSystem" type="button" class="btn btn-danger"
+                                onclick="shutdownSystem()">Shutdown System
                         </button>
                     </div>
                 </div>
