@@ -104,6 +104,7 @@ class GSVeventHandler():
         self.session.register(self.setDateTimeFromBrowser, u"de.me_systeme.gsv.setDateTimeFromBrowser")
         self.session.register(self.isSystemReady, u"de.me_systeme.gsv.isSystemReady")
         self.session.register(self.rebootSystem, u"de.me_systeme.gsv.rebootSystem")
+        self.session.register(self.shutdownSystem, u"de.me_systeme.gsv.shutdownSystem")
         self.session.register(self.getLogFileList, u"de.me_systeme.gsv.getLogFileList")
         self.session.register(self.reduceCSVFile, u"de.me_systeme.gsv.reduceCSVFile")
 
@@ -163,13 +164,8 @@ class GSVeventHandler():
 
     def writeUserScale(self, channelNo, userScaleValue):
         # first convert float to bytes
-        try:
-            userScale = self.gsv_lib.convertFloatsToBytes([userScaleValue])
-        except:
-            self.session.publish(u"de.me_systeme.gsv.onWriteUserScale",
-                             [0x50, 'ERR_PAR', channelNo])
-        else:
-            self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale',
+        userScale = self.gsv_lib.convertFloatsToBytes([userScaleValue])
+        self.session.writeAntwort(self.gsv_lib.buildWriteUserScale(channelNo, userScale), 'rcvWriteUserScale',
                                   channelNo)
 
     def getUnitNoAsText(self, channelNo):
@@ -280,6 +276,16 @@ class GSVeventHandler():
             else:
                 return [x, "an error occurred"]
 
+    def shutdownSystem(self):
+        if sys.platform == 'win32':
+            return [0x01, "Windows not supported"]
+        else:
+            x = os.system("sudo shutdown -h now")
+            if x == 0:
+                return [0, "ERR_OK"]
+            else:
+                return [x, "an error occurred"]
+
     def isSystemReady(self):
         return self.session.sys_ready
 
@@ -300,14 +306,6 @@ class GSVeventHandler():
 
     def deleteCSVFile(self, fileName):
         filepath = self.session.config.extra['csvpath'] + fileName
-
-        # for more security, check absolute path
-        abs_path, fname = os.path.split(os.path.abspath(filepath))
-        if abs_path != os.path.abspath(self.session.config.extra['csvpath']):
-            logging.getLogger('serial2ws.WAMP_Component.router.GSVeventHandler').warning(
-                "deleteCSVFile try to delete files outside of the csvpath. aborted.")
-            return False
-
         if (os.path.isfile(filepath)):
             try:
                 os.remove(filepath)
@@ -318,7 +316,7 @@ class GSVeventHandler():
             else:
                 return True
         else:
-            msg = fileName + ' konnte nicht gefunden werden (geloescht werden)'
+            msg = fileName + ' konnte nicht gefunden werden (gelÃ¶scht werden)'
             logging.getLogger('serial2ws.WAMP_Component.GSV_6Protocol').warning(msg)
             return False
 
