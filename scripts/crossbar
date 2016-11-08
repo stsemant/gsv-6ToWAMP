@@ -10,7 +10,7 @@
 # Description:       starts crossbar
 ### END INIT INFO
 
-pypy_dir=/home/pi/install/pypy-4.0.0-linux-armhf-raspbian/bin
+pypy_dir=/home/pi/install/pypy2-v5.4.1-linux-armhf-raspbian/bin
 gsv6ToWamp_dir=/home/pi/gsv-6ToWAMP
 crossbar_init_log=/home/pi/gsv-6ToWAMP/logs/crossbar.init.log
 
