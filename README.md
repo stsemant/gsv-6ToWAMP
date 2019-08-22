@@ -150,7 +150,7 @@ from now on, you can start and stop crossbar and serial2ws via the deamon
 	sudo /etc/init.d/crossbar stop
 	
 	sudo /etc/init.d/serial2ws start
-	sudo /etc/init.d/serail2ws stop
+	sudo /etc/init.d/serial2ws stop
 	
 autostart for crossbar and serial2ws
 I use the rc.local for them. open /etc/rc.local
