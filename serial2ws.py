@@ -122,8 +122,8 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log", type=str, default='DEBUG',
                         help="set logLevel (CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE).")
 
-    parser.add_argument("--baudrate", type=int, default=115200,
-                        choices=[300, 1200, 2400, 4800, 9600, 19200, 57600, 115200],
+    parser.add_argument("--baudrate", type=int, default=230400,
+                        choices=[300, 1200, 2400, 4800, 9600, 19200, 57600, 115200, 230000],
                         help='Serial port baudrate.')
 
     if sys.platform == 'win32':
